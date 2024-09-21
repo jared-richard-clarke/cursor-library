@@ -217,14 +217,14 @@
              (syntax-case stx ()
                [(grammar [rule-x body-x] [rule-y body-y] ...)
                 (with-syntax ([(size-x size-y ...) (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let ([rule-x (sequence (encode RULE (quote rule-x)) body-x)]
-                                [rule-y (sequence (encode RULE (quote rule-y)) body-y)]
+                  (syntax (let ([rule-x (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                [rule-y (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                 ...
                                 [symbols (quote (rule-x rule-y ...))])
                             (let ([size-x (length-check rule-x)]
                                   [size-y (length-check rule-y)]
                                   ...)
-                              (let ([rules   (sequence rule-x rule-y ...)]
+                              (let ([rules   (sequence (encode GRAMMAR) rule-x rule-y ...)]
                                     [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))])
                                 (map (lambda (x)
                                        (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-operand x)))
