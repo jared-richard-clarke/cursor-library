@@ -18,6 +18,7 @@
                  (collections charset))
 
          ;; === constants ===
+         
          (define ERROR           'Error)
          (define EMPTY           'Empty)
          (define ANY             'Any)
@@ -44,6 +45,7 @@
          (define NONE-OF         'None-Of)
 
          ;; === data ===
+         
          (define-record-type (code encode code?)
            (fields kind operand)
            (nongenerative)
@@ -92,7 +94,7 @@
 
          ;; empty
          ;;
-         ;; Always succeeds, consuming no input.
+         ;; Always succeed, consuming no input.
          (define empty (encode EMPTY))
 
          ;; any
@@ -103,7 +105,7 @@
          ;; (character x)
          ;;   where x = char
          ;;
-         ;; Match character "x".
+         ;; Match character.
          (define character
            (lambda (x)
              (if (char? x)
@@ -112,7 +114,8 @@
 
          ;; (and-then px py)
          ;;
-         ;; Match two patterns in a sequence.
+         ;; Match a sequence of two patterns. Acts as flat-map, simultaneously marking encoding errors
+         ;; and flattening sequences into a single list of instructions.
          (define and-then
            (lambda (px py)
              (let ([check-code (lambda (x)
@@ -125,14 +128,14 @@
 
          ;; (sequence px py pz ...)
          ;;
-         ;; Match two or more patterns in a sequence.
+         ;; Match a sequence of two or more patterns.
          (define sequence
            (lambda xs
              (reduce-right and-then xs)))
 
          ;; (ordered-choice px py)
          ;;
-         ;; Ordered choice for two patterns.
+         ;; Match one of two patterns. Ordered choice.
          (define ordered-choice
            (lambda (px py)
              (let ([offset-x (length-check px)]
@@ -144,21 +147,21 @@
 
          ;; (choice px py pz ...)
          ;;
-         ;; Ordered choice for two or more patterns.
+         ;; Match one of two or more patterns.
          (define choice
            (lambda xs
              (reduce-right ordered-choice xs)))
 
          ;; (maybe px)
          ;;
-         ;; Match zero or one patterns.
+         ;; Optionally match pattern.
          (define maybe
            (lambda (px)
              (choice px empty)))
 
          ;; (repeat px)
          ;;
-         ;; Match pattern "px" zero or more times.
+         ;; Match pattern zero or more times.
          (define repeat
            (lambda (px)
              (let ([offset (length-check px)])
@@ -168,7 +171,7 @@
 
          ;; (is? px)
          ;;
-         ;; Queries match for pattern "px", consuming no input.
+         ;; Queries match for pattern, consuming no input.
          (define is?
            (lambda (px)
              (let ([offset-x (+ (length-check px) 2)]
@@ -180,7 +183,7 @@
 
          ;; (is-not? px)
          ;;
-         ;; Queries no match for pattern "px", consuming no input.
+         ;; Queries no match for pattern, consuming no input.
          (define is-not?
            (lambda (px)
              (let ([offset (length-check px)])
@@ -191,7 +194,7 @@
          ;; (one-of xs)
          ;;   where xs = string
          ;;
-         ;; Match a character in string "xs" converted into a set of characters.
+         ;; Match a character in a string converted into a set of characters.
          (define one-of
            (lambda (xs)
              (if (string? xs)
@@ -201,7 +204,7 @@
          ;; (none-of xs)
          ;;   where xs = string
          ;;
-         ;; Match a character not in string "xs" converted into a set of characters.
+         ;; Match a character not in a string converted into a set of characters.
          (define none-of
            (lambda (xs)
              (if (string? xs)
@@ -212,7 +215,7 @@
          ;;          [rule body] ...)
          ;;
          ;; Allows recursive patterns for grammar construction.
-         ;; The first rule is the start pattern.
+         ;; A sequence of one or more rules. The first rule is the start pattern.
          (define-syntax grammar
            (lambda (stx)
              (syntax-case stx ()
@@ -240,8 +243,8 @@
          ;;   where fn = function
          ;;         px = pattern
          ;;
-         ;; Patterns return a list containing sequences of character matches.
-         ;; "transform" applies an arbitrary function over that list.
+         ;; Pattern returns list of character matches to be transformed
+         ;; by an arbitrary function.
          (define transform
            (lambda (fn px)
              (sequence (encode TRANSFORM-START fn)
