@@ -11,6 +11,7 @@
                  is-not?
                  one-of
                  none-of
+                 grammar
                  transform
                  text)
          (import (rnrs)
