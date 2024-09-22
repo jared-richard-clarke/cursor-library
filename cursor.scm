@@ -229,10 +229,10 @@
                   (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
                                  [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                  ...
-                                 [symbols (quote (rule-x rule-y ...))]
                                  [size-x  (length-check rule-x)]
                                  [size-y  (length-check rule-y)]
                                  ...
+                                 [symbols (quote (rule-x rule-y ...))]
                                  [rules   (sequence (encode GRAMMAR) rule-x rule-y ...)]
                                  [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))])
                             (map (lambda (x)
