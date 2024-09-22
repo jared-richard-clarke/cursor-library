@@ -18,31 +18,35 @@
                  (collections charset))
 
          ;; === constants ===
-         
-         (define ERROR           'Error)
-         (define EMPTY           'Empty)
-         (define ANY             'Any)
-         (define FAIL            'Fail)
-         (define FAIL-TWICE      'Fail-Twice)
-         (define CHARACTER       'Character)
-         (define SEQUENCE        'Sequence)
-         (define CHOICE          'Choice)
-         (define COMMIT          'Commit)
-         (define PARTIAL-COMMIT  'Partial-Commit)
-         (define BACK-COMMIT     'Back-Commit)
-         (define GRAMMAR         'Grammar)
-         (define RULE            'Rule)
-         (define CALL            'Call)
-         (define RETURN          'Return)
-         (define JUMP            'Jump)
-         ;; Transform: Functors and Captures combined.
-         (define TRANSFORM-START 'Transform-Start)
-         (define TRANSFORM-END   'Transform-End)
-         (define LABEL           'Label)
-         (define IS              'Is)
-         (define IS-NOT          'Is-Not)
-         (define ONE-OF          'One-Of)
-         (define NONE-OF         'None-Of)
+
+         (define-syntax enum
+           (syntax-rules ()
+             [(_ x y ...)
+              (begin (define x (quote x))
+                     (define y (quote y)) ...)]))
+
+         (enum ERROR
+               EMPTY
+               ANY
+               FAIL
+               FAIL-TWICE
+               CHARACTER
+               SEQUENCE
+               CHOICE
+               COMMIT
+               PARTIAL-COMMIT
+               BACK-COMMIT
+               GRAMMAR
+               RULE
+               CALL
+               RETURN
+               JUMP
+               TRANSFORM-START
+               TRANSFORM-END
+               IS
+               IS-NOT
+               ONE-OF
+               NONE-OF)
 
          ;; === data ===
          
