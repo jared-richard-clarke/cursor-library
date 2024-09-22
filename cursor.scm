@@ -51,14 +51,15 @@
          ;; === data ===
 
          (define-record-type (code encode code?)
-           (fields kind operand)
+           (fields kind op-x op-y)
            (nongenerative)
            (sealed #t)
            (protocol
             (lambda (new)
               (case-lambda
-               [(kind)         (new kind '())]
-               [(kind operand) (new kind operand)]))))
+               [(kind)           (new kind '() '())]
+               [(kind op-x)      (new kind op-x '())]
+               [(kind op-x op-y) (new kind op-x op-y)]))))
 
          ;; === utilities ===
 
@@ -234,12 +235,13 @@
                                  ...
                                  [symbols (quote (rule-x rule-y ...))]
                                  [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))]
-                                 [rules   (sequence (encode GRAMMAR) rule-x rule-y ...)])
+                                 [total   (apply + (list size-x size-y ...))]
+                                 [rules   (sequence (encode GRAMMAR total) rule-x rule-y ...)])
                             (map (lambda (x)
-                                   (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-operand x)))
-                                          (let ([offset (assq (code-operand x) offsets)])
+                                   (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-op-x x)))
+                                          (let ([offset (assq (code-op-x x) offsets)])
                                             (if offset
-                                                (encode CALL (cdr offset))
+                                                (encode CALL x (cdr offset))
                                                 x))]
                                          [else x]))
                                  rules))))])))
