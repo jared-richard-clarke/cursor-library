@@ -233,8 +233,8 @@
                                  [size-y  (length-check rule-y)]
                                  ...
                                  [symbols (quote (rule-x rule-y ...))]
-                                 [rules   (sequence (encode GRAMMAR) rule-x rule-y ...)]
-                                 [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))])
+                                 [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))]
+                                 [rules   (sequence (encode GRAMMAR) rule-x rule-y ...)])
                             (map (lambda (x)
                                    (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-operand x)))
                                           (let ([offset (assq (code-operand x) offsets)])
