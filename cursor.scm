@@ -223,32 +223,33 @@
          ;; A sequence of one or more rules. The first rule is the start pattern.
          (define-syntax grammar
            (lambda (stx)
-             (syntax-case stx ()
-               [(grammar [rule-x body-x] [rule-y body-y] ...)
-                (with-syntax ([(size-x size-y ...)
-                               (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
-                                 [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
-                                 ...
-                                 [size-x  (length-check rule-x)]
-                                 [size-y  (length-check rule-y)]
-                                 ...
-                                 [symbols (quote (rule-x rule-y ...))]
-                                 [offsets (zip-with cons symbols (scan-right + 0 (list 0 size-x size-y ...)))]
-                                 [total   (apply + (list size-x size-y ...))]
-                                 [rules   (sequence (encode GRAMMAR total)
-                                                    (encode CALL (quote rule-x) 2)
-                                                    (encode JUMP (+ total 1))
-                                                    rule-x
-                                                    rule-y ...)])
-                            (map (lambda (x)
-                                   (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-op-x x)))
-                                          (let ([offset (assq (code-op-x x) offsets)])
-                                            (if offset
-                                                (encode CALL x (cdr offset))
-                                                x))]
-                                         [else x]))
-                                 rules))))])))
+             (let ([FIRST-OFFSET 2])
+               (syntax-case stx ()
+                 [(grammar [rule-x body-x] [rule-y body-y] ...)
+                  (with-syntax ([(size-x size-y ...)
+                                 (generate-temporaries (syntax (rule-x rule-y ...)))])
+                    (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                   [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
+                                   ...
+                                   [size-x  (length-check rule-x)]
+                                   [size-y  (length-check rule-y)]
+                                   ...
+                                   [symbols (quote (rule-x rule-y ...))]
+                                   [offsets (zip-with cons symbols (scan-right + FIRST-OFFSET (list 0 size-x size-y ...)))]
+                                   [total   (apply + (list size-x size-y ...))]
+                                   [rules   (sequence (encode GRAMMAR total)
+                                                      (encode CALL (quote rule-x) FIRST-OFFSET)
+                                                      (encode JUMP (+ total 1))
+                                                      rule-x
+                                                      rule-y ...)])
+                              (map (lambda (x)
+                                     (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-op-x x)))
+                                            (let ([offset (assq (code-op-x x) offsets)])
+                                              (if offset
+                                                  (encode CALL x (cdr offset))
+                                                  x))]
+                                           [else x]))
+                                   rules))))]))))
 
          ;; (transform fn px)
          ;;   where fn = function
