@@ -257,7 +257,7 @@
                                             (let ([offset (assq (code-op-x x) offsets)])
                                               (if offset
                                                   (encode CALL x (cdr offset))
-                                                  x))]
+                                                  (encode ERROR x)))]
                                            [else x]))
                                    rules))))]))))
 
