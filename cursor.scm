@@ -181,9 +181,9 @@
          ;; Queries match for pattern, consuming no input.
          (define is?
            (lambda (px)
-             (let ([offset-x (+ (length-check px) 2)]
+             (let ([offset-x (length-check px)]
                    [offset-y 2])
-               (sequence (encode CHOICE offset-x)
+               (sequence (encode CHOICE (+ offset-x 2))
                          px
                          (encode BACK-COMMIT offset-y)
                          fail))))
