@@ -273,9 +273,12 @@
          ;; by an arbitrary function.
          (define transform
            (lambda (fn px)
-             (sequence (encode TRANSFORM-START fn)
-                       px
-                       (encode TRANSFORM-END))))
+             (if (procedure? fn)
+                 (sequence (encode TRANSFORM-START fn)
+                           px
+                           (encode TRANSFORM-END))
+                 (sequence (encode ERROR fn)
+                           px))))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
