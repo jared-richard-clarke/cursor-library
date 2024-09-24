@@ -138,7 +138,9 @@
          ;; Match a sequence of two or more patterns.
          (define sequence
            (lambda xs
-             (reduce-right and-then xs)))
+             (if (>= (length xs) 2)
+                 (reduce-right and-then xs)
+                 (encode ERROR xs))))
 
          ;; (ordered-choice px py)
          ;;
@@ -157,7 +159,9 @@
          ;; Match one of two or more patterns.
          (define choice
            (lambda xs
-             (reduce-right ordered-choice xs)))
+             (if (>= (length xs) 2)
+                 (reduce-right ordered-choice xs)
+                 (encode ERROR xs))))
 
          ;; (maybe px)
          ;;
