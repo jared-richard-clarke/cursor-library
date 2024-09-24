@@ -278,7 +278,8 @@
                            px
                            (encode TRANSFORM-END))
                  (sequence (encode ERROR fn)
-                           px))))
+                           px
+                           (encode ERROR fn)))))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
