@@ -12,6 +12,7 @@
                  one-of
                  none-of
                  grammar
+                 call
                  transform
                  text)
          (import (rnrs)
@@ -39,6 +40,7 @@
                GRAMMAR
                RULE
                CALL
+               OPEN-CALL
                RETURN
                JUMP
                TRANSFORM-START
@@ -216,6 +218,14 @@
                  (encode NONE-OF (make-charset xs))
                  (encode ERROR xs))))
 
+         (define-syntax call
+           (syntax-rules ()
+             [(_ x)
+              (let ([id (quote x)])
+                (if (symbol? id)
+                    (encode OPEN-CALL id)
+                    (encode ERROR id)))]))
+
          ;; (grammar [rule body]
          ;;          [rule body] ...)
          ;;
@@ -243,7 +253,7 @@
                                                       rule-x
                                                       rule-y ...)])
                               (map (lambda (x)
-                                     (cond [(and (code? x) (eq? ERROR (code-kind x)) (symbol? (code-op-x x)))
+                                     (cond [(and (code? x) (eq? OPEN-CALL (code-kind x)))
                                             (let ([offset (assq (code-op-x x) offsets)])
                                               (if offset
                                                   (encode CALL x (cdr offset))
