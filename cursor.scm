@@ -122,7 +122,7 @@
 
          ;; (and-then px py)
          ;;
-         ;; Match a sequence of two patterns. Acts as flat-map, simultaneously marking encoding errors
+         ;; Match a sequence of two patterns. Acts as flat-map, marking encoding errors
          ;; and flattening sequences into a single list of instructions.
          (define and-then
            (lambda (px py)
