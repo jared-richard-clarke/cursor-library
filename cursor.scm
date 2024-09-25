@@ -198,7 +198,7 @@
 
          ;; (maybe px)
          ;;
-         ;; Match pattern zero or one time. Always succeeds.
+         ;; Match pattern one or zero times. Always succeeds.
          (define maybe
            (lambda (px)
              (choice px empty)))
