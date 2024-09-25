@@ -136,7 +136,7 @@
          ;; any
          ;;
          ;; Match and consume any character if there
-	 ;; is input to be consumed.
+         ;; is input to be consumed.
          (define any (list (encode ANY)))
 
          ;; (character x)
@@ -154,7 +154,7 @@
          ;; (and-then px py)
          ;;
          ;; Match two patterns in sequence. Acts as flat-map,
-	 ;; marking encoding errors and merging instruction lists.
+         ;; marking encoding errors and merging instruction lists.
          (define and-then
            (lambda (px py)
              (let ([check-code (lambda (x)
@@ -209,7 +209,7 @@
          ;; (repeat px)
          ;;
          ;; Match pattern zero or more times.
-	 ;; Always succeeds.
+         ;; Always succeeds.
          (define repeat
            (lambda (px)
              (let ([offset (length-check px)])
@@ -229,7 +229,7 @@
          ;; (is? px)
          ;;
          ;; Queries match for pattern. Succeeds on match.
-	 ;; Consumes no input.
+         ;; Consumes no input.
          (define is?
            (lambda (px)
              (let ([offset-x (length-check px)]
@@ -242,7 +242,7 @@
          ;; (is-not? px)
          ;;
          ;; Queries match for pattern. Fails on match.
-	 ;; Consumes no input.
+         ;; Consumes no input.
          (define is-not?
            (lambda (px)
              (let ([offset (length-check px)])
@@ -256,7 +256,7 @@
          ;;   where xs = string
          ;;
          ;; Match character in a set of characters.
-	 ;; Constructs set from given string.
+         ;; Constructs set from given string.
          (define one-of
            (lambda (xs)
              (if (string? xs)
@@ -267,7 +267,7 @@
          ;;   where xs = string
          ;;
          ;; Match character not in a set of characters.
-	 ;; Constructs set from given string.
+         ;; Constructs set from given string.
          (define none-of
            (lambda (xs)
              (if (string? xs)
@@ -293,7 +293,7 @@
          ;;
          ;; Allows recursive patterns for grammar construction.
          ;; A sequence of one or more rules. The first rule is
-	 ;; the start state.
+         ;; the start state.
          (define-syntax grammar
            (lambda (stx)
              (let ([FIRST-OFFSET 2])
@@ -348,7 +348,7 @@
          ;; (text xs)
          ;;
          ;; Transforms a string literal into a sequence
-	 ;; of character instructions.
+         ;; of character instructions.
          (define text
            (lambda (xs)
              (cond [(string? xs)
