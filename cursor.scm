@@ -78,7 +78,7 @@
                ONE-OF
                NONE-OF)
 
-         ;; === data ===
+         ;; === Data ===
 
          (define-record-type (code encode code?)
            (fields kind op-x op-y)
@@ -91,7 +91,7 @@
                [(kind op-x)      (new kind op-x '())]
                [(kind op-x op-y) (new kind op-x op-y)]))))
 
-         ;; === utilities ===
+         ;; === Tools ===
 
          (define zip-with
            (lambda (fn . xs)
