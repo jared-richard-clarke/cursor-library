@@ -228,7 +228,7 @@
 
          ;; (is? px)
          ;;
-         ;; Queries match for pattern. Succeeds on match.
+         ;; Queries pattern match. Succeeds on match.
          ;; Consumes no input.
          (define is?
            (lambda (px)
@@ -241,7 +241,7 @@
 
          ;; (is-not? px)
          ;;
-         ;; Queries match for pattern. Fails on match.
+         ;; Queries pattern match. Fails on match.
          ;; Consumes no input.
          (define is-not?
            (lambda (px)
