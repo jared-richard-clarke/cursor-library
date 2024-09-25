@@ -7,6 +7,7 @@
                  choice
                  maybe
                  repeat
+                 repeat+1
                  is?
                  is-not?
                  one-of
