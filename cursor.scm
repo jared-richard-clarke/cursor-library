@@ -142,10 +142,10 @@
                  (reduce-right and-then xs)
                  (encode ERROR xs))))
 
-         ;; (ordered-choice px py)
+         ;; (or-else px py)
          ;;
          ;; Match one of two patterns. Ordered choice.
-         (define ordered-choice
+         (define or-else
            (lambda (px py)
              (let ([offset-x (length-check px)]
                    [offset-y (length-check py)])
@@ -160,12 +160,12 @@
          (define choice
            (lambda xs
              (if (>= (length xs) 2)
-                 (reduce-right ordered-choice xs)
+                 (reduce-right or-else xs)
                  (encode ERROR xs))))
 
          ;; (maybe px)
          ;;
-         ;; Optionally match pattern.
+         ;; Match pattern zero or one time.
          (define maybe
            (lambda (px)
              (choice px empty)))
@@ -180,9 +180,16 @@
                          px
                          (encode PARTIAL-COMMIT (- offset))))))
 
+         ;; (repeat+1 px)
+         ;;
+         ;; Match pattern one or more times.
+         (define repeat+1
+           (lambda (px)
+             (sequence px (repeat px))))
+
          ;; (is? px)
          ;;
-         ;; Queries match for pattern, consuming no input.
+         ;; Queries match for pattern. Succeeds on match. Consumes no input.
          (define is?
            (lambda (px)
              (let ([offset-x (length-check px)]
@@ -194,7 +201,7 @@
 
          ;; (is-not? px)
          ;;
-         ;; Queries no match for pattern, consuming no input.
+         ;; Queries match for pattern. Fails on match. Consumes no input.
          (define is-not?
            (lambda (px)
              (let ([offset (length-check px)])
@@ -205,7 +212,7 @@
          ;; (one-of xs)
          ;;   where xs = string
          ;;
-         ;; Match a character in a string converted into a set of characters.
+         ;; Match one character in a string converted into a set of characters.
          (define one-of
            (lambda (xs)
              (if (string? xs)
@@ -222,6 +229,9 @@
                  (encode NONE-OF (make-charset xs))
                  (encode ERROR xs))))
 
+         ;; (call x)
+         ;;
+         ;; Calls a rule within a closed grammar.
          (define-syntax call
            (syntax-rules ()
              [(_ x)
@@ -273,13 +283,13 @@
          ;; by an arbitrary function.
          (define transform
            (lambda (fn px)
-             (if (procedure? fn)
-                 (sequence (encode TRANSFORM-START fn)
-                           px
-                           (encode TRANSFORM-END))
-                 (sequence (encode ERROR fn)
-                           px
-                           (encode ERROR fn)))))
+             (cond [(procedure? fn)
+                    (sequence (encode TRANSFORM-START fn)
+                              px
+                              (encode TRANSFORM-END))]
+                   [else (sequence (encode ERROR fn)
+                                   px
+                                   (encode ERROR fn))])))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
@@ -291,8 +301,8 @@
          ;; Transforms a string literal into a sequence of character instructions.
          (define text
            (lambda (xs)
-             (if (string? xs)
-                 (let ([characters (map character (string->list xs))])
-                   (apply sequence characters))
-                 (encode ERROR xs))))
+             (cond [(string? xs)
+                    (let ([characters (map character (string->list xs))])
+                      (apply sequence characters))]
+                   [else (encode ERROR xs)])))
          )
