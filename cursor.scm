@@ -46,7 +46,7 @@
          (import (rnrs)
                  (collections charset))
 
-         ;; === constants ===
+         ;; === Constants ===
 
          (define-syntax enum
            (syntax-rules ()
@@ -124,19 +124,20 @@
          ;; fail
          ;;
          ;; Force failure.
-         (define fail       (encode FAIL))
-         (define fail-twice (encode FAIL-TWICE))
+         (define fail       (list (encode FAIL)))
+         (define fail-twice (list (encode FAIL-TWICE)))
 
          ;; empty
          ;;
-         ;; The empty pattern, which always succeeds and consumes no input.
-         ;; Also known as epsilon.
-         (define empty (encode EMPTY))
+         ;; The empty pattern, which always succeeds and
+         ;; consumes no input. Also known as epsilon.
+         (define empty (list (encode EMPTY)))
 
          ;; any
          ;;
-         ;; Match and consume any character if there is input to be consumed.
-         (define any (encode ANY))
+         ;; Match and consume any character if there
+	 ;; is input to be consumed.
+         (define any (list (encode ANY)))
 
          ;; (character x)
          ;;   where x = char
@@ -145,15 +146,15 @@
          (define character
            (lambda (x)
              (if (char? x)
-                 (encode CHARACTER x)
-                 (encode ERROR x))))
+                 (list (encode CHARACTER x))
+                 (list (encode ERROR x)))))
 
-         ;; === Sequencing ===
+         ;; === Concatenation ===
 
          ;; (and-then px py)
          ;;
-         ;; Match two patterns in sequence. Acts as flat-map, marking encoding errors
-         ;; and merging instruction lists.
+         ;; Match two patterns in sequence. Acts as flat-map,
+	 ;; marking encoding errors and merging instruction lists.
          (define and-then
            (lambda (px py)
              (let ([check-code (lambda (x)
@@ -173,7 +174,7 @@
                  (reduce-right and-then xs)
                  (encode ERROR xs))))
 
-         ;; === Ordered Choice ===
+         ;; === Ordered Choice: Limited Backtracking ===
 
          ;; (or-else px py)
          ;;
@@ -198,7 +199,7 @@
 
          ;; (maybe px)
          ;;
-         ;; Match pattern one or zero times. Always succeeds.
+         ;; Optional match. Always succeeds.
          (define maybe
            (lambda (px)
              (choice px empty)))
@@ -207,7 +208,8 @@
 
          ;; (repeat px)
          ;;
-         ;; Match pattern zero or more times. Always succeeds.
+         ;; Match pattern zero or more times.
+	 ;; Always succeeds.
          (define repeat
            (lambda (px)
              (let ([offset (length-check px)])
@@ -222,11 +224,12 @@
            (lambda (px)
              (sequence px (repeat px))))
 
-         ;; === Syntactic Predicates ===
+         ;; === Syntactic Predicates: Unlimited Lookahead ===
 
          ;; (is? px)
          ;;
-         ;; Queries match for pattern. Succeeds on match. Consumes no input.
+         ;; Queries match for pattern. Succeeds on match.
+	 ;; Consumes no input.
          (define is?
            (lambda (px)
              (let ([offset-x (length-check px)]
@@ -238,7 +241,8 @@
 
          ;; (is-not? px)
          ;;
-         ;; Queries match for pattern. Fails on match. Consumes no input.
+         ;; Queries match for pattern. Fails on match.
+	 ;; Consumes no input.
          (define is-not?
            (lambda (px)
              (let ([offset (length-check px)])
@@ -251,7 +255,8 @@
          ;; (one-of xs)
          ;;   where xs = string
          ;;
-         ;; Match one character in a string converted into a set of characters.
+         ;; Match character in a set of characters.
+	 ;; Constructs set from given string.
          (define one-of
            (lambda (xs)
              (if (string? xs)
@@ -261,7 +266,8 @@
          ;; (none-of xs)
          ;;   where xs = string
          ;;
-         ;; Match a character not in a string converted into a set of characters.
+         ;; Match character not in a set of characters.
+	 ;; Constructs set from given string.
          (define none-of
            (lambda (xs)
              (if (string? xs)
@@ -286,7 +292,8 @@
          ;;          [rule body] ...)
          ;;
          ;; Allows recursive patterns for grammar construction.
-         ;; A sequence of one or more rules. The first rule is the start pattern.
+         ;; A sequence of one or more rules. The first rule is
+	 ;; the start state.
          (define-syntax grammar
            (lambda (stx)
              (let ([FIRST-OFFSET 2])
@@ -321,8 +328,8 @@
          ;;   where fn = function
          ;;         px = pattern
          ;;
-         ;; Pattern returns list of character matches to be transformed
-         ;; by an arbitrary function.
+         ;; Pattern returns list of character matches to be
+         ;; transformed by an arbitrary function.
          (define transform
            (lambda (fn px)
              (cond [(procedure? fn)
@@ -340,7 +347,8 @@
 
          ;; (text xs)
          ;;
-         ;; Transforms a string literal into a sequence of character instructions.
+         ;; Transforms a string literal into a sequence
+	 ;; of character instructions.
          (define text
            (lambda (xs)
              (cond [(string? xs)
