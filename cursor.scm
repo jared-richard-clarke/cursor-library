@@ -119,7 +119,7 @@
                          x
                          (list x)))))
 
-         ;; === combinators ===
+         ;; === Matches ===
 
          ;; fail
          ;;
@@ -130,6 +130,7 @@
          ;; empty
          ;;
          ;; Always succeed, consuming no input.
+         ;; Also known as epsilon.
          (define empty (encode EMPTY))
 
          ;; any
@@ -146,6 +147,8 @@
              (if (char? x)
                  (encode CHARACTER x)
                  (encode ERROR x))))
+
+         ;; === Sequencing ===
 
          ;; (and-then px py)
          ;;
@@ -169,6 +172,8 @@
              (if (>= (length xs) 2)
                  (reduce-right and-then xs)
                  (encode ERROR xs))))
+
+         ;; === Ordered Choice ===
 
          ;; (or-else px py)
          ;;
@@ -198,6 +203,8 @@
            (lambda (px)
              (choice px empty)))
 
+         ;; === Repetition ===
+
          ;; (repeat px)
          ;;
          ;; Match pattern zero or more times.
@@ -214,6 +221,8 @@
          (define repeat+1
            (lambda (px)
              (sequence px (repeat px))))
+
+         ;; === Syntactic Predicates ===
 
          ;; (is? px)
          ;;
@@ -237,6 +246,8 @@
                          px
                          fail-twice))))
 
+         ;; === Sets ===
+
          ;; (one-of xs)
          ;;   where xs = string
          ;;
@@ -256,6 +267,8 @@
              (if (string? xs)
                  (encode NONE-OF (make-charset xs))
                  (encode ERROR xs))))
+
+         ;; === Grammar ===
 
          ;; (call x)
          ;;   where x = symbol
