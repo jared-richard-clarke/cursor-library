@@ -230,6 +230,7 @@
                  (encode ERROR xs))))
 
          ;; (call x)
+         ;;   where x = symbol
          ;;
          ;; Calls a rule within a closed grammar.
          (define-syntax call
