@@ -119,7 +119,7 @@
                          x
                          (list x)))))
 
-         ;; === Matches ===
+         ;; === Atoms ===
 
          ;; fail
          ;;
@@ -129,7 +129,7 @@
 
          ;; empty
          ;;
-         ;; Always succeed, consuming no input.
+         ;; The empty pattern, which always succeeds and consumes no input.
          ;; Also known as epsilon.
          (define empty (encode EMPTY))
 
@@ -141,7 +141,7 @@
          ;; (character x)
          ;;   where x = char
          ;;
-         ;; Match character.
+         ;; Match and consume the given character.
          (define character
            (lambda (x)
              (if (char? x)
@@ -198,7 +198,7 @@
 
          ;; (maybe px)
          ;;
-         ;; Match pattern zero or one time.
+         ;; Match pattern zero or one time. Always succeeds.
          (define maybe
            (lambda (px)
              (choice px empty)))
@@ -207,7 +207,7 @@
 
          ;; (repeat px)
          ;;
-         ;; Match pattern zero or more times.
+         ;; Match pattern zero or more times. Always succeeds.
          (define repeat
            (lambda (px)
              (let ([offset (length-check px)])
