@@ -126,7 +126,8 @@
          (define check-code
            (lambda (x)
              (cond [(code? x) (list x)]
-                   [(not (pair? x)) (list (encode ERROR x))]
+                   [(not (pair? x))
+                    (list (encode ERROR x))]
                    [(and (pair? x) (not (code? (car x))))
                     (list (encode ERROR x))]
                    [else x])))
