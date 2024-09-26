@@ -1,4 +1,4 @@
-;; === Cursor: Text Matching Library ===
+;; === Cursor: A library for building Parsing Expression Grammars ===
 ;;
 ;;  --------------------------------------
 ;; | Cursor                | PEG          |
@@ -22,6 +22,10 @@
 ;; | (sequence px py)      | px py        |
 ;; |-----------------------+--------------|
 ;; | (choice   px py)      | px / py      |
+;; |-----------------------+--------------|
+;; | (one-of  "xyz")       | [xyz]        |
+;; |-----------------------+--------------|
+;; | (none-of "xyz")       | [^xyz]       |
 ;; |-----------------------+--------------|
 ;; | (grammar [rule body]) | rule <- body |
 ;;  --------------------------------------
@@ -113,11 +117,19 @@
                          '()
                          xs)))
 
-         (define length-check
+         (define check-length
            (lambda (x)
              (length (if (list? x)
                          x
                          (list x)))))
+
+         (define check-code
+           (lambda (x)
+             (cond [(code? x) (list x)]
+                   [(not (pair? x)) (list (encode ERROR x))]
+                   [(and (pair? x) (not (code? (car x))))
+                    (list (encode ERROR x))]
+                   [else x])))
 
          ;; === Atoms ===
 
@@ -153,17 +165,11 @@
 
          ;; (and-then px py)
          ;;
-         ;; Match two patterns in sequence. Acts as flat-map,
-         ;; marking encoding errors and merging instruction lists.
+         ;; Match two patterns in sequence. Acts as flat-map or concat-map,
+         ;; marking encoding errors while merging lists of instructions.
          (define and-then
            (lambda (px py)
-             (let ([check-code (lambda (x)
-                                 (cond [(code? x) (list x)]
-                                       [(not (pair? x)) (list (encode ERROR x))]
-                                       [(and (pair? x) (not (code? (car x))))
-                                        (list (encode ERROR x))]
-                                       [else x]))])
-               (append (check-code px) (check-code py)))))
+             (append (check-code px) (check-code py))))
 
          ;; (sequence px py pz ...)
          ;;
@@ -181,8 +187,8 @@
          ;; Match one of two patterns. Ordered choice.
          (define or-else
            (lambda (px py)
-             (let ([offset-x (length-check px)]
-                   [offset-y (length-check py)])
+             (let ([offset-x (check-length px)]
+                   [offset-y (check-length py)])
                (sequence (encode CHOICE (+ offset-x 2))
                          px
                          (encode COMMIT (+ offset-y 1))
@@ -208,11 +214,13 @@
 
          ;; (repeat px)
          ;;
-         ;; Match pattern zero or more times.
-         ;; Always succeeds.
+         ;; Match pattern zero or more times. Always succeeds.
+         ;;
+         ;; Side Note: Repetition on a pattern that succeeds
+         ;; but consumes no input creates an infinite loop.
          (define repeat
            (lambda (px)
-             (let ([offset (length-check px)])
+             (let ([offset (check-length px)])
                (sequence (encode CHOICE (+ offset 2))
                          px
                          (encode PARTIAL-COMMIT (- offset))))))
@@ -228,11 +236,11 @@
 
          ;; (is? px)
          ;;
-         ;; Look ahead by pattern. Succeeds on match.
-         ;; Consumes no input.
+         ;; Look ahead by pattern. Succeeds if pattern succeeds.
+         ;; Fails if pattern fails. Consumes no input.
          (define is?
            (lambda (px)
-             (let ([offset-x (length-check px)]
+             (let ([offset-x (check-length px)]
                    [offset-y 2])
                (sequence (encode CHOICE (+ offset-x 2))
                          px
@@ -241,16 +249,16 @@
 
          ;; (is-not? px)
          ;;
-         ;; Look ahead by pattern. Fails on match.
-         ;; Consumes no input.
+         ;; Look ahead by pattern. Fails if pattern succeeds.
+         ;; Succeeds if pattern fails. Consumes no input.
          (define is-not?
            (lambda (px)
-             (let ([offset (length-check px)])
+             (let ([offset (check-length px)])
                (sequence (encode CHOICE (+ offset 2))
                          px
                          fail-twice))))
 
-         ;; === Sets ===
+         ;; === Sets: Character Classes ===
 
          ;; (one-of xs)
          ;;   where xs = string
@@ -279,7 +287,7 @@
          ;; (call x)
          ;;   where x = symbol
          ;;
-         ;; Calls a rule within a closed grammar.
+         ;; Calls rule within a closed grammar.
          (define-syntax call
            (syntax-rules ()
              [(_ x)
@@ -304,8 +312,8 @@
                     (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
                                    [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                    ...
-                                   [size-x  (length-check rule-x)]
-                                   [size-y  (length-check rule-y)]
+                                   [size-x  (check-length rule-x)]
+                                   [size-y  (check-length rule-y)]
                                    ...
                                    [symbols (quote (rule-x rule-y ...))]
                                    [offsets (zip-with cons symbols (scan-right + FIRST-OFFSET (list 0 size-x size-y ...)))]
@@ -336,9 +344,10 @@
                     (sequence (encode TRANSFORM-START fn)
                               px
                               (encode TRANSFORM-END))]
-                   [else (sequence (encode ERROR fn)
-                                   px
-                                   (encode ERROR fn))])))
+                   [else
+                    (sequence (encode ERROR fn)
+                              px
+                              (encode ERROR fn))])))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
