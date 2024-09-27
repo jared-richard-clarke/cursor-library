@@ -84,19 +84,23 @@
 
          ;; === Data ===
 
-         ;; Instruction Set: (list code-x code-y ...)
-         ;;   where code = (encode kind op-x op-y)
+         ;; Instruction Set: (list code code ...)
+         ;;   where code = (encode type op-x op-y)
 
+         ;; record-type: code
+         ;;
+         ;; An instruction. A type symbol followed by two operands for
+         ;; holding symbols, sets, offsets, functions, and error messages.
          (define-record-type (code encode code?)
-           (fields kind op-x op-y)
+           (fields type op-x op-y)
            (nongenerative)
            (sealed #t)
            (protocol
             (lambda (new)
               (case-lambda
-               [(kind)           (new kind '() '())]
-               [(kind op-x)      (new kind op-x '())]
-               [(kind op-x op-y) (new kind op-x op-y)]))))
+               [(type)           (new type '() '())]
+               [(type op-x)      (new type op-x '())]
+               [(type op-x op-y) (new type op-x op-y)]))))
 
          ;; === Tools ===
 
@@ -328,7 +332,7 @@
                                                       rule-x
                                                       rule-y ...)])
                               (map (lambda (x)
-                                     (cond [(and (code? x) (eq? OPEN-CALL (code-kind x)))
+                                     (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
                                             (let ([offset (assq (code-op-x x) offsets)])
                                               (if offset
                                                   (encode CALL x (cdr offset))
