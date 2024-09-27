@@ -84,6 +84,9 @@
 
          ;; === Data ===
 
+         ;; Instruction Set: (list code-x code-y ...)
+         ;;   where code = (encode kind op-x op-y)
+
          (define-record-type (code encode code?)
            (fields kind op-x op-y)
            (nongenerative)
@@ -329,7 +332,7 @@
                                             (let ([offset (assq (code-op-x x) offsets)])
                                               (if offset
                                                   (encode CALL x (cdr offset))
-                                                  x))]
+                                                  (encode ERROR x)))]
                                            [else x]))
                                    rules))))]))))
 
