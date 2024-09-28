@@ -113,9 +113,16 @@
 
          ;; === Tools ===
 
+         ;; (define zip-with
+         ;;   (lambda (fn . xs)
+         ;;     (apply map fn xs)))
+         
          (define zip-with
-           (lambda (fn . xs)
-             (apply map fn xs)))
+           (lambda (fn xs ys)
+             (if (or (null? xs) (null? ys))
+                 '()
+                 (cons (fn (car xs) (car ys))
+                       (zip-with fn (cdr xs) (cdr ys))))))
 
          (define scan-right
            (lambda (fn base xs)
@@ -321,34 +328,32 @@
          ;; the start state.
          (define-syntax grammar
            (lambda (stx)
-             ;; Invariant offset for first rule in grammar.
-             (let ([FIRST-OFFSET 2])
-               (syntax-case stx ()
-                 [(grammar [rule-x body-x] [rule-y body-y] ...)
-                  (with-syntax ([(size-x size-y ...)
-                                 (generate-temporaries (syntax (rule-x rule-y ...)))])
-                    (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
-                                   [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
-                                   ...
-                                   [size-x  (check-length rule-x)]
-                                   [size-y  (check-length rule-y)]
-                                   ...
-                                   [symbols (quote (rule-x rule-y ...))]
-                                   [offsets (zip-with cons symbols (scan-right + FIRST-OFFSET (list 0 size-x size-y ...)))]
-                                   [total   (apply + (list size-x size-y ...))]
-                                   [rules   (sequence (encode GRAMMAR total)
-                                                      (encode CALL (quote rule-x) FIRST-OFFSET)
-                                                      (encode JUMP (+ total 1))
-                                                      rule-x
-                                                      rule-y ...)])
-                              (map (lambda (x)
-                                     (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
-                                            (let ([offset (assq (code-op-x x) offsets)])
-                                              (if offset
-                                                  (encode CALL x (cdr offset))
-                                                  (encode ERROR x ERROR-UNDEFINED-RULE)))]
-                                           [else x]))
-                                   rules))))]))))
+             (syntax-case stx ()
+               [(grammar [rule-x body-x] [rule-y body-y] ...)
+                (with-syntax ([(size-x size-y ...)
+                               (generate-temporaries (syntax (rule-x rule-y ...)))])
+                  (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                 [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
+                                 ...
+                                 [size-x  (check-length rule-x)]
+                                 [size-y  (check-length rule-y)]
+                                 ...
+                                 [symbols (quote (rule-x rule-y ...))]
+                                 [offsets (zip-with cons symbols (scan-right + 2 (list 0 size-x size-y ...)))]
+                                 [total   (apply + (list size-x size-y ...))]
+                                 [rules   (sequence (encode GRAMMAR (+ total 3))
+                                                    (encode CALL (quote rule-x) 2)
+                                                    (encode JUMP (+ total 1))
+                                                    rule-x
+                                                    rule-y ...)])
+                            (map (lambda (x)
+                                   (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
+                                          (let ([offset (assq (code-op-x x) offsets)])
+                                            (if offset
+                                                (encode CALL (code-op-x x) (cdr offset))
+                                                (encode ERROR x ERROR-UNDEFINED-RULE)))]
+                                         [else x]))
+                                 rules))))])))
 
          ;; (transform fn px)
          ;;   where fn = function
