@@ -112,10 +112,6 @@
                [(type op-x op-y) (new type op-x op-y)]))))
 
          ;; === Tools ===
-
-         ;; (define zip-with
-         ;;   (lambda (fn . xs)
-         ;;     (apply map fn xs)))
          
          (define zip-with
            (lambda (fn xs ys)
@@ -350,7 +346,7 @@
                                    (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
                                           (let ([offset (assq (code-op-x x) offsets)])
                                             (if offset
-                                                (encode CALL (code-op-x x) (cdr offset))
+                                                (encode CALL (car offset) (cdr offset))
                                                 (encode ERROR x ERROR-UNDEFINED-RULE)))]
                                          [else x]))
                                  rules))))])))
