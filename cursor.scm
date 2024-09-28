@@ -89,8 +89,7 @@
 
          ;; record-type: code
          ;;
-         ;; An instruction. A type symbol followed by two operands for
-         ;; holding symbols, sets, offsets, functions, and error messages.
+         ;; An instruction containing a type identifier followed by two operands.
          (define-record-type (code encode code?)
            (fields type op-x op-y)
            (nongenerative)
