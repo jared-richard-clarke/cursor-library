@@ -76,7 +76,7 @@
                RETURN
                JUMP
                TRANSFORM-START
-               TRANSFORM-END
+               TRANSFORM-STOP
                IS
                IS-NOT
                ONE-OF
@@ -362,7 +362,7 @@
              (cond [(procedure? fn)
                     (sequence (encode TRANSFORM-START fn)
                               px
-                              (encode TRANSFORM-END))]
+                              (encode TRANSFORM-STOP))]
                    [else
                     (sequence (encode ERROR fn ERROR-TYPE-FUNCTION)
                               px
