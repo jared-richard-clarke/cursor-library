@@ -82,6 +82,16 @@
                ONE-OF
                NONE-OF)
 
+         ;; === Error Messages ===
+
+         (define ERROR-TYPE-CHARACTER "not a character")
+         (define ERROR-TYPE-SYMBOL    "not a symbol")
+         (define ERROR-TYPE-STRING    "not a string")
+         (define ERROR-TYPE-FUNCTION  "not a function")
+         (define ERROR-FUNCTION-ARITY "mismatched arity")
+         (define ERROR-MALFORMED-CODE "malformed instruction")
+         (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
+
          ;; === Data ===
 
          ;; Instruction Set: (list code code ...)
@@ -133,9 +143,9 @@
            (lambda (x)
              (cond [(code? x) (list x)]
                    [(not (pair? x))
-                    (list (encode ERROR x))]
+                    (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [(and (pair? x) (not (code? (car x))))
-                    (list (encode ERROR x))]
+                    (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
 
          ;; === Atoms ===
@@ -166,7 +176,7 @@
            (lambda (x)
              (if (char? x)
                  (list (encode CHARACTER x))
-                 (list (encode ERROR x)))))
+                 (list (encode ERROR x ERROR-TYPE-CHARACTER)))))
 
          ;; === Concatenation ===
 
@@ -185,7 +195,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right and-then xs)
-                 (encode ERROR xs))))
+                 (encode ERROR xs ERROR-FUNCTION-ARITY))))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
@@ -208,7 +218,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right or-else xs)
-                 (encode ERROR xs))))
+                 (encode ERROR xs ERROR-FUNCTION-ARITY))))
 
          ;; (maybe px)
          ;;
@@ -276,7 +286,7 @@
            (lambda (xs)
              (if (string? xs)
                  (list (encode ONE-OF (make-charset xs)))
-                 (list (encode ERROR xs)))))
+                 (list (encode ERROR xs ERROR-TYPE-STRING)))))
 
          ;; (none-of xs)
          ;;   where xs = string
@@ -287,7 +297,7 @@
            (lambda (xs)
              (if (string? xs)
                  (list (encode NONE-OF (make-charset xs)))
-                 (list (encode ERROR xs)))))
+                 (list (encode ERROR xs ERROR-TYPE-STRING)))))
 
          ;; === Grammar ===
 
@@ -301,7 +311,7 @@
               (let ([id (quote x)])
                 (if (symbol? id)
                     (encode OPEN-CALL id)
-                    (encode ERROR id)))]))
+                    (encode ERROR id ERROR-TYPE-SYMBOL)))]))
 
          ;; (grammar [rule pattern]
          ;;          [rule pattern] ...)
@@ -311,6 +321,7 @@
          ;; the start state.
          (define-syntax grammar
            (lambda (stx)
+             ;; Invariant offset for first rule in grammar.
              (let ([FIRST-OFFSET 2])
                (syntax-case stx ()
                  [(grammar [rule-x body-x] [rule-y body-y] ...)
@@ -335,7 +346,7 @@
                                             (let ([offset (assq (code-op-x x) offsets)])
                                               (if offset
                                                   (encode CALL x (cdr offset))
-                                                  (encode ERROR x)))]
+                                                  (encode ERROR x ERROR-UNDEFINED-RULE)))]
                                            [else x]))
                                    rules))))]))))
 
@@ -352,7 +363,7 @@
                               px
                               (encode TRANSFORM-END))]
                    [else
-                    (sequence (encode ERROR fn)
+                    (sequence (encode ERROR fn ERROR-TYPE-FUNCTION)
                               px
                               (encode ERROR fn))])))
 
@@ -370,5 +381,5 @@
              (cond [(string? xs)
                     (let ([characters (map character (string->list xs))])
                       (apply sequence characters))]
-                   [else (encode ERROR xs)])))
+                   [else (encode ERROR xs ERROR-TYPE-STRING)])))
          )
