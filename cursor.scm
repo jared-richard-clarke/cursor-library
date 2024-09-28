@@ -276,8 +276,8 @@
          (define one-of
            (lambda (xs)
              (if (string? xs)
-                 (encode ONE-OF (make-charset xs))
-                 (encode ERROR xs))))
+                 (list (encode ONE-OF (make-charset xs)))
+                 (list (encode ERROR xs)))))
 
          ;; (none-of xs)
          ;;   where xs = string
@@ -287,8 +287,8 @@
          (define none-of
            (lambda (xs)
              (if (string? xs)
-                 (encode NONE-OF (make-charset xs))
-                 (encode ERROR xs))))
+                 (list (encode NONE-OF (make-charset xs)))
+                 (list (encode ERROR xs)))))
 
          ;; === Grammar ===
 
