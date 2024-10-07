@@ -45,7 +45,7 @@
                  none-of
                  grammar
                  call
-                 transform
+                 capture
                  text)
          (import (rnrs)
                  (collections charset))
@@ -75,8 +75,8 @@
                OPEN-CALL
                RETURN
                JUMP
-               TRANSFORM-START
-               TRANSFORM-STOP
+               CAPTURE-START
+               CAPTURE-STOP
                IS
                IS-NOT
                ONE-OF
@@ -351,22 +351,26 @@
                                          [else x]))
                                  rules))))])))
 
-         ;; (transform fn px)
+         ;; (capture px)
+         ;; (capture fn px)
          ;;   where fn = function
          ;;         px = pattern
          ;;
-         ;; Pattern returns list of character matches to be
-         ;; transformed by an arbitrary function.
-         (define transform
-           (lambda (fn px)
+         ;; Pattern returns list of character matches —
+         ;; optionally transformed by an arbitrary function.
+         ;; Ignores "fn" arguments that are not functions.
+         (define capture
+           (case-lambda
+            [(px) (capture '() px)]
+            [(fn px)
              (cond [(procedure? fn)
-                    (sequence (encode TRANSFORM-START fn)
+                    (sequence (encode CAPTURE-START fn)
                               px
-                              (encode TRANSFORM-STOP))]
+                              (encode CAPTURE-STOP))]
                    [else
-                    (sequence (encode ERROR fn ERROR-TYPE-FUNCTION)
+                    (sequence (encode CAPTURE-START)
                               px
-                              (encode ERROR fn))])))
+                              (encode CAPTURE-STOP))]))])
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
