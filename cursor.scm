@@ -321,7 +321,7 @@
               (let ([id (quote x)])
                 (if (symbol? id)
                     (list (encode OPEN-CALL id))
-                    (list (encode ERROR id ERROR-TYPE-SYMBOL))))]))
+                    (list (encode ERROR OPEN-CALL ERROR-TYPE-SYMBOL))))]))
 
          ;; (grammar [rule pattern]
          ;;          [rule pattern] ...)
