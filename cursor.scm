@@ -198,7 +198,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right and-then xs)
-                 (encode ERROR xs ERROR-FUNCTION-ARITY))))
+                 (list (encode ERROR (car xs) ERROR-FUNCTION-ARITY)))))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
@@ -221,7 +221,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right or-else xs)
-                 (encode ERROR xs ERROR-FUNCTION-ARITY))))
+                 (list (encode ERROR (car xs) ERROR-FUNCTION-ARITY)))))
 
          ;; (maybe px)
          ;;
@@ -313,8 +313,8 @@
              [(_ x)
               (let ([id (quote x)])
                 (if (symbol? id)
-                    (encode OPEN-CALL id)
-                    (encode ERROR id ERROR-TYPE-SYMBOL)))]))
+                    (list (encode OPEN-CALL id))
+                    (list (encode ERROR id ERROR-TYPE-SYMBOL))))]))
 
          ;; (grammar [rule pattern]
          ;;          [rule pattern] ...)
@@ -347,7 +347,7 @@
                                           (let ([offset (assq (code-op-x x) offsets)])
                                             (if offset
                                                 (encode CALL (car offset) (cdr offset))
-                                                (encode ERROR x ERROR-UNDEFINED-RULE)))]
+                                                (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
                                          [else x]))
                                  rules))))])))
 
@@ -370,7 +370,7 @@
                    [else
                     (sequence (encode CAPTURE-START)
                               px
-                              (encode CAPTURE-STOP))]))])
+                              (encode CAPTURE-STOP))])]))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
