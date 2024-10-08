@@ -77,6 +77,7 @@
                JUMP
                CAPTURE-START
                CAPTURE-STOP
+               REPEAT
                IS
                IS-NOT
                ONE-OF
@@ -91,6 +92,7 @@
          (define ERROR-FUNCTION-ARITY "mismatched arity")
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
+         (define ERROR-NULLABLE       "potential infinite loop")
 
          ;; === Data ===
 
@@ -198,7 +200,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right and-then xs)
-                 (list (encode ERROR (car xs) ERROR-FUNCTION-ARITY)))))
+                 (list (encode ERROR SEQUENCE ERROR-FUNCTION-ARITY)))))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
@@ -221,7 +223,7 @@
            (lambda xs
              (if (>= (length xs) 2)
                  (reduce-right or-else xs)
-                 (list (encode ERROR (car xs) ERROR-FUNCTION-ARITY)))))
+                 (list (encode ERROR CHOICE ERROR-FUNCTION-ARITY)))))
 
          ;; (maybe px)
          ;;
@@ -240,10 +242,15 @@
          ;; but consumes no input creates an infinite loop.
          (define repeat
            (lambda (px)
-             (let ([offset (check-length px)])
-               (sequence (encode CHOICE (+ offset 2))
-                         px
-                         (encode PARTIAL-COMMIT (- offset))))))
+             (let ([nullable? (lambda (x) (and (code? x) (eq? EMPTY (code-type x))))]
+                   [pattern   (if (list? px) px (list px))])
+               (cond [(not (exists nullable? pattern))
+                      (let ([offset (check-length px)])
+                        (sequence (encode CHOICE (+ offset 2))
+                                  px
+                                  (encode PARTIAL-COMMIT (- offset))))]
+                     [else
+                      (list (encode ERROR REPEAT ERROR-NULLABLE))]))))
 
          ;; (repeat+1 px)
          ;;
