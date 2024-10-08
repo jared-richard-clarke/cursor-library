@@ -92,7 +92,7 @@
          (define ERROR-FUNCTION-ARITY "mismatched arity")
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "potential infinite loop")
+         (define ERROR-NULLABLE       "empty pattern may cause infinite loop")
 
          ;; === Data ===
 
