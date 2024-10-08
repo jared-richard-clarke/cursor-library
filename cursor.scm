@@ -112,7 +112,7 @@
                [(type op-x op-y) (new type op-x op-y)]))))
 
          ;; === Tools ===
-         
+
          (define zip-with
            (lambda (fn xs ys)
              (if (or (null? xs) (null? ys))
@@ -386,5 +386,5 @@
              (cond [(string? xs)
                     (let ([characters (map character (string->list xs))])
                       (apply sequence characters))]
-                   [else (encode ERROR xs ERROR-TYPE-STRING)])))
+                   [else (list (encode ERROR xs ERROR-TYPE-STRING))])))
          )
