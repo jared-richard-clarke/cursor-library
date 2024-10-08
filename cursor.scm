@@ -296,7 +296,7 @@
            (lambda (xs)
              (if (string? xs)
                  (list (encode ONE-OF (make-charset xs)))
-                 (list (encode ERROR xs ERROR-TYPE-STRING)))))
+                 (list (encode ERROR ONE-OF ERROR-TYPE-STRING)))))
 
          ;; (none-of xs)
          ;;   where xs = string
@@ -307,7 +307,7 @@
            (lambda (xs)
              (if (string? xs)
                  (list (encode NONE-OF (make-charset xs)))
-                 (list (encode ERROR xs ERROR-TYPE-STRING)))))
+                 (list (encode ERROR NONE-OF ERROR-TYPE-STRING)))))
 
          ;; === Grammar ===
 
@@ -393,5 +393,5 @@
              (cond [(string? xs)
                     (let ([characters (map character (string->list xs))])
                       (apply sequence characters))]
-                   [else (list (encode ERROR xs ERROR-TYPE-STRING))])))
+                   [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
          )
