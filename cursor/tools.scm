@@ -1,12 +1,12 @@
 (library (cursor tools)
-         (export assert
+         (export assert-test
                  enum
                  zip-with
                  scan-right
                  reduce-right)
          (import (rnrs))
 
-         (define-syntax assert
+         (define-syntax assert-test
            (syntax-rules ()
              [(_ compare x y)
               (let ([computed-x x]
