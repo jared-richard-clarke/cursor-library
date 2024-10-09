@@ -362,6 +362,7 @@
 
          (define unit-tests
            (test-chunk
+            "Cursor Core"
             ;; === Test Data ===
             (define a (encode #\a))
             (define b (encode #\b))
