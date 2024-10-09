@@ -1,5 +1,6 @@
 (library (cursor tools)
          (export assert-test
+                 test-chunk
                  enum
                  zip-with
                  scan-right
@@ -17,6 +18,18 @@
                          (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
                          (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
                          (newline))))]))
+
+         (define-syntax test-chunk
+           (syntax-rules ()
+             [(_ label x y ...)
+              (lambda ()
+                (begin (display (string-append "Begin Test: " label))
+                       (newline)
+                       x
+                       y
+                       ...
+                       (newline)
+                       (display (string-append "End Test: "   label))))]))
 
          (define-syntax enum
            (syntax-rules ()
