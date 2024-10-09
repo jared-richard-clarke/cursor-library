@@ -1,5 +1,6 @@
 (library (cursor core)
-         (export empty
+         (export code encode code? code-type code-op-x code-op-y
+                 empty
                  any
                  character
                  sequence
@@ -44,7 +45,8 @@
                IS
                IS-NOT
                ONE-OF
-               NONE-OF)
+               NONE-OF
+               END)
 
          ;; === Error Messages ===
 
@@ -55,7 +57,7 @@
          (define ERROR-FUNCTION-ARITY "mismatched arity")
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "empty pattern may cause infinite loop")
+         (define ERROR-NULLABLE       "empty pattern within may cause infinite loop")
 
          ;; === Data ===
 
@@ -72,9 +74,9 @@
            (protocol
             (lambda (new)
               (case-lambda
-               [(type)           (new type '() '())]
-               [(type op-x)      (new type op-x '())]
-               [(type op-x op-y) (new type op-x op-y)]))))
+                [(type)           (new type '() '())]
+                [(type op-x)      (new type op-x '())]
+                [(type op-x op-y) (new type op-x op-y)]))))
 
          ;; === Helper Functions ===
 
@@ -308,16 +310,16 @@
          ;; Ignores "fn" arguments that are not functions.
          (define capture
            (case-lambda
-            [(px) (capture '() px)]
-            [(fn px)
-             (cond [(procedure? fn)
-                    (sequence (encode CAPTURE-START fn)
-                              px
-                              (encode CAPTURE-STOP))]
-                   [else
-                    (sequence (encode CAPTURE-START)
-                              px
-                              (encode CAPTURE-STOP))])]))
+             [(px) (capture '() px)]
+             [(fn px)
+              (cond [(procedure? fn)
+                     (sequence (encode CAPTURE-START fn)
+                               px
+                               (encode CAPTURE-STOP))]
+                    [else
+                     (sequence (encode CAPTURE-START)
+                               px
+                               (encode CAPTURE-STOP))])]))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
