@@ -1,5 +1,5 @@
 (library (cursor core)
-         (export code encode code? code-type code-op-x code-op-y
+         (export encode code? code-type code-op-x code-op-y
                  empty
                  any
                  character
