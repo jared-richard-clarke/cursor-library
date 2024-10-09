@@ -1,6 +1,5 @@
 (library (cursor core)
-         (export encode code? code-type code-op-x code-op-y
-                 empty
+         (export empty
                  any
                  character
                  sequence
@@ -336,4 +335,71 @@
                     (let ([characters (map character (string->list xs))])
                       (apply sequence characters))]
                    [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
+
+         ;; === Unit Tests ===
+
+         (define RUN-TESTS #f)
+
+         (define code-equal?
+           (lambda (a b)
+             (and (code? a)
+                  (code? b)
+                  (let ([a-type (code-type a)]
+                        [a-x    (code-op-x a)]
+                        [a-y    (code-op-y a)]
+                        [b-type (code-type b)]
+                        [b-x    (code-op-x b)]
+                        [b-y    (code-op-y b)])
+                    (equal? (list a-type a-x a-y)
+                            (list b-type b-x b-y))))))
+
+         (define instructions-equal?
+           (lambda (xs ys)
+             (and (list? xs)
+                  (list? ys)
+                  (= (length xs) (length ys))
+                  (for-all code-equal? xs ys))))
+
+         (define unit-tests
+           (test-chunk
+            ;; === Test Data ===
+            (define a (encode #\a))
+            (define b (encode #\b))
+            (define c (encode #\c))
+
+            ;; === Literals ===
+            (assert-test instructions-equal?
+                         (character #\a)
+                         (list a))
+
+            (assert-test instructions-equal?
+                         (text "abc")
+                         (list a b c))
+
+            ;; === Concatenation ===
+            (assert-test instructions-equal?
+                         (sequence (character #\a)
+                                   (character #\b)
+                                   (character #\c))
+                         (list a b c))
+
+            ;; === Ordered Choice ===
+            (assert-test instructions-equal?
+                         (choice (character #\a)
+                                 (character #\b))
+                         (list (encode CHOICE 3)
+                               a
+                               (encode COMMIT 2)
+                               b))
+
+            ;; === Repetition ===
+            (assert-test instructions-equal?
+                         (repeat (character #\a))
+                         (list (encode CHOICE 3)
+                               a
+                               (encode PARTIAL-COMMIT -1)))))
+
+         ;; === Test Runner ===
+         (when RUN-TESTS (unit-tests))
+         
          )
