@@ -31,20 +31,20 @@
 ;;  --------------------------------------------
 
 (library (cursor)
-  (export empty
-          any
-          character
-          sequence
-          choice
-          maybe
-          repeat
-          repeat+1
-          is?
-          is-not?
-          one-of
-          none-of
-          grammar
-          call
-          capture
-          text)
-  (import (cursor core)))
+         (export empty
+                 any
+                 character
+                 sequence
+                 choice
+                 maybe
+                 repeat
+                 repeat+1
+                 is?
+                 is-not?
+                 one-of
+                 none-of
+                 grammar
+                 call
+                 capture
+                 text)
+         (import (cursor core)))
