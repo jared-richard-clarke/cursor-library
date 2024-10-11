@@ -14,11 +14,11 @@
 
          (define-syntax test-assert
            (syntax-rules ()
-             [(_ compare x y)
+             [(_ compare label x y)
               (thunk (let ([computed-x x]
                            [computed-y y])
                        (unless (compare computed-x computed-y)
-                         (begin (display "Test failed:")
+                         (begin (display (string-append "test " label " failed:"))
                                 (newline)
                                 (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
                                 (newline)
