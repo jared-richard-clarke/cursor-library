@@ -29,7 +29,8 @@
                 x
                 y
                 ...
-                (display (string-append "End Test: "   label)))]))
+                (display (string-append "End Test: "   label))
+                (newline))]))
 
          (define-syntax enum
            (syntax-rules ()
