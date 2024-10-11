@@ -16,6 +16,7 @@
                   (begin (display "Test failed:")
                          (newline)
                          (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
+                         (newline)
                          (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
                          (newline))))]))
 
@@ -23,13 +24,12 @@
            (syntax-rules ()
              [(_ label x y ...)
               (lambda ()
-                (begin (display (string-append "Begin Test: " label))
-                       (newline)
-                       x
-                       y
-                       ...
-                       (newline)
-                       (display (string-append "End Test: "   label))))]))
+                (display (string-append "Begin Test: " label))
+                (newline)
+                x
+                y
+                ...
+                (display (string-append "End Test: "   label)))]))
 
          (define-syntax enum
            (syntax-rules ()
