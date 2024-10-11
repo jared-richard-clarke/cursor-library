@@ -367,17 +367,17 @@
               "Cursor Core"
               ;; === Literals ===
               ;; Π(g, i, 'c') ≡ Char c
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (character #\a)
                            (list a))
 
               ;; === Concatenation ===
               ;; Π(g, i, p₁p₂) ≡ Π(g, i, p₁) Π(g, i + |Π(g, x, p₁)|, p₂)
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (text "abc")
                            (list a b c))
               
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (sequence (character #\a)
                                      (character #\b)
                                      (character #\c))
@@ -388,7 +388,7 @@
               ;;                  Π(g, i + 1, p₁)
               ;;                  Commit |Π(g, x, p₂)| + 1
               ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (choice (character #\a)
                                    (character #\b))
                            (list (encode CHOICE 3)
@@ -400,7 +400,7 @@
               ;; Π(g, i, p*) ≡ Choice |Π(g, x, p)| + 2
               ;;               Π(g, i + 1, p)
               ;;               PartialCommit − |Π(g, x, p)|
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (repeat (character #\a))
                            (list (encode CHOICE 3)
                                  a
@@ -410,7 +410,7 @@
               ;; Π(g, i, !p) ≡ Choice |Π(g, x, p)| + 2
               ;;               Π(g, i + 1, p)
               ;;               FailTwice
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (is-not? (character #\a))
                            (list (encode CHOICE 3)
                                  a
@@ -421,7 +421,7 @@
               ;;               Π(g, i + 1, p)
               ;;               BackCommit 2
               ;;               Fail
-              (assert-test instructions-equal?
+              (test-assert instructions-equal?
                            (is? (character #\a))
                            (list (encode CHOICE 3)
                                  a
