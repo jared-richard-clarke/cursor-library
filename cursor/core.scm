@@ -1,5 +1,6 @@
 (library (cursor core)
          (export empty
+                 fail
                  any
                  character
                  sequence
@@ -97,17 +98,16 @@
 
          ;; === Atoms ===
 
-         ;; fail
-         ;;
-         ;; Force failure.
-         (define fail       (list (encode FAIL)))
-         (define fail-twice (list (encode FAIL-TWICE)))
-
          ;; empty
          ;;
          ;; The empty pattern, which always succeeds and
          ;; consumes no input. Also known as epsilon.
          (define empty (list (encode EMPTY)))
+
+         ;; fail
+         ;;
+         ;; Force failure.
+         (define fail (list (encode FAIL)))
 
          ;; any
          ;;
@@ -225,7 +225,7 @@
              (let ([offset (check-length px)])
                (sequence (encode CHOICE (+ offset 2))
                          px
-                         fail-twice))))
+                         (encode FAIL-TWICE)))))
 
          ;; === Sets: Character Classes ===
 
@@ -376,7 +376,7 @@
               (test-assert instructions-equal?
                            (text "abc")
                            (list a b c))
-              
+
               (test-assert instructions-equal?
                            (sequence (character #\a)
                                      (character #\b)
@@ -414,7 +414,7 @@
                            (is-not? (character #\a))
                            (list (encode CHOICE 3)
                                  a
-                                 fail-twice))
+                                 (encode FAIL-TWICE)))
 
               ;; === And Predicate ===
               ;; Π(g, i, &p) ≡ Choice |Π(g, x, p)| + 2
@@ -426,6 +426,6 @@
                            (list (encode CHOICE 3)
                                  a
                                  (encode BACK-COMMIT 2)
-                                 fail)))))
+                                 (encode FAIL))))))
 
          )
