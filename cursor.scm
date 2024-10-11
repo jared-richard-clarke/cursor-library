@@ -32,6 +32,7 @@
 
 (library (cursor)
          (export empty
+                 fail
                  any
                  character
                  sequence
