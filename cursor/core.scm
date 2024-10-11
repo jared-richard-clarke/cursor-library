@@ -365,7 +365,6 @@
                  [c (encode CHARACTER #\c)])
              (test-chunk
               "Cursor Core"
-
               ;; === Literals ===
               (assert-test instructions-equal?
                            (character #\a)
