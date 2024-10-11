@@ -14,7 +14,8 @@
                  grammar
                  call
                  capture
-                 text)
+                 text
+                 (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor tools)
                  (cursor collections charset))
@@ -45,7 +46,7 @@
                IS-NOT
                ONE-OF
                NONE-OF
-               END)
+               MATCH)
 
          ;; === Error Messages ===
 
@@ -338,8 +339,6 @@
 
          ;; === Unit Tests ===
 
-         (define RUN-TESTS #f)
-
          (define code-equal?
            (lambda (a b)
              (and (code? a)
@@ -361,46 +360,42 @@
                   (for-all code-equal? xs ys))))
 
          (define unit-tests
-           (test-chunk
-            "Cursor Core"
-            ;; === Test Data ===
-            (define a (encode #\a))
-            (define b (encode #\b))
-            (define c (encode #\c))
+           (let ([a (encode CHARACTER #\a)]
+                 [b (encode CHARACTER #\b)]
+                 [c (encode CHARACTER #\c)])
+             (test-chunk
+              "Cursor Core"
 
-            ;; === Literals ===
-            (assert-test instructions-equal?
-                         (character #\a)
-                         (list a))
+              ;; === Literals ===
+              (assert-test instructions-equal?
+                           (character #\a)
+                           (list a))
 
-            (assert-test instructions-equal?
-                         (text "abc")
-                         (list a b c))
+              (assert-test instructions-equal?
+                           (text "abc")
+                           (list a b c))
 
-            ;; === Concatenation ===
-            (assert-test instructions-equal?
-                         (sequence (character #\a)
-                                   (character #\b)
-                                   (character #\c))
-                         (list a b c))
+              ;; === Concatenation ===
+              (assert-test instructions-equal?
+                           (sequence (character #\a)
+                                     (character #\b)
+                                     (character #\c))
+                           (list a b c))
 
-            ;; === Ordered Choice ===
-            (assert-test instructions-equal?
-                         (choice (character #\a)
-                                 (character #\b))
-                         (list (encode CHOICE 3)
-                               a
-                               (encode COMMIT 2)
-                               b))
+              ;; === Ordered Choice ===
+              (assert-test instructions-equal?
+                           (choice (character #\a)
+                                   (character #\b))
+                           (list (encode CHOICE 3)
+                                 a
+                                 (encode COMMIT 2)
+                                 b))
 
-            ;; === Repetition ===
-            (assert-test instructions-equal?
-                         (repeat (character #\a))
-                         (list (encode CHOICE 3)
-                               a
-                               (encode PARTIAL-COMMIT -1)))))
-
-         ;; === Test Runner ===
-         (when RUN-TESTS (unit-tests))
+              ;; === Repetition ===
+              (assert-test instructions-equal?
+                           (repeat (character #\a))
+                           (list (encode CHOICE 3)
+                                 a
+                                 (encode PARTIAL-COMMIT -1))))))
          
          )
