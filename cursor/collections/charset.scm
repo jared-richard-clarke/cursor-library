@@ -1,7 +1,8 @@
 (library (cursor collections charset)
          (export make-charset
                  charset?
-                 charset-has?)
+                 charset-has?
+                 charset-equal?)
          (import (rnrs))
 
          ;; === constants ===
@@ -31,8 +32,12 @@
              (let ([table (charset-table self)])
                (hashtable-contains? table key))))
 
-         (define charset-size
-           (lambda (self)
-             (let ([table (charset-table self)])
-               (hashtable-size table))))
+         (define charset-equal?
+           (lambda (set-x set-y)
+             (let ([tx (charset-table set-x)]
+                   [ty (charset-table set-y)])
+               (and (= (hashtable-size tx) (hashtable-size ty))
+                    (let ([keys (vector->list (hashtable-keys tx))])
+                      (for-all (lambda (key) (hashtable-contains? ty key)) keys))))))
+
          )
