@@ -1,5 +1,5 @@
 (library (cursor tools)
-         (export assert-test
+         (export test-assert
                  test-chunk
                  enum
                  zip-with
@@ -7,30 +7,34 @@
                  reduce-right)
          (import (rnrs))
 
-         (define-syntax assert-test
+         (define-syntax thunk
+           (syntax-rules ()
+             [(_ x y ...)
+              (lambda () x y ...)]))
+
+         (define-syntax test-assert
            (syntax-rules ()
              [(_ compare x y)
-              (let ([computed-x x]
-                    [computed-y y])
-                (unless (compare computed-x computed-y)
-                  (begin (display "Test failed:")
-                         (newline)
-                         (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
-                         (newline)
-                         (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
-                         (newline))))]))
+              (thunk (let ([computed-x x]
+                           [computed-y y])
+                       (unless (compare computed-x computed-y)
+                         (begin (display "Test failed:")
+                                (newline)
+                                (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
+                                (newline)
+                                (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
+                                (newline)))))]))
 
-         (define-syntax test-chunk
-           (syntax-rules ()
-             [(_ label x y ...)
-              (lambda ()
-                (display (string-append "Begin Test: " label))
-                (newline)
-                x
-                y
-                ...
-                (display (string-append "End Test: "   label))
-                (newline))]))
+         (define test-chunk
+           (lambda (label . tests)
+             (let ([start (string-append "Begin Test: " label)]
+                   [stop  (string-append "End Test: "   label)]
+                   [run   (lambda (f) (f))])
+               (thunk (display start)
+                      (newline)
+                      (for-each run tests)
+                      (display stop)
+                      (newline)))))
 
          (define-syntax enum
            (syntax-rules ()
