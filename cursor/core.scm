@@ -353,8 +353,12 @@
                         [b-type (code-type b)]
                         [b-x    (code-op-x b)]
                         [b-y    (code-op-y b)])
-                    (equal? (list a-type a-x a-y)
-                            (list b-type b-x b-y))))))
+                    (or (and (eq? a-type b-type)
+                             (charset? a-x)
+                             (charset? b-x)
+                             (charset-equal? a-x b-x))
+                        (equal? (list a-type a-x a-y)
+                                (list b-type b-x b-y)))))))
 
          (define instructions-equal?
            (lambda (xs ys)
