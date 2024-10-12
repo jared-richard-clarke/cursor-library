@@ -39,7 +39,7 @@
              (let ([table (charset-table self)])
                (hashtable-contains? table key))))
 
-         (define character-set-equal?
+         (define charset-equal?
            (lambda (set-x set-y)
              (let ([tx (charset-table set-x)]
                    [ty (charset-table set-y)])
@@ -68,7 +68,7 @@
                            (list c a d b)
                            set-abcd)
               
-              (test-assert character-set-equal?
+              (test-assert charset-equal?
                            "different inputs, same set"
                            set-abcd
                            (make-charset "aabbccddccbbaa")))))
