@@ -343,35 +343,31 @@
 
          ;; === Unit Tests ===
 
-         (define code-equal?
-           (lambda (a b)
-             (and (code? a)
-                  (code? b)
-                  (let ([a-type (code-type a)]
-                        [a-x    (code-op-x a)]
-                        [a-y    (code-op-y a)]
-                        [b-type (code-type b)]
-                        [b-x    (code-op-x b)]
-                        [b-y    (code-op-y b)])
-                    (or (and (eq? a-type b-type)
-                             (charset? a-x)
-                             (charset? b-x)
-                             (charset-equal? a-x b-x))
-                        (equal? (list a-type a-x a-y)
-                                (list b-type b-x b-y)))))))
-
-         (define instructions-equal?
-           (lambda (xs ys)
-             (and (list? xs)
-                  (list? ys)
-                  (= (length xs) (length ys))
-                  (for-all code-equal? xs ys))))
-
          (define unit-tests
-           (let ([a (encode CHARACTER #\a)]
-                 [b (encode CHARACTER #\b)]
-                 [c (encode CHARACTER #\c)]
-                 [u (encode CHARACTER #\⌘)])
+           (let* ([a (encode CHARACTER #\a)]
+                  [b (encode CHARACTER #\b)]
+                  [c (encode CHARACTER #\c)]
+                  [u (encode CHARACTER #\⌘)]
+                  [code-equal? (lambda (a b)
+                                 (and (code? a)
+                                      (code? b)
+                                      (let ([a-type (code-type a)]
+                                            [a-x    (code-op-x a)]
+                                            [a-y    (code-op-y a)]
+                                            [b-type (code-type b)]
+                                            [b-x    (code-op-x b)]
+                                            [b-y    (code-op-y b)])
+                                        (or (and (eq? a-type b-type)
+                                                 (charset? a-x)
+                                                 (charset? b-x)
+                                                 (charset-equal? a-x b-x))
+                                            (equal? (list a-type a-x a-y)
+                                                    (list b-type b-x b-y))))))]
+                  [instructions-equal? (lambda (xs ys)
+                                         (and (list? xs)
+                                              (list? ys)
+                                              (= (length xs) (length ys))
+                                              (for-all code-equal? xs ys)))])
              (test-chunk
               "Cursor Core"
               ;; === Literals ===
