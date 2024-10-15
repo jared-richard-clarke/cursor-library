@@ -96,6 +96,42 @@
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
 
+         (define nullable?
+           (lambda (xs)
+             (let recur ([xs xs]
+                         [offset 0])
+                     ;; End of list.
+               (cond [(null? xs) #f]
+                     ;; Check instructions at offsets.
+                     [(> offset 0) (recur (cdr xs) (- offset 1))]
+                     [(and (code? (car xs))
+                           (not (eq? ERROR (code-type (car xs)))))
+                      (let* ([x    (car xs)]
+                             [xs   (cdr xs)]
+                             [type (code-type x)]
+                             [op-x (code-op-x x)]
+                             [op-y (code-op-y x)])
+                              ;; Terminating cases.
+                        (cond [(or (eq? type CHARACTER)
+                                   (eq? type ANY)
+                                   (eq? type FAIL)
+                                   (eq? type OPEN-CALL)) #f]
+                              [(or (eq? type EMPTY)
+                                   (eq? op-y REPEAT)
+                                   (eq? op-y IS)
+                                   (eq? op-y IS-NOT)) #t]
+                              ;; === choices ===
+                              ;; Check first if second is nullable.
+                              [(eq? type CHOICE)
+                               (or (recur xs (code-op-x x))
+                                   ;; First choice.
+                                   (recur x offset))]
+                              ;; === sequences ===
+                              ;; If first pattern is nullable, check subsequent.
+                              [(recur x offset) (recur xs offset)]
+                              [else #f]))]
+                     [else #f]))))
+
          ;; === Atoms ===
 
          ;; empty
@@ -184,11 +220,10 @@
          ;; but consumes no input creates an infinite loop.
          (define repeat
            (lambda (px)
-             (let ([nullable? (lambda (x) (and (code? x) (eq? EMPTY (code-type x))))]
-                   [pattern   (if (list? px) px (list px))])
-               (cond [(not (exists nullable? pattern))
+             (let ([pattern (if (list? px) px (list px))])
+               (cond [(not (nullable? pattern))
                       (let ([offset (check-length px)])
-                        (sequence (encode CHOICE (+ offset 2))
+                        (sequence (encode CHOICE (+ offset 2) REPEAT)
                                   px
                                   (encode PARTIAL-COMMIT (- offset))))]
                      [else
@@ -211,7 +246,7 @@
            (lambda (px)
              (let ([offset-x (check-length px)]
                    [offset-y 2])
-               (sequence (encode CHOICE (+ offset-x 2))
+               (sequence (encode CHOICE (+ offset-x 2) IS)
                          px
                          (encode BACK-COMMIT offset-y)
                          fail))))
@@ -223,7 +258,7 @@
          (define is-not?
            (lambda (px)
              (let ([offset (check-length px)])
-               (sequence (encode CHOICE (+ offset 2))
+               (sequence (encode CHOICE (+ offset 2) IS-NOT)
                          px
                          (encode FAIL-TWICE)))))
 
