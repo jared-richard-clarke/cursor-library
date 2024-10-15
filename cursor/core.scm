@@ -123,10 +123,9 @@
                                    (eq? op-y IS-NOT)) #t]
                               ;; === choices ===
                               ;; Check first if second is nullable.
-                              [(eq? type CHOICE)
-                               (or (recur xs (code-op-x x))
-                                   ;; First choice.
-                                   (recur x offset))]
+                              [(and (eq? type CHOICE)
+                                    (recur xs (code-op-x x)))
+                               (recur x offset)]
                               ;; === sequences ===
                               ;; If first pattern is nullable, check subsequent.
                               [(recur x offset) (recur xs offset)]
@@ -221,11 +220,11 @@
          ;; but consumes no input creates an infinite loop.
          (define repeat
            (lambda (px)
-             (let ([pattern (if (list? px) px (list px))])
+             (let ([pattern (check-code px)])
                (cond [(not (nullable? pattern))
-                      (let ([offset (check-length px)])
+                      (let ([offset (length pattern)])
                         (sequence (encode CHOICE (+ offset 2) REPEAT)
-                                  px
+                                  pattern
                                   (encode PARTIAL-COMMIT (- offset))))]
                      [else
                       (list (encode ERROR REPEAT ERROR-NULLABLE))]))))
