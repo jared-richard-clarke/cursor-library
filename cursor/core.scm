@@ -476,7 +476,7 @@
               (test-assert instructions-equal?
                            "repeat a*"
                            (repeat (character #\a))
-                           (list (encode CHOICE 3)
+                           (list (encode CHOICE 3 REPEAT)
                                  a
                                  (encode PARTIAL-COMMIT -1)))
 
@@ -484,7 +484,7 @@
                            "repeat a+"
                            (repeat+1 (character #\a))
                            (list a
-                                 (encode CHOICE 3)
+                                 (encode CHOICE 3 REPEAT)
                                  a
                                  (encode PARTIAL-COMMIT -1)))
 
@@ -495,7 +495,7 @@
               (test-assert instructions-equal?
                            "predicate !a"
                            (is-not? (character #\a))
-                           (list (encode CHOICE 3)
+                           (list (encode CHOICE 3 IS-NOT)
                                  a
                                  (encode FAIL-TWICE)))
 
@@ -507,7 +507,7 @@
               (test-assert instructions-equal?
                            "predicate &a"
                            (is? (character #\a))
-                           (list (encode CHOICE 3)
+                           (list (encode CHOICE 3 IS)
                                  a
                                  (encode BACK-COMMIT 2)
                                  (encode FAIL))))))
