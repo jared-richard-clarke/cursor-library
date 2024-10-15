@@ -123,8 +123,9 @@
                                    (eq? op-y IS-NOT)) #t]
                               ;; === choices ===
                               ;; Check first if second is nullable.
-                              [(and (eq? type CHOICE) (recur xs (code-op-x x)))
-                               (recur (list x) offset)]
+                              [(eq? type CHOICE) (if (recur xs (code-op-x x))
+                                                     (recur (list x) offset)
+                                                     #f]
                               ;; === sequences ===
                               ;; If first pattern is nullable, check subsequent.
                               [(recur (list x) offset) (recur xs offset)]
