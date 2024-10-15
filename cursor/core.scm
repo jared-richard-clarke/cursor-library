@@ -104,6 +104,7 @@
                (cond [(null? xs) #f]
                      ;; Check instructions at offsets.
                      [(> offset 0) (recur (cdr xs) (- offset 1))]
+                     ;; If not malformed instruction, check for nullability.
                      [(and (code? (car xs))
                            (not (eq? ERROR (code-type (car xs)))))
                       (let* ([x    (car xs)]
