@@ -58,7 +58,7 @@
          (define ERROR-FUNCTION-ARITY "mismatched arity")
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "empty pattern within may cause infinite loop")
+         (define ERROR-NULLABLE       "pattern within may cause infinite loop")
 
          ;; === Data ===
 
@@ -105,8 +105,7 @@
                      ;; Check instructions at offsets.
                      [(> offset 0) (recur (cdr xs) (- offset 1))]
                      ;; If not malformed instruction, check for nullability.
-                     [(and (code? (car xs))
-                           (not (eq? ERROR (code-type (car xs)))))
+                     [(and (code? (car xs)) (not (eq? ERROR (code-type (car xs)))))
                       (let* ([x    (car xs)]
                              [xs   (cdr xs)]
                              [type (code-type x)]
@@ -122,13 +121,15 @@
                                    (eq? op-y IS)
                                    (eq? op-y IS-NOT)) #t]
                               ;; === choices ===
-                              ;; Check first if second is nullable.
+                              ;; Check first pattern if second pattern is nullable.
                               [(eq? type CHOICE) (if (recur xs (code-op-x x))
-                                                     (recur (list x) offset)
-                                                     #f]
+                                                     (recur xs offset)
+                                                     #f)]
                               ;; === sequences ===
-                              ;; If first pattern is nullable, check subsequent.
-                              [(recur (list x) offset) (recur xs offset)]
+                              ;; Check second pattern if first pattern is nullable.
+                              [(not (null? xs)) (if (recur xs offset)
+                                                    (recur (cdr xs) offset)
+                                                    #f)]
                               [else #f]))]
                      [else #f]))))
 
