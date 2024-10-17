@@ -135,10 +135,9 @@
 
          ;; === Atoms ===
 
-         ;; empty
+         ;; empty -> ε
          ;;
-         ;; The empty pattern, which always succeeds and
-         ;; consumes no input. Also known as epsilon.
+         ;; Always succeeds and consumes no input.
          (define empty (list (encode EMPTY)))
 
          ;; fail
@@ -166,26 +165,27 @@
 
          ;; (and-then px py)
          ;;
-         ;; Match two patterns in sequence. Acts as flat-map or concat-map,
-         ;; marking encoding errors while merging lists of instructions.
+         ;; Acts as flat-map or concat-map, marking encoding errors
+         ;; while merging lists of instructions.
          (define and-then
            (lambda (px py)
              (append (check-code px) (check-code py))))
 
-         ;; (sequence px py pz ...)
+         ;; (sequence px py ...)
          ;;
-         ;; Match a sequence of two or more patterns.
+         ;; (sequence px py) -> px • py
+         ;; (sequence px)    -> px
+         ;; (sequence)       -> ε
          (define sequence
            (lambda xs
-             (if (>= (length xs) 2)
-                 (reduce-right and-then xs)
-                 (list (encode ERROR SEQUENCE ERROR-FUNCTION-ARITY)))))
+             (let ([arity (length xs)])
+               (cond [(= arity 0) empty]
+                     [(= arity 1) (code-check (car xs))]
+                     [else (reduce-right and-then xs)]))))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
          ;; (or-else px py)
-         ;;
-         ;; Match one of two patterns. Ordered choice.
          (define or-else
            (lambda (px py)
              (let ([offset-x (check-length px)]
@@ -195,18 +195,22 @@
                          (encode COMMIT (+ offset-y 1))
                          py))))
 
-         ;; (choice px py pz ...)
+         ;; (choice px py ...)
          ;;
-         ;; Match one of two or more patterns.
+         ;; (choice px py) -> px / py
+         ;; (choice px)    -> px
+         ;; (choice)       -> fail
          (define choice
            (lambda xs
-             (if (>= (length xs) 2)
-                 (reduce-right or-else xs)
-                 (list (encode ERROR CHOICE ERROR-FUNCTION-ARITY)))))
+             (let ([arity (length xs)])
+               (cond [(= arity 0) fail]
+                     [(= arity 1) (code-check (car xs))]
+                     [else (reduce-right or-else xs)]))))
 
          ;; (maybe px)
          ;;
-         ;; Optional match. Always succeeds.
+         ;; (maybe px) -> px?
+         ;; (maybe px) -> px / ε
          (define maybe
            (lambda (px)
              (choice px empty)))
@@ -215,7 +219,7 @@
 
          ;; (repeat px)
          ;;
-         ;; Match pattern zero or more times. Always succeeds.
+         ;; (repeat px) -> px*
          ;;
          ;; Side Note: Repetition on a pattern that succeeds
          ;; but consumes no input creates an infinite loop.
@@ -232,7 +236,8 @@
 
          ;; (repeat+1 px)
          ;;
-         ;; Match pattern one or more times.
+         ;; (repeat+1 px) -> px+
+         ;; (repeat+1 px) -> px • px*
          (define repeat+1
            (lambda (px)
              (sequence px (repeat px))))
@@ -240,6 +245,8 @@
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
          ;; (is? px)
+         ;;
+         ;; (is? px) -> &px
          ;;
          ;; Look ahead by pattern. Succeeds if pattern succeeds.
          ;; Fails if pattern fails. Consumes no input.
@@ -253,6 +260,8 @@
                          fail))))
 
          ;; (is-not? px)
+         ;;
+         ;; (is-not? px) -> !px
          ;;
          ;; Look ahead by pattern. Fails if pattern succeeds.
          ;; Succeeds if pattern fails. Consumes no input.
@@ -268,6 +277,8 @@
          ;; (one-of xs)
          ;;   where xs = string
          ;;
+         ;; (one-of xs) -> [xy...]
+         ;;
          ;; Match character in a set of characters.
          ;; Constructs set from given string.
          (define one-of
@@ -278,6 +289,8 @@
 
          ;; (none-of xs)
          ;;   where xs = string
+         ;;
+         ;; (none-of xs) -> [^xy...]
          ;;
          ;; Match character not in a set of characters.
          ;; Constructs set from given string.
@@ -303,6 +316,8 @@
 
          ;; (grammar [rule pattern]
          ;;          [rule pattern] ...)
+         ;;
+         ;; (grammar [rule pattern]) -> rule <- pattern
          ;;
          ;; Allows recursive patterns for grammar construction.
          ;; A sequence of one or more rules. The first rule is
@@ -363,6 +378,8 @@
          ;; Traverses instruction list, looking for invalid patterns.
 
          ;; (text xs)
+         ;;
+         ;; (text xs) -> x • y ...
          ;;
          ;; Transforms a string literal into a sequence
          ;; of character instructions. Returns the empty
