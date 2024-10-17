@@ -18,7 +18,10 @@
            (sealed #t)
            (protocol
             (lambda (new)
-              (lambda (xs)
+              (case-lambda
+               [()
+                (new (make-eqv-hashtable))]
+               [(xs)
                 (unless (string? xs)
                   (assertion-violation TYPE ERROR-TYPE-STRING xs))
                 (let ([characters (string->list xs)]
@@ -27,12 +30,27 @@
                                     (hashtable-set! accum x #t)
                                     accum)
                                   hashtable
-                                  characters)))))))
+                                  characters)))]))))
 
          (define charset-size
            (lambda (self)
              (let ([table (charset-table self)])
                (hashtable-size table))))
+
+         (define charset-union
+           (lambda (set-x set-y)
+             (let* ([set-z (make-charset)]
+                    [tx    (charset-table set-x)]
+                    [ty    (charset-table set-y)]
+                    [tz    (charset-table set-z)]
+                    [xs    (hashtable-keys tx)]
+                    [ys    (hashtable-keys ty)])
+               (vector-for-each (lambda (x y)
+                                  (hashtable-set! tz x #t)
+                                  (hashtable-set! tz y #t))
+                                xs
+                                ys)
+               set-z)))
 
          (define charset-has?
            (lambda (self key)
@@ -62,12 +80,12 @@
                            "ordered list, character set"
                            (list a b c d)
                            set-abcd)
-              
+
               (test-assert list-eq-set?
                            "unordered list, character set"
                            (list c a d b)
                            set-abcd)
-              
+
               (test-assert charset-equal?
                            "different inputs, same set"
                            set-abcd
