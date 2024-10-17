@@ -145,7 +145,7 @@
          ;; Force failure.
          (define fail (list (encode FAIL)))
 
-         ;; any
+         ;; any -> .
          ;;
          ;; Match and consume any character if there
          ;; is input to be consumed.
