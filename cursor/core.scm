@@ -182,15 +182,16 @@
 
          ;; === Ordered Choice: Limited Backtracking ===
 
-         (define fold-choice
+         (define fold-choices
            (let ([or-else (lambda (px py)
                             (let ([offset-x (check-length px)]
                                   [offset-y (car py)]
                                   [py       (cdr py)])
-                              (sequence (encode CHOICE (+ offset-x 2))
-                                        px
-                                        (encode COMMIT (+ offset-y 1))
-                                        py)))])
+                              (cons (+ offset-x offset-y 2)
+                                    (sequence (encode CHOICE (+ offset-x 2))
+                                              px
+                                              (encode COMMIT (+ offset-y 1))
+                                              py))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -205,7 +206,7 @@
            (case-lambda
             [()  fail]
             [(x) (check-code x)]
-            [xs  (cdr (fold-choice xs))]))
+            [xs  (cdr (fold-choices xs))]))
 
          ;; (maybe px)
          ;;
