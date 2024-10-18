@@ -336,7 +336,7 @@
                                  [size-y  (check-length rule-y)]
                                  ...
                                  [symbols (quote (rule-x rule-y ...))]
-                                 [offsets (zip-with cons symbols (scan-right + (list 2 size-x size-y ...)))]
+                                 [offsets (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
                                  [total   (apply + (list size-x size-y ...))]
                                  [rules   (sequence (encode GRAMMAR (+ total 3))
                                                     (encode CALL (quote rule-x) 2)
