@@ -3,7 +3,8 @@
                  test-chunk
                  enum
                  zip-with
-                 scan-right
+                 scan-left
+                 scan
                  reduce-right)
          (import (rnrs))
 
@@ -49,12 +50,15 @@
                  (cons (fn (car xs) (car ys))
                        (zip-with fn (cdr xs) (cdr ys))))))
 
-         (define scan-right
+         (define scan-left
            (lambda (fn base xs)
              (if (null? xs)
-                 xs
-                 (let ([x (fn base (car xs))])
-                   (cons x (scan-right fn x (cdr xs)))))))
+                 (cons base xs)
+                 (cons base (scan-left fn (fn base (car xs)) (cdr xs))))))
+
+         (define scan
+           (lambda (fn xs)
+             (scan-left fn (car xs) (cdr xs))))
 
          (define reduce-right
            (lambda (fn xs)
