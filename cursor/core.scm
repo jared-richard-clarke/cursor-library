@@ -195,7 +195,7 @@
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
-                   (or-else (car xs) (fold-choice (cdr xs)))))))
+                   (or-else (car xs) (fold-choices (cdr xs)))))))
 
          ;; (choice px py ...)
          ;;
