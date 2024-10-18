@@ -205,7 +205,7 @@
            (case-lambda
             [()  fail]
             [(x) (check-code x)]
-            [xs  (fold-choice xs)]))
+            [xs  (cdr (fold-choice xs))]))
 
          ;; (maybe px)
          ;;
