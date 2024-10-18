@@ -163,29 +163,25 @@
 
          ;; === Concatenation ===
 
-         ;; (and-then px py)
-         ;;
-         ;; Acts as flat-map or concat-map, marking encoding errors
-         ;; while merging lists of instructions.
-         (define and-then
-           (lambda (px py)
-             (append (check-code px) (check-code py))))
-
          ;; (sequence px py ...)
          ;;
          ;; (sequence px py) -> px • py
          ;; (sequence px)    -> px
          ;; (sequence)       -> ε
+         ;;
+         ;; Doubles as flat-map or concat-map, marking encoding errors
+         ;; while merging lists of instructions.
          (define sequence
-           (lambda xs
-             (let ([arity (length xs)])
-               (cond [(= arity 0) empty]
-                     [(= arity 1) (code-check (car xs))]
-                     [else (reduce-right and-then xs)]))))
+           (case-lambda
+            [()  empty]
+            [(x) (check-code x)]
+            [xs  (fold-right (lambda (px py)
+                               (append (check-code px) py))
+                             '()
+                             xs)]))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
-         ;; (or-else px py)
          (define or-else
            (lambda (px py)
              (let ([offset-x (check-length px)]
@@ -201,11 +197,10 @@
          ;; (choice px)    -> px
          ;; (choice)       -> fail
          (define choice
-           (lambda xs
-             (let ([arity (length xs)])
-               (cond [(= arity 0) fail]
-                     [(= arity 1) (code-check (car xs))]
-                     [else (reduce-right or-else xs)]))))
+           (case-lambda
+            [()  fail]
+            [(x) (check-code x)]
+            [xs  (reduce-right or-else xs)]))
 
          ;; (maybe px)
          ;;
