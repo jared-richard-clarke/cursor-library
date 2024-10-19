@@ -392,7 +392,7 @@
                            [size       (length characters)])
                       (cond [(< size 1) empty]
                             [(= size 1) (car characters)]
-                            [else (apply sequence characters)]))]
+                            [else       characters]))]
                    [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
 
          ;; === Unit Tests ===
