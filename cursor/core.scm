@@ -279,27 +279,31 @@
          ;;   where xs = string
          ;;
          ;; (one-of xs) -> [xy...]
+         ;; (one-of "") -> fail
          ;;
-         ;; Match character in a set of characters.
-         ;; Constructs set from given string.
+         ;; Match character in a set of characters. Constructs set from given string.
          (define one-of
            (lambda (xs)
-             (if (string? xs)
-                 (list (encode ONE-OF (make-charset xs)))
-                 (list (encode ERROR ONE-OF ERROR-TYPE-STRING)))))
+             (cond [(string? xs)
+                    (if (string=? xs "")
+                        fail
+                        (list (encode ONE-OF (make-charset xs))))]
+                   [else (list (encode ERROR ONE-OF ERROR-TYPE-STRING))])))
 
          ;; (none-of xs)
          ;;   where xs = string
          ;;
          ;; (none-of xs) -> [^xy...]
+         ;; (none-of "") -> any
          ;;
-         ;; Match character not in a set of characters.
-         ;; Constructs set from given string.
+         ;; Match character not in a set of characters. Constructs set from given string.
          (define none-of
            (lambda (xs)
-             (if (string? xs)
-                 (list (encode NONE-OF (make-charset xs)))
-                 (list (encode ERROR NONE-OF ERROR-TYPE-STRING)))))
+             (cond [(string? xs)
+                    (if (string=? xs "")
+                        any
+                        (list (encode NONE-OF (make-charset xs))))]
+                   [else (list (encode ERROR NONE-OF ERROR-TYPE-STRING))])))
 
          ;; === Grammar ===
 
