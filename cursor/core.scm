@@ -115,6 +115,8 @@
                         (cond [(or (eq? type CHARACTER)
                                    (eq? type ANY)
                                    (eq? type FAIL)
+                                   (eq? type ONE-OF)
+                                   (eq? type NONE-OF)
                                    (eq? type OPEN-CALL)) #f]
                               [(or (eq? type EMPTY)
                                    (eq? op-y REPEAT)
