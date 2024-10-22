@@ -122,9 +122,11 @@
                                    (eq? op-y REPEAT)
                                    (eq? op-y IS)
                                    (eq? op-y IS-NOT)) #t]
+                              [(or (eq? type CAPTURE-START)
+                                   (eq? type CAPTURE-END)) (recur xs offset)]
                               ;; === choices ===
                               ;; Check first pattern if second pattern is nullable.
-                              [(eq? type CHOICE) (if (recur xs (code-op-x x))
+                              [(eq? type CHOICE) (if (recur xs op-x)
                                                      (recur xs offset)
                                                      #f)]
                               ;; === sequences ===
