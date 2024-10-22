@@ -15,7 +15,7 @@
 
          (define-syntax test-assert
            (syntax-rules ()
-             [(_ compare label x y)
+             [(_ label compare x y)
               (thunk (let ([computed-x x]
                            [computed-y y])
                        (unless (compare computed-x computed-y)
