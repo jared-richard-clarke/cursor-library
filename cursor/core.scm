@@ -435,42 +435,42 @@
               "Cursor Core"
               ;; === Literals ===
               ;; Π(g, i, 'c') ≡ Char c
-              (test-assert instructions-equal?
-                           "character literal a"
+              (test-assert "character literal a"
+                           instructions-equal?
                            (character #\a)
                            (list a))
 
-              (test-assert instructions-equal?
-                           "character literal ⌘"
+              (test-assert "character literal ⌘"
+                           instructions-equal?
                            (character #\⌘)
                            (list u))
 
               ;; === Concatenation ===
               ;; Π(g, i, p₁p₂) ≡ Π(g, i, p₁) Π(g, i + |Π(g, x, p₁)|, p₂)
-              (test-assert instructions-equal?
-                           "text sequence abc"
+              (test-assert "text sequence abc"
+                           instructions-equal?
                            (text "abc")
                            (list a b c))
 
-              (test-assert instructions-equal?
-                           "text sequence ⌘b⌘"
+              (test-assert "text sequence ⌘b⌘"
+                           instructions-equal?
                            (text "⌘b⌘")
                            (list u b u))
 
-              (test-assert instructions-equal?
-                           "sequence abc"
+              (test-assert "sequence abc"
+                           instructions-equal?
                            (sequence (character #\a)
                                      (character #\b)
                                      (character #\c))
                            (list a b c))
 
-              (test-assert instructions-equal?
-                           "text singular"
+              (test-assert "text singular"
+                           instructions-equal?
                            (text "a")
                            (character #\a))
 
-              (test-assert instructions-equal?
-                           "empty string"
+              (test-assert "empty string"
+                           instructions-equal?
                            (text "")
                            empty)
 
@@ -479,8 +479,8 @@
               ;;                  Π(g, i + 1, p₁)
               ;;                  Commit |Π(g, x, p₂)| + 1
               ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
-              (test-assert instructions-equal?
-                           "choice a / b"
+              (test-assert "choice a / b"
+                           instructions-equal?
                            (choice (character #\a)
                                    (character #\b))
                            (list (encode CHOICE 3)
@@ -488,8 +488,8 @@
                                  (encode COMMIT 2)
                                  b))
 
-              (test-assert instructions-equal?
-                           "right associativity"
+              (test-assert "right associativity"
+                           instructions-equal?
                            (choice (character #\a)
                                    (character #\b)
                                    (character #\c))
@@ -501,15 +501,15 @@
               ;; Π(g, i, p*) ≡ Choice |Π(g, x, p)| + 2
               ;;               Π(g, i + 1, p)
               ;;               PartialCommit − |Π(g, x, p)|
-              (test-assert instructions-equal?
-                           "repeat a*"
+              (test-assert "repeat a*"
+                           instructions-equal?
                            (repeat (character #\a))
                            (list (encode CHOICE 3 REPEAT)
                                  a
                                  (encode PARTIAL-COMMIT -1)))
 
-              (test-assert instructions-equal?
-                           "repeat a+"
+              (test-assert "repeat a+"
+                           instructions-equal?
                            (repeat+1 (character #\a))
                            (list a
                                  (encode CHOICE 3 REPEAT)
@@ -520,8 +520,8 @@
               ;; Π(g, i, !p) ≡ Choice |Π(g, x, p)| + 2
               ;;               Π(g, i + 1, p)
               ;;               FailTwice
-              (test-assert instructions-equal?
-                           "predicate !a"
+              (test-assert "predicate !a"
+                           instructions-equal?
                            (is-not? (character #\a))
                            (list (encode CHOICE 3 IS-NOT)
                                  a
@@ -532,8 +532,8 @@
               ;;               Π(g, i + 1, p)
               ;;               BackCommit 2
               ;;               Fail
-              (test-assert instructions-equal?
-                           "predicate &a"
+              (test-assert "predicate &a"
+                           instructions-equal?
                            (is? (character #\a))
                            (list (encode CHOICE 3 IS)
                                  a
