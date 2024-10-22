@@ -76,18 +76,18 @@
                                       (for-all (lambda (x) (charset-has? set-y x)) list-x)))])
              (test-chunk
               "Cursor Character Set"
-              (test-assert list-eq-set?
-                           "ordered list, character set"
+              (test-assert "ordered list, character set"
+                           list-eq-set?
                            (list a b c d)
                            set-abcd)
 
-              (test-assert list-eq-set?
-                           "unordered list, character set"
+              (test-assert "unordered list, character set"
+                           list-eq-set?
                            (list c a d b)
                            set-abcd)
 
-              (test-assert charset-equal?
-                           "different inputs, same set"
+              (test-assert "different inputs, same set"
+                           charset-equal?
                            set-abcd
                            (make-charset "aabbccddccbbaa")))))
 
