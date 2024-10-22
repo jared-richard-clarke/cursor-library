@@ -135,7 +135,7 @@
                               [else #f]))]
                      [else #f]))))
 
-         ;; === Atoms ===
+         ;; === Terminals ===
 
          ;; empty -> ε
          ;;
