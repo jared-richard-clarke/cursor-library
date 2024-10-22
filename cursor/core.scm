@@ -122,6 +122,7 @@
                                    (eq? op-y REPEAT)
                                    (eq? op-y IS)
                                    (eq? op-y IS-NOT)) #t]
+                              ;; === non-terminating cases ===
                               [(or (eq? type CAPTURE-START)
                                    (eq? type CAPTURE-END)) (recur xs offset)]
                               ;; === choices ===
