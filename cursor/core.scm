@@ -347,8 +347,7 @@
                                  [symbols (quote (rule-x rule-y ...))]
                                  [offsets (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
                                  [total   (apply + (list size-x size-y ...))]
-                                 [rules   (sequence (encode GRAMMAR (+ total 2))
-                                                    (encode CALL (quote rule-x) 2)
+                                 [rules   (sequence (encode GRAMMAR (+ total 2) 2)
                                                     (encode JUMP (+ total 1))
                                                     rule-x
                                                     rule-y ...)])
