@@ -124,7 +124,7 @@
                                    (eq? op-y IS-NOT)) #t]
                               ;; === non-terminating cases ===
                               [(or (eq? type CAPTURE-START)
-                                   (eq? type CAPTURE-END)) (recur xs offset)]
+                                   (eq? type CAPTURE-STOP)) (recur xs offset)]
                               ;; === choices ===
                               ;; Check first pattern if second pattern is nullable.
                               [(eq? type CHOICE) (if (recur xs op-x)
@@ -401,7 +401,7 @@
                            [size       (length characters)])
                       (cond [(< size 1) empty]
                             [(= size 1) (car characters)]
-                            [else       characters]))]
+                            [else       (apply sequence characters)]))]
                    [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
 
          ;; === Unit Tests ===
