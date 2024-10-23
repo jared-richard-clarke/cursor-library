@@ -331,8 +331,8 @@
                   (syntax (let* ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
                                  [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                  ...
-                                 [size-x  (check-length rule-x)]
-                                 [size-y  (check-length rule-y)]
+                                 [size-x  (length rule-x)]
+                                 [size-y  (length rule-y)]
                                  ...
                                  [symbols (quote (rule-x rule-y ...))]
                                  [offsets (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
