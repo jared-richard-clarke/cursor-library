@@ -95,7 +95,7 @@
                    [(and (pair? x) (not (code? (car x))))
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
-         
+
          (define nullable?
            (lambda (xs)
              (let recur ([xs xs]
@@ -166,9 +166,6 @@
          ;; (sequence px py) -> px • py
          ;; (sequence px)    -> px
          ;; (sequence)       -> ε
-         ;;
-         ;; Doubles as flat-map or concat-map, marking encoding errors
-         ;; while merging lists of instructions.
          (define sequence
            (case-lambda
             [()  empty]
@@ -186,10 +183,10 @@
                                   [offset-y (car py)]
                                   [py       (cdr py)])
                               (cons (+ offset-x offset-y 2)
-                                    (sequence (encode CHOICE (+ offset-x 2))
-                                              px
-                                              (encode COMMIT (+ offset-y 1))
-                                              py))))])
+                                    (append (list (encode CHOICE (+ offset-x 2)))
+                                            (check-code px)
+                                            (list (encode COMMIT (+ offset-y 1)))
+                                            py))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -227,9 +224,9 @@
              (let ([pattern (check-code px)])
                (cond [(not (nullable? pattern))
                       (let ([offset (length pattern)])
-                        (sequence (encode CHOICE (+ offset 2) REPEAT)
-                                  pattern
-                                  (encode PARTIAL-COMMIT (- offset))))]
+                        (append (list (encode CHOICE (+ offset 2) REPEAT))
+                                pattern
+                                (list (encode PARTIAL-COMMIT (- offset)))))]
                      [else
                       (list (encode ERROR REPEAT ERROR-NULLABLE))]))))
 
@@ -239,7 +236,7 @@
          ;; (repeat+1 px) -> px • px*
          (define repeat+1
            (lambda (px)
-             (sequence px (repeat px))))
+             (append (check-code px) (repeat px))))
 
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
@@ -253,10 +250,10 @@
            (lambda (px)
              (let ([offset-x (check-length px)]
                    [offset-y 2])
-               (sequence (encode CHOICE (+ offset-x 2) IS)
-                         px
-                         (encode BACK-COMMIT offset-y)
-                         fail))))
+               (append (list (encode CHOICE (+ offset-x 2) IS))
+                       (check-code px)
+                       (list (encode BACK-COMMIT offset-y))
+                       fail))))
 
          ;; (is-not? px)
          ;;
@@ -267,9 +264,9 @@
          (define is-not?
            (lambda (px)
              (let ([offset (check-length px)])
-               (sequence (encode CHOICE (+ offset 2) IS-NOT)
-                         px
-                         (encode FAIL-TWICE)))))
+               (append (list (encode CHOICE (+ offset 2) IS-NOT))
+                       (check-code px)
+                       (list (encode FAIL-TWICE))))))
 
          ;; === Sets: Character Classes ===
 
@@ -340,10 +337,10 @@
                                  [symbols (quote (rule-x rule-y ...))]
                                  [offsets (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
                                  [total   (apply + (list size-x size-y ...))]
-                                 [rules   (sequence (encode GRAMMAR (+ total 2) 2)
-                                                    (encode JUMP (+ total 1))
-                                                    rule-x
-                                                    rule-y ...)])
+                                 [rules   (append (list (encode GRAMMAR (+ total 2) 2))
+                                                  (list (encode JUMP (+ total 1)))
+                                                  rule-x
+                                                  rule-y ...)])
                             (map (lambda (x)
                                    (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
                                           (let ([offset (assq (code-op-x x) offsets)])
@@ -366,13 +363,13 @@
              [(px) (capture '() px)]
              [(fn px)
               (cond [(procedure? fn)
-                     (sequence (encode CAPTURE-START fn)
-                               px
-                               (encode CAPTURE-STOP))]
+                     (append (list (encode CAPTURE-START fn))
+                             (check-code px)
+                             (list (encode CAPTURE-STOP)))]
                     [else
-                     (sequence (encode CAPTURE-START)
-                               px
-                               (encode CAPTURE-STOP))])]))
+                     (append (list (encode CAPTURE-START))
+                             (check-code px)
+                             (list (encode CAPTURE-STOP)))])]))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
@@ -393,7 +390,7 @@
                            [size       (length characters)])
                       (cond [(< size 1) empty]
                             [(= size 1) (car characters)]
-                            [else       (apply sequence characters)]))]
+                            [else       (apply append characters)]))]
                    [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
 
          ;; === Unit Tests ===
