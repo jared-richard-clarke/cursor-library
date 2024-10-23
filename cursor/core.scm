@@ -95,12 +95,11 @@
                    [(and (pair? x) (not (code? (car x))))
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
-
+         
          (define nullable?
            (lambda (xs)
              (let recur ([xs xs]
                          [offset 0])
-                     ;; End of list.
                (cond [(null? xs) #f]
                      ;; Check instructions at offsets.
                      [(> offset 1) (recur (cdr xs) (- offset 1))]
@@ -122,19 +121,13 @@
                                    (eq? op-y REPEAT)
                                    (eq? op-y IS)
                                    (eq? op-y IS-NOT)) #t]
-                              ;; === non-terminating cases ===
-                              [(or (eq? type CAPTURE-START)
-                                   (eq? type CAPTURE-STOP)) (recur xs offset)]
                               ;; === choices ===
                               ;; Check first pattern if second pattern is nullable.
                               [(eq? type CHOICE) (if (recur xs op-x)
                                                      (recur xs offset)
                                                      #f)]
                               ;; === sequences ===
-                              ;; Check second pattern if first pattern is nullable.
-                              [(not (null? xs)) (if (recur xs offset)
-                                                    (recur (cdr xs) offset)
-                                                    #f)]
+                              [(not (null? xs)) (recur xs offset)]
                               [else #f]))]
                      [else #f]))))
 
