@@ -155,9 +155,13 @@
                                   (eq? op-y IS)
                                   (eq? op-y IS-NOT))
                               (recur (+ index 1) counter #t)]
-                             [(or (eq? type CAPTURE-START)
-                                  (eq? type CHOICE))
+                             [(eq? type CAPTURE-START)
                               (recur (+ index 1) counter nullable)]
+                             [(eq? type CHOICE)
+                              (let ([result (recur (+ index 1) counter nullable)])
+                                (if (hashtable? result)
+                                    result
+                                    (recur (+ index op-x) counter result))]
                              [(or (eq? type GRAMMAR)
                                   (eq? type CALL))
                               (recur op-y counter nullable)]
