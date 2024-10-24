@@ -135,42 +135,43 @@
            (lambda (xs)
              (let ([table (make-eqv-hashtable)]
                    [size  (vector-length xs)])
-               (let loop ([index    0]
-                          [counter  0]
-                          [nullable #f])
-                 (cond [(>= index size) #f]
-                       [else (let* ([code (vector-ref xs index)]
-                                    [type (code-type code)]
-                                    [op-x (code-op-x code)]
-                                    [op-y (code-op-y code)])
-                               (cond [(or (eq? type CHARACTER)
-                                          (eq? type ANY)
-                                          (eq? type FAIL)
-                                          (eq? type ONE-OF)
-                                          (eq? type NONE-OF))
-                                      nullable]
-                                     [(eq? type EMPTY) #t]
-                                     [(or (eq? op-y REPEAT)
-                                          (eq? op-y IS)
-                                          (eq? op-y IS-NOT))
-                                      (loop (+ index 1) counter #t)]
-                                     [(or (eq? type CAPTURE-START)
-                                          (eq? type CHOICE))
-                                      (loop (+ index 1) counter nullable)]
-                                     [(or (eq? type GRAMMAR)
-                                          (eq? type CALL))
-                                      (loop op-y counter nullable)]
-                                     [(eq? type RULE)
-                                      (let ([counter (+ counter 1)]
-                                            [rule    (hashtable-ref table op-x #f)])
-                                        (cond [(> counter MAX-RULES) table]
-                                              [rule (hashtable-set! table op-x (+ rule 1))
-                                                    (loop (+ index 1) counter nullable)]
-                                              [else (hashtable-set! table op-x 0)
-                                                    (loop (+ index 1) counter nullable)]))]
-                                     [(loop (+ index 1) counter nullable)
-                                      (loop (+ index 2) counter nullable)]
-                                     [else #f]))])))))
+               (let recur ([index    0]
+                           [counter  0]
+                           [nullable #f])
+                 (if (>= index size)
+                     #f
+                     (let* ([code (vector-ref xs index)]
+                            [type (code-type code)]
+                            [op-x (code-op-x code)]
+                            [op-y (code-op-y code)])
+                       (cond [(or (eq? type CHARACTER)
+                                  (eq? type ANY)
+                                  (eq? type FAIL)
+                                  (eq? type ONE-OF)
+                                  (eq? type NONE-OF))
+                              nullable]
+                             [(eq? type EMPTY) #t]
+                             [(or (eq? op-y REPEAT)
+                                  (eq? op-y IS)
+                                  (eq? op-y IS-NOT))
+                              (recur (+ index 1) counter #t)]
+                             [(or (eq? type CAPTURE-START)
+                                  (eq? type CHOICE))
+                              (recur (+ index 1) counter nullable)]
+                             [(or (eq? type GRAMMAR)
+                                  (eq? type CALL))
+                              (recur op-y counter nullable)]
+                             [(eq? type RULE)
+                              (let ([counter (+ counter 1)]
+                                    [rule    (hashtable-ref table op-x #f)])
+                                (cond [(> counter MAX-RULES) table]
+                                      [rule (hashtable-set! table op-x (+ rule 1))
+                                            (recur (+ index 1) counter nullable)]
+                                      [else (hashtable-set! table op-x 0)
+                                            (recur (+ index 1) counter nullable)]))]
+                             [(recur (+ index 1) counter nullable)
+                              (recur (+ index 2) counter nullable)]
+                             [else #f])))))))
 
          ;; === Terminals ===
 
