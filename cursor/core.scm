@@ -132,13 +132,12 @@
                      [else #f]))))
 
          (define check-rule
-           (lambda (xs)
-             (let ([table (make-eqv-hashtable)]
-                   [size  (vector-length xs)])
-               (let recur ([index    0]
+           (lambda (xs start end)
+             (let ([table (make-eqv-hashtable)])
+               (let recur ([index    start]
                            [counter  0]
                            [nullable #f])
-                 (if (>= index size)
+                 (if (>= index end)
                      #f
                      (let* ([code (vector-ref xs index)]
                             [type (code-type code)]
@@ -157,25 +156,31 @@
                               (recur (+ index 1) counter #t)]
                              [(eq? type CAPTURE-START)
                               (recur (+ index 1) counter nullable)]
+                             ;; === choices ===
+                             ;; Check both branches for nullable and non-nullable,
+                             ;; Bail on possible left recursion.
                              [(eq? type CHOICE)
-                              (let ([result (recur (+ index 1) counter nullable)])
-                                (if (hashtable? result)
-                                    result
-                                    (recur (+ index op-x) counter result))]
+                              (let ([nullable (recur (+ index 1) counter nullable)])
+                                (if (hashtable? nullable)
+                                    nullable
+                                    (recur (+ index op-x) counter nullable)))]
                              [(or (eq? type GRAMMAR)
                                   (eq? type CALL))
                               (recur op-y counter nullable)]
                              [(eq? type RULE)
                               (let ([counter (+ counter 1)]
                                     [rule    (hashtable-ref table op-x #f)])
-                                (cond [(> counter MAX-RULES) table]
+                                (cond [(> counter MAX-STEPS) table]
                                       [rule (hashtable-set! table op-x (+ rule 1))
                                             (recur (+ index 1) counter nullable)]
                                       [else (hashtable-set! table op-x 0)
                                             (recur (+ index 1) counter nullable)]))]
-                             [(recur (+ index 1) counter nullable)
-                              (recur (+ index 2) counter nullable)]
-                             [else #f])))))))
+                             ;; === sequences ===
+                             ;; If the first pattern is nullable, check the second.
+                             [else (let ([nullable (recur (+ index 1) counter nullable)])
+                                     (cond [(hashtable? nullable) nullable]
+                                           [nullable (recur (+ index 2) counter nullable)]
+                                           [else nullable]))])))))))
 
          ;; === Terminals ===
 
