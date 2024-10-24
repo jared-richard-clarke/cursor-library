@@ -131,7 +131,7 @@
                               [else #f]))]
                      [else #f]))))
 
-         (define verify-rule
+         (define check-rule
            (lambda (xs)
              (let ([table (make-eqv-hashtable)]
                    [size  (vector-length xs)])
