@@ -168,8 +168,9 @@
                                                     (loop (+ index 1) counter nullable)]
                                               [else (hashtable-set! table op-x 0)
                                                     (loop (+ index 1) counter nullable)]))]
-                                     [(not (loop (+ index 1) counter nullable)) #f]
-                                     [else (loop (+ index 2) counter nullable)]))])))))
+                                     [(loop (+ index 1) counter nullable)
+                                      (loop (+ index 2) counter nullable)]
+                                     [else #f]))])))))
 
          ;; === Terminals ===
 
