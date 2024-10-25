@@ -131,6 +131,55 @@
                               [else #f]))]
                      [else #f]))))
 
+         (define check-rule
+           (lambda (xs start stop rules)
+             (let recur ([index    start]
+                         [count    1]
+                         [nullable #f])
+               (if (>= index stop)
+                   #f
+                   (let* ([code (vector-ref xs index)]
+                          [type (code-type code)]
+                          [op-x (code-op-x code)]
+                          [op-y (code-op-y code)])
+
+                     (cond [(or (eq? type CHARACTER)
+                                (eq? type ANY)
+                                (eq? type FAIL)
+                                (eq? type ONE-OF)
+                                (eq? type NONE-OF))
+                            nullable]
+
+                           [(eq? type EMPTY) #t]
+
+                           [(or (eq? op-y REPEAT)
+                                (eq? op-y IS)
+                                (eq? op-y IS-NOT))
+                            (recur (+ index 1) count #t)]
+
+                           [(eq? type CHOICE)
+                            (let ([result (recur (+ index 1) count nullable)])
+                              (if (hashtable? result)
+                                  result
+                                  (recur (+ index op-x) count result)))]
+
+                           [(or (eq? type GRAMMAR)
+                                (eq? type CALL))
+                            (recur op-y count nullable)]
+
+                           [(eq? type RULE)
+                            (let ([count (+ count 1)]
+                                  [total (hashtable-ref rules op-x #f)])
+                              (cond [(>= count MAX-RULES) rules]
+                                    [total (hashtable-set! rules op-x (+ total 1))
+                                           (recur (+ index 1) count nullable)]
+                                    [else  (hashtable-set! rules op-x 0)
+                                           (recur (+ index 1) count nullable)]))]
+
+                           [nullable (recur (+ index 1) count nullable)]
+
+                           [else #f]))))))
+         
          ;; === Terminals ===
 
          ;; empty -> ε
