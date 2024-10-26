@@ -49,6 +49,8 @@
                NONE-OF
                MATCH)
 
+         (define MAX-RULES 1000)
+
          ;; === Error Messages ===
 
          (define ERROR-TYPE-CHARACTER "not a character")
@@ -59,6 +61,7 @@
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
          (define ERROR-NULLABLE       "pattern within may cause infinite loop")
+         (define ERROR-LEFT-RECURSION "rule may be left recursive")
 
          ;; === Data ===
 
@@ -131,55 +134,88 @@
                               [else #f]))]
                      [else #f]))))
 
-         (define check-rule
-           (lambda (xs start stop rules)
-             (let recur ([index    start]
-                         [count    1]
-                         [nullable #f])
-               (if (>= index stop)
-                   #f
-                   (let* ([code (vector-ref xs index)]
-                          [type (code-type code)]
-                          [op-x (code-op-x code)]
-                          [op-y (code-op-y code)])
+         (define check-grammar
+           (lambda (xs)
+             (let* ([vs         (list->vector xs)]
+                    [size       (vector-length vs)]
+                    [rule-count (make-eqv-hashtable)]
+                    [step-count 1]
+                    [error-flag #f]
+                    [check-rule (lambda (start)
+                                  (let recur ([index start]
+                                              [nullable #f])
+                                    (if (or error-flag (>= index size))
+                                        #f
+                                        (let* ([code (vector-ref vs index)]
+                                               [type (code-type code)]
+                                               [op-x (code-op-x code)]
+                                               [op-y (code-op-y code)])
 
-                     (cond [(or (eq? type CHARACTER)
-                                (eq? type ANY)
-                                (eq? type FAIL)
-                                (eq? type ONE-OF)
-                                (eq? type NONE-OF))
-                            nullable]
+                                          (cond [(or (eq? type CHARACTER)
+                                                     (eq? type ANY)
+                                                     (eq? type FAIL)
+                                                     (eq? type ONE-OF)
+                                                     (eq? type NONE-OF))
+                                                 nullable]
 
-                           [(eq? type EMPTY) #t]
+                                                [(eq? type EMPTY) #t]
 
-                           [(or (eq? op-y REPEAT)
-                                (eq? op-y IS)
-                                (eq? op-y IS-NOT))
-                            (recur (+ index 1) count #t)]
+                                                [(or (eq? op-y REPEAT)
+                                                     (eq? op-y IS)
+                                                     (eq? op-y IS-NOT))
+                                                 (recur (+ index 1) #t)]
 
-                           [(eq? type CHOICE)
-                            (let ([result (recur (+ index 1) count nullable)])
-                              (if (hashtable? result)
-                                  result
-                                  (recur (+ index op-x) count result)))]
+                                                [(eq? type CHOICE)
+                                                 (let ([nullable (recur (+ index 1) nullable)])
+                                                   (if error-flag
+                                                       #f
+                                                       (recur (+ index op-x) nullable)))]
 
-                           [(or (eq? type GRAMMAR)
-                                (eq? type CALL))
-                            (recur op-y count nullable)]
+                                                [(eq? type CAPTURE-START)
+                                                 (recur (+ index 1) nullable)]
 
-                           [(eq? type RULE)
-                            (let ([count (+ count 1)]
-                                  [total (hashtable-ref rules op-x #f)])
-                              (cond [(>= count MAX-RULES) rules]
-                                    [total (hashtable-set! rules op-x (+ total 1))
-                                           (recur (+ index 1) count nullable)]
-                                    [else  (hashtable-set! rules op-x 0)
-                                           (recur (+ index 1) count nullable)]))]
+                                                [(or (eq? type GRAMMAR)
+                                                     (eq? type CALL))
+                                                 (recur op-y nullable)]
 
-                           [nullable (recur (+ index 1) count nullable)]
+                                                [(eq? type RULE)
+                                                 (set! step-count (+ step-count 1))
+                                                 (cond [error-flag #f]
+                                                       [(>= step-count MAX-RULES) (set! error-flag #t) #f]
+                                                       [else
+                                                        (let ([total (hashtable-ref rule-count op-x #f)])
+                                                          (if total
+                                                              (begin (hashtable-set! rule-count op-x (+ total 1))
+                                                                     (recur (+ index 1) nullable))
+                                                              (begin (hashtable-set! rule-count op-x 0)
+                                                                     (recur (+ index 1) nullable))))])]
 
-                           [else #f]))))))
-         
+                                                [nullable (recur (+ index 1) nullable)]
+
+                                                [else #f])))))]
+                    [find-rule   (lambda ()
+                                   (let ([rules (hashtable-keys rule-count)])
+                                     (vector-fold (lambda (rule-x rule-y)
+                                                    (let ([count-x (hashtable-ref rule-x 0)]
+                                                          [count-y (hashtable-ref rule-y 0)])
+                                                      (if (> count-x count-y)
+                                                          rule-x
+                                                          rule-y)))
+                                                  rules)))]
+                    [next-rule   (lambda (i)
+                                   (let loop ([index i])
+                                     (cond [(>= index size) index]
+                                           [(eq? RULE (code-type (vector-ref vs index))) index]
+                                           [else (loop (+ index 1))])))]
+                    [check-rules (lambda ()
+                                   (let loop ([index (next-rule 0)])
+                                     (cond [error-flag (list (encode ERROR (find-rule) ERROR-LEFT-RECURSION))]
+                                           [(< index size)
+                                            (check-rule index)
+                                            (loop (next-rule (+ index 1)))]
+                                           [else xs])))])
+               (check-rules))))
+
          ;; === Terminals ===
 
          ;; empty -> ε
