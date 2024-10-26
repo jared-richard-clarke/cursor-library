@@ -158,9 +158,8 @@
                                                      (eq? type NONE-OF))
                                                  nullable]
 
-                                                [(eq? type EMPTY) #t]
-
-                                                [(or (eq? op-y REPEAT)
+                                                [(or (eq? type EMPTY)
+                                                     (eq? op-y REPEAT)
                                                      (eq? op-y IS)
                                                      (eq? op-y IS-NOT))
                                                  (recur (+ index 1) #t)]
