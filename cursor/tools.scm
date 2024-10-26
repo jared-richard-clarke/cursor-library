@@ -5,7 +5,8 @@
                  zip-with
                  scan-left
                  scan
-                 reduce-right)
+                 reduce-right
+                 vector-fold)
          (import (rnrs))
 
          (define-syntax thunk
@@ -68,5 +69,14 @@
                                (fn x accum)))
                          '()
                          xs)))
+
+         (define vector-fold
+           (lambda (fn xs)
+             (let loop ([index 1]
+                        [size  (vector-length xs)]
+                        [accum (vector-ref xs 0)])
+               (if (>= index size)
+                   accum
+                   (loop (+ index 1) size (fn accum (vector-ref xs index)))))))
 
          )
