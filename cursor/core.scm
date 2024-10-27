@@ -98,6 +98,7 @@
                    [(and (pair? x) (not (code? (car x))))
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
+         
          (define nullable?
            (lambda (xs)
              (let recur ([xs xs]
