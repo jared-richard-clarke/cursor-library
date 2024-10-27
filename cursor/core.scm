@@ -147,29 +147,7 @@
                                              [type (code-type code)]
                                              [op-x (code-op-x code)]
                                              [op-y (code-op-y code)])
-
-                                        (cond [(or (eq? type CHARACTER)
-                                                   (eq? type ANY)
-                                                   (eq? type FAIL)
-                                                   (eq? type ONE-OF)
-                                                   (eq? type NONE-OF))]
-
-                                              [(or (eq? type EMPTY)
-                                                   (eq? op-y REPEAT)
-                                                   (eq? op-y IS)
-                                                   (eq? op-y IS-NOT))
-                                               (recur (+ index 1))]
-
-                                              [(eq? type CHOICE)
-                                               (recur (+ index 1))
-                                               (unless error-flag
-                                                 (recur (+ index op-x)))]
-
-                                              [(or (eq? type GRAMMAR)
-                                                   (eq? type CALL))
-                                               (recur op-y)]
-
-                                              [(eq? type RULE)
+                                        (cond [(eq? type RULE)
                                                (set! step-count (+ step-count 1))
                                                (cond [error-flag]
                                                      [(>= step-count MAX-RULES) (set! error-flag #t)]
@@ -180,7 +158,23 @@
                                                                    (recur (+ index 1)))
                                                             (begin (hashtable-set! rule-count op-x 0)
                                                                    (recur (+ index 1)))))])]
-
+                                              [(or (eq? type GRAMMAR)
+                                                   (eq? type CALL))
+                                               (recur op-y)]
+                                              [(eq? type CHOICE)
+                                               (recur (+ index 1))
+                                               (unless error-flag
+                                                 (recur (+ index op-x)))]
+                                              [(or (eq? type CHARACTER)
+                                                   (eq? type ANY)
+                                                   (eq? type FAIL)
+                                                   (eq? type ONE-OF)
+                                                   (eq? type NONE-OF))]
+                                              [(or (eq? type EMPTY)
+                                                   (eq? op-y REPEAT)
+                                                   (eq? op-y IS)
+                                                   (eq? op-y IS-NOT))
+                                               (recur (+ index 1))]
                                               [else (recur (+ index 1))])))))]
                     [find-rule   (lambda ()
                                    (let ([rules (hashtable-keys rule-count)])
