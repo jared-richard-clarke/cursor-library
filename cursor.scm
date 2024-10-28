@@ -7,7 +7,7 @@
 ;; |--------------------------+-----------------|
 ;; | any                      | .               |
 ;; |--------------------------+-----------------|
-;; | (character #\x)          | "x"             |
+;; | (char #\x)               | "x"             |
 ;; |--------------------------+-----------------|
 ;; | (maybe p)                | p?              |
 ;; |--------------------------+-----------------|
@@ -34,7 +34,7 @@
          (export empty
                  fail
                  any
-                 character
+                 char
                  sequence
                  choice
                  maybe
@@ -44,8 +44,8 @@
                  is-not?
                  one-of
                  none-of
-                 grammar
                  call
+                 grammar
                  capture
                  text)
          (import (cursor core)))
