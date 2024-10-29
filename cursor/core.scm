@@ -2,7 +2,7 @@
          (export empty
                  fail
                  any
-                 char
+                 character
                  sequence
                  choice
                  maybe
@@ -218,10 +218,11 @@
          ;; is input to be consumed.
          (define any (list (encode ANY)))
 
-         ;; (char x)
+         ;; (character x)
+         ;;   where x = char
          ;;
          ;; Match and consume the given character.
-         (define char
+         (define character
            (lambda (x)
              (if (char? x)
                  (list (encode CHARACTER x))
@@ -454,11 +455,11 @@
          (define text
            (lambda (xs)
              (cond [(string? xs)
-                    (let* ([chars (map char (string->list xs))]
-                           [size  (length chars)])
+                    (let* ([characters (map character (string->list xs))]
+                           [size       (length characters)])
                       (cond [(< size 1) empty]
-                            [(= size 1) (car chars)]
-                            [else       (apply append chars)]))]
+                            [(= size 1) (car characters)]
+                            [else       (apply append characters)]))]
                    [else (list (encode ERROR SEQUENCE ERROR-TYPE-STRING))])))
 
          ;; === Unit Tests ===
@@ -494,12 +495,12 @@
               ;; Π(g, i, 'c') ≡ Char c
               (test-assert "character literal a"
                            instructions-equal?
-                           (char #\a)
+                           (character #\a)
                            (list a))
 
               (test-assert "character literal ⌘"
                            instructions-equal?
-                           (char #\⌘)
+                           (character #\⌘)
                            (list u))
 
               ;; === Concatenation ===
@@ -516,15 +517,15 @@
 
               (test-assert "sequence abc"
                            instructions-equal?
-                           (sequence (char #\a)
-                                     (char #\b)
-                                     (char #\c))
+                           (sequence (character #\a)
+                                     (character #\b)
+                                     (character #\c))
                            (list a b c))
 
               (test-assert "text singular"
                            instructions-equal?
                            (text "a")
-                           (char #\a))
+                           (character #\a))
 
               (test-assert "empty string"
                            instructions-equal?
@@ -538,8 +539,8 @@
               ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
               (test-assert "choice a / b"
                            instructions-equal?
-                           (choice (char #\a)
-                                   (char #\b))
+                           (choice (character #\a)
+                                   (character #\b))
                            (list (encode CHOICE 3)
                                  a
                                  (encode COMMIT 2)
@@ -547,12 +548,12 @@
 
               (test-assert "right associativity"
                            instructions-equal?
-                           (choice (char #\a)
-                                   (char #\b)
-                                   (char #\c))
-                           (choice (char #\a)
-                                   (choice (char #\b)
-                                           (char #\c))))
+                           (choice (character #\a)
+                                   (character #\b)
+                                   (character #\c))
+                           (choice (character #\a)
+                                   (choice (character #\b)
+                                           (character #\c))))
 
               ;; === Repetition ===
               ;; Π(g, i, p*) ≡ Choice |Π(g, x, p)| + 2
@@ -560,14 +561,14 @@
               ;;               PartialCommit − |Π(g, x, p)|
               (test-assert "repeat a*"
                            instructions-equal?
-                           (repeat (char #\a))
+                           (repeat (character #\a))
                            (list (encode CHOICE 3 REPEAT)
                                  a
                                  (encode PARTIAL-COMMIT -1)))
 
               (test-assert "repeat a+"
                            instructions-equal?
-                           (repeat+1 (char #\a))
+                           (repeat+1 (character #\a))
                            (list a
                                  (encode CHOICE 3 REPEAT)
                                  a
@@ -579,7 +580,7 @@
               ;;               FailTwice
               (test-assert "predicate !a"
                            instructions-equal?
-                           (is-not? (char #\a))
+                           (is-not? (character #\a))
                            (list (encode CHOICE 3 IS-NOT)
                                  a
                                  (encode FAIL-TWICE)))
@@ -591,7 +592,7 @@
               ;;               Fail
               (test-assert "predicate &a"
                            instructions-equal?
-                           (is? (char #\a))
+                           (is? (character #\a))
                            (list (encode CHOICE 3 IS)
                                  a
                                  (encode BACK-COMMIT 2)
