@@ -156,7 +156,7 @@
                                                         (if total
                                                             (begin (hashtable-set! rule-count op-x (+ total 1))
                                                                    (recur (+ index 1)))
-                                                            (begin (hashtable-set! rule-count op-x 0)
+                                                            (begin (hashtable-set! rule-count op-x 1)
                                                                    (recur (+ index 1)))))])]
                                               [(or (eq? type GRAMMAR)
                                                    (eq? type CALL))
