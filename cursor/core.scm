@@ -139,42 +139,42 @@
                     [rule-count   (make-eqv-hashtable)]
                     [step-count   0]
                     [error-flag   #f]
-                    [check-rule (lambda (start)
-                                  (let recur ([index start])
-                                    (unless (or error-flag (>= index size))
-                                      (let* ([code (vector-ref instructions index)]
-                                             [type (code-type code)]
-                                             [op-x (code-op-x code)]
-                                             [op-y (code-op-y code)])
-                                        (cond [(eq? type RULE)
-                                               (set! step-count (+ step-count 1))
-                                               (cond [error-flag]
-                                                     [(>= step-count MAX-RULES) (set! error-flag #t)]
-                                                     [else
-                                                      (let ([total (hashtable-ref rule-count op-x #f)])
-                                                        (if total
-                                                            (begin (hashtable-set! rule-count op-x (+ total 1))
-                                                                   (recur (+ index 1)))
-                                                            (begin (hashtable-set! rule-count op-x 1)
-                                                                   (recur (+ index 1)))))])]
-                                              [(or (eq? type GRAMMAR)
-                                                   (eq? type CALL))
-                                               (recur op-y)]
-                                              [(eq? type CHOICE)
-                                               (recur (+ index 1))
-                                               (unless error-flag
-                                                 (recur (+ index op-x)))]
-                                              [(or (eq? type CHARACTER)
-                                                   (eq? type ANY)
-                                                   (eq? type FAIL)
-                                                   (eq? type ONE-OF)
-                                                   (eq? type NONE-OF))]
-                                              [(or (eq? type EMPTY)
-                                                   (eq? op-y REPEAT)
-                                                   (eq? op-y IS)
-                                                   (eq? op-y IS-NOT))
-                                               (recur (+ index 1))]
-                                              [else (recur (+ index 1))])))))]
+                    [check-rule   (lambda (start)
+                                    (let recur ([index start])
+                                      (unless (or error-flag (>= index size))
+                                        (let* ([code (vector-ref instructions index)]
+                                               [type (code-type code)]
+                                               [op-x (code-op-x code)]
+                                               [op-y (code-op-y code)])
+                                          (cond [(eq? type RULE)
+                                                 (set! step-count (+ step-count 1))
+                                                 (cond [error-flag]
+                                                       [(>= step-count MAX-RULES) (set! error-flag #t)]
+                                                       [else
+                                                        (let ([total (hashtable-ref rule-count op-x #f)])
+                                                          (if total
+                                                              (begin (hashtable-set! rule-count op-x (+ total 1))
+                                                                     (recur (+ index 1)))
+                                                              (begin (hashtable-set! rule-count op-x 1)
+                                                                     (recur (+ index 1)))))])]
+                                                [(or (eq? type GRAMMAR)
+                                                     (eq? type CALL))
+                                                 (recur op-y)]
+                                                [(eq? type CHOICE)
+                                                 (recur (+ index 1))
+                                                 (unless error-flag
+                                                   (recur (+ index op-x)))]
+                                                [(or (eq? type CHARACTER)
+                                                     (eq? type ANY)
+                                                     (eq? type FAIL)
+                                                     (eq? type ONE-OF)
+                                                     (eq? type NONE-OF))]
+                                                [(or (eq? type EMPTY)
+                                                     (eq? op-y REPEAT)
+                                                     (eq? op-y IS)
+                                                     (eq? op-y IS-NOT))
+                                                 (recur (+ index 1))]
+                                                [else (recur (+ index 1))])))))]
                     [find-rule   (lambda ()
                                    (let ([rules (hashtable-keys rule-count)])
                                      (vector-fold (lambda (rule-x rule-y)
@@ -197,7 +197,6 @@
                                             (loop (next-rule (+ index 1)))]
                                            [else xs])))])
                (check-rules))))
-
 
          ;; === Terminals ===
 
