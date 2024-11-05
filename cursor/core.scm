@@ -421,7 +421,7 @@
                                               (or (not (code? x)) (eq? (code-type x) ERROR)))
                                             closed-rules)
                                     closed-rules
-                                    (verify-grammar closed-rules)))))))])))
+                                    (check-grammar closed-rules)))))))])))
 
          ;; (capture px)
          ;; (capture fn px)
