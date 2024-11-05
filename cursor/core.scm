@@ -418,7 +418,8 @@
                                                                 [else x]))
                                                         open-rules)])
                                 (if (exists (lambda (x)
-                                              (or (not (code? x)) (eq? (code-type x) ERROR)))
+                                              (or (not (code? x))
+                                                  (eq? (code-type x) ERROR)))
                                             closed-rules)
                                     closed-rules
                                     (check-grammar closed-rules)))))))])))
