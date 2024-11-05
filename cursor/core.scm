@@ -404,7 +404,7 @@
                                   ...)
                               (let* ([symbols      (quote (rule-x rule-y ...))]
                                      [offsets      (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
-                                     [total        (apply + (list size-x size-y ...))]
+                                     [total        (+ size-x size-y ...)]
                                      [open-rules   (append (list (encode GRAMMAR (+ total 2) 2))
                                                            (list (encode JUMP (+ total 1)))
                                                            rule-x
