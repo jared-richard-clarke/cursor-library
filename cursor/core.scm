@@ -198,6 +198,7 @@
                                            [else xs])))])
                (check-rules))))
 
+
          ;; === Terminals ===
 
          ;; empty -> ε
@@ -395,27 +396,32 @@
                [(grammar [rule-x body-x] [rule-y body-y] ...)
                 (with-syntax ([(size-x size-y ...)
                                (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let ([rule-x  (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
-                                [rule-y  (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
+                  (syntax (let ([rule-x (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                [rule-y (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                 ...)
-                            (let* ([size-x  (length rule-x)]
-                                   [size-y  (length rule-y)]
-                                   ...
-                                   [symbols (quote (rule-x rule-y ...))]
-                                   [offsets (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
-                                   [total   (apply + (list size-x size-y ...))]
-                                   [rules   (append (list (encode GRAMMAR (+ total 2) 2))
-                                                    (list (encode JUMP (+ total 1)))
-                                                    rule-x
-                                                    rule-y ...)])
-                              (map (lambda (x)
-                                     (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
-                                            (let ([offset (assq (code-op-x x) offsets)])
-                                              (if offset
-                                                  (encode CALL (car offset) (cdr offset))
-                                                  (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
-                                           [else x]))
-                                   rules))))]))))
+                            (let ([size-x (length rule-x)]
+                                  [size-y (length rule-y)]
+                                  ...)
+                              (let* ([symbols      (quote (rule-x rule-y ...))]
+                                     [offsets      (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
+                                     [total        (apply + (list size-x size-y ...))]
+                                     [open-rules   (append (list (encode GRAMMAR (+ total 2) 2))
+                                                           (list (encode JUMP (+ total 1)))
+                                                           rule-x
+                                                           rule-y ...)]
+                                     [closed-rules (map (lambda (x)
+                                                          (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
+                                                                 (let ([offset (assq (code-op-x x) offsets)])
+                                                                   (if offset
+                                                                       (encode CALL (car offset) (cdr offset))
+                                                                       (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
+                                                                [else x]))
+                                                        open-rules)])
+                                (if (exists (lambda (x)
+                                              (or (not (code? x)) (eq? (code-type x) ERROR)))
+                                            closed-rules)
+                                    closed-rules
+                                    (verify-grammar closed-rules)))))))])))
 
          ;; (capture px)
          ;; (capture fn px)
