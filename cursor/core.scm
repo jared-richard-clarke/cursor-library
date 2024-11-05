@@ -93,9 +93,8 @@
          (define check-code
            (lambda (x)
              (cond [(code? x) (list x)]
-                   [(not (pair? x))
-                    (list (encode ERROR x ERROR-MALFORMED-CODE))]
-                   [(and (pair? x) (not (code? (car x))))
+                   [(or (not (pair? x))
+                        (and (pair? x) (not (code? (car x)))))
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
 
