@@ -383,11 +383,6 @@
                       (check-code px)
                       (list (encode CAPTURE-STOP)))]))
 
-         ;; (audit xs)
-         ;;   where xs = pattern instructions
-         ;;
-         ;; Traverses instruction list, looking for invalid patterns.
-
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
          (define text
