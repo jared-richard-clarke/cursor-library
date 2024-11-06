@@ -201,26 +201,16 @@
 
          ;; === Terminals ===
 
-         ;; empty -> ε
-         ;;
-         ;; Always succeeds and consumes no input.
+         ;; empty = ε
          (define empty (list (encode EMPTY)))
 
          ;; fail
-         ;;
-         ;; Force failure.
          (define fail (list (encode FAIL)))
 
-         ;; any -> .
-         ;;
-         ;; Match and consume any character if there
-         ;; is input to be consumed.
+         ;; any = .
          (define any (list (encode ANY)))
 
-         ;; (char x)
-         ;;   where x = char
-         ;;
-         ;; Match and consume the given character.
+         ;; (char #\a) = "a"
          (define char
            (lambda (x)
              (if (char? x)
@@ -229,11 +219,9 @@
 
          ;; === Concatenation ===
 
-         ;; (sequence px py ...)
-         ;;
-         ;; (sequence px py) -> px • py
-         ;; (sequence px)    -> px
-         ;; (sequence)       -> ε
+         ;; (sequence px py ...) = px • py • ...
+         ;; (sequence px)        = px
+         ;; (sequence)           = ε
          (define sequence
            (case-lambda
             [()  empty]
@@ -260,33 +248,23 @@
                    (cons (check-length (car xs)) (check-code (car xs)))
                    (or-else (car xs) (fold-choices (cdr xs)))))))
 
-         ;; (choice px py ...)
-         ;;
-         ;; (choice px py) -> px / py
-         ;; (choice px)    -> px
-         ;; (choice)       -> fail
+         ;; (choice px py ...) = px / py / ...
+         ;; (choice px)        = px
+         ;; (choice)           = fail
          (define choice
            (case-lambda
             [()  fail]
             [(x) (check-code x)]
             [xs  (cdr (fold-choices xs))]))
 
-         ;; (maybe px)
-         ;;
-         ;; (maybe px) -> px?
-         ;; (maybe px) -> px / ε
+         ;; (maybe px) = px? = px / ε
          (define maybe
            (lambda (px)
              (choice px empty)))
 
          ;; === Repetition ===
 
-         ;; (repeat px)
-         ;;
-         ;; (repeat px) -> px*
-         ;;
-         ;; Side Note: Repetition on a pattern that succeeds
-         ;; but consumes no input creates an infinite loop.
+         ;; (repeat px) = px*
          (define repeat
            (lambda (px)
              (let ([pattern (check-code px)])
@@ -298,22 +276,15 @@
                      [else
                       (list (encode ERROR REPEAT ERROR-NULLABLE))]))))
 
-         ;; (repeat+1 px)
-         ;;
-         ;; (repeat+1 px) -> px+
-         ;; (repeat+1 px) -> px • px*
+         ;; (repeat+1 px) = px+
+         ;; (repeat+1 px) = px • px*
          (define repeat+1
            (lambda (px)
              (append (check-code px) (repeat px))))
 
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
-         ;; (is? px)
-         ;;
-         ;; (is? px) -> &px
-         ;;
-         ;; Look ahead by pattern. Succeeds if pattern succeeds.
-         ;; Fails if pattern fails. Consumes no input.
+         ;; (is? px) = &px
          (define is?
            (lambda (px)
              (let ([offset-x (check-length px)]
@@ -323,12 +294,7 @@
                        (list (encode BACK-COMMIT offset-y))
                        fail))))
 
-         ;; (is-not? px)
-         ;;
-         ;; (is-not? px) -> !px
-         ;;
-         ;; Look ahead by pattern. Fails if pattern succeeds.
-         ;; Succeeds if pattern fails. Consumes no input.
+         ;; (is-not? px) = !px
          (define is-not?
            (lambda (px)
              (let ([offset (check-length px)])
@@ -338,13 +304,8 @@
 
          ;; === Sets: Character Classes ===
 
-         ;; (one-of xs)
-         ;;   where xs = string
-         ;;
-         ;; (one-of xs) -> [xy...]
-         ;; (one-of "") -> fail
-         ;;
-         ;; Match character in a set of characters. Constructs set from given string.
+         ;; (one-of "abc") = [abc]
+         ;; (one-of "")    = ∅
          (define one-of
            (lambda (xs)
              (cond [(string? xs)
@@ -353,13 +314,9 @@
                         (list (encode ONE-OF (make-charset xs))))]
                    [else (list (encode ERROR ONE-OF ERROR-TYPE-STRING))])))
 
-         ;; (none-of xs)
-         ;;   where xs = string
-         ;;
-         ;; (none-of xs) -> [^xy...]
-         ;; (none-of "") -> any
-         ;;
-         ;; Match character not in a set of characters. Constructs set from given string.
+         ;; (none-of "abc") = [^abc]
+         ;; (none-of "")    = U
+         ;;   where U = the universal set
          (define none-of
            (lambda (xs)
              (cond [(string? xs)
@@ -372,8 +329,6 @@
 
          ;; (call x)
          ;;   where x = symbol
-         ;;
-         ;; Calls rule within a closed grammar.
          (define-syntax call
            (syntax-rules ()
              [(_ x)
@@ -382,14 +337,7 @@
                     (list (encode OPEN-CALL id))
                     (list (encode ERROR OPEN-CALL ERROR-TYPE-SYMBOL))))]))
 
-         ;; (grammar [rule pattern]
-         ;;          [rule pattern] ...)
-         ;;
-         ;; (grammar [rule pattern]) -> rule <- pattern
-         ;;
-         ;; Allows recursive patterns for grammar construction.
-         ;; A sequence of one or more rules. The first rule is
-         ;; the start state.
+         ;; (grammar [rule instruction-list] ...) = rule <- instruction-list ...
          (define-syntax grammar
            (lambda (stx)
              (syntax-case stx ()
@@ -424,39 +372,24 @@
                                     closed-rules
                                     (check-grammar closed-rules)))))))])))
 
-         ;; (capture px)
          ;; (capture fn px)
          ;;   where fn = function
-         ;;         px = pattern
-         ;;
-         ;; Pattern returns list of character matches —
-         ;; optionally transformed by an arbitrary function.
-         ;; Ignores "fn" arguments that are not functions.
+         ;;         px = instruction-list
          (define capture
            (case-lambda
              [(px) (capture '() px)]
              [(fn px)
-              (cond [(procedure? fn)
-                     (append (list (encode CAPTURE-START fn))
-                             (check-code px)
-                             (list (encode CAPTURE-STOP)))]
-                    [else
-                     (append (list (encode CAPTURE-START))
-                             (check-code px)
-                             (list (encode CAPTURE-STOP)))])]))
+              (append (list (encode CAPTURE-START (if (procedure? fn) fn '())))
+                      (check-code px)
+                      (list (encode CAPTURE-STOP)))]))
 
          ;; (audit xs)
          ;;   where xs = pattern instructions
          ;;
          ;; Traverses instruction list, looking for invalid patterns.
 
-         ;; (text xs)
-         ;;
-         ;; (text xs) -> x • y ...
-         ;;
-         ;; Transforms a string literal into a sequence
-         ;; of character instructions. Returns the empty
-         ;; instruction for an empty string.
+         ;; (text "abc") = a • b • c
+         ;; (text "")    = ε
          (define text
            (lambda (xs)
              (cond [(string? xs)
