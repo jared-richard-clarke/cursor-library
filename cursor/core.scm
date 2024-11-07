@@ -274,7 +274,7 @@
                                 pattern
                                 (list (encode PARTIAL-COMMIT (- offset)))))]
                      [else
-                      (list (encode ERROR REPEAT ERROR-NULLABLE))]))))
+                      (list (encode ERROR 'repeat ERROR-NULLABLE))]))))
 
          ;; (repeat+1 px) = px+
          ;; (repeat+1 px) = px • px*
@@ -306,13 +306,14 @@
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
+         ;;   where ∅ = the empty set
          (define one-of
            (lambda (xs)
              (cond [(string? xs)
                     (if (string=? xs "")
                         fail
                         (list (encode ONE-OF (make-charset xs))))]
-                   [else (list (encode ERROR ONE-OF ERROR-TYPE-STRING))])))
+                   [else (list (encode ERROR 'one-of ERROR-TYPE-STRING))])))
 
          ;; (none-of "abc") = [^abc]
          ;; (none-of "")    = U
@@ -323,7 +324,7 @@
                     (if (string=? xs "")
                         any
                         (list (encode NONE-OF (make-charset xs))))]
-                   [else (list (encode ERROR NONE-OF ERROR-TYPE-STRING))])))
+                   [else (list (encode ERROR 'none-of ERROR-TYPE-STRING))])))
 
          ;; === Grammar ===
 
@@ -411,10 +412,12 @@
                                             [b-type (code-type b)]
                                             [b-x    (code-op-x b)]
                                             [b-y    (code-op-y b)])
+                                            ;; Charset comparison.
                                         (or (and (eq? a-type b-type)
                                                  (charset? a-x)
                                                  (charset? b-x)
                                                  (charset-equal? a-x b-x))
+                                            ;; Default comparison.
                                             (equal? (list a-type a-x a-y)
                                                     (list b-type b-x b-y))))))]
                   [instructions-equal? (lambda (xs ys)
@@ -436,6 +439,16 @@
                            (char #\⌘)
                            (list u))
 
+              (test-assert "symbol, not character"
+                           instructions-equal?
+                           (char 'a)
+                           (list (encode ERROR 'a ERROR-TYPE-CHARACTER)))
+
+              (test-assert "string, not character"
+                           instructions-equal?
+                           (char "a")
+                           (list (encode ERROR "a" ERROR-TYPE-CHARACTER)))
+
               ;; === Concatenation ===
               ;; Π(g, i, p₁p₂) ≡ Π(g, i, p₁) Π(g, i + |Π(g, x, p₁)|, p₂)
               (test-assert "text sequence abc"
@@ -448,6 +461,16 @@
                            (text "⌘b⌘")
                            (list u b u))
 
+              (test-assert "text singular"
+                           instructions-equal?
+                           (text "a")
+                           (char #\a))
+
+              (test-assert "text empty"
+                           instructions-equal?
+                           (text "")
+                           empty)
+
               (test-assert "sequence abc"
                            instructions-equal?
                            (sequence (char #\a)
@@ -455,14 +478,17 @@
                                      (char #\c))
                            (list a b c))
 
-              (test-assert "text singular"
+              (test-assert "sequence nested"
                            instructions-equal?
-                           (text "a")
-                           (char #\a))
+                           (sequence (sequence (char #\a)
+                                               (char #\b))
+                                     (char #\c)
+                                     (text "ba"))
+                           (list a b c b a))
 
-              (test-assert "empty string"
+              (test-assert "sequence identity"
                            instructions-equal?
-                           (text "")
+                           (sequence)
                            empty)
 
               ;; === Ordered Choice ===
@@ -479,7 +505,7 @@
                                  (encode COMMIT 2)
                                  b))
 
-              (test-assert "right associativity"
+              (test-assert "choice (a / (b / c))"
                            instructions-equal?
                            (choice (char #\a)
                                    (char #\b)
@@ -487,6 +513,11 @@
                            (choice (char #\a)
                                    (choice (char #\b)
                                            (char #\c))))
+
+              (test-assert "choice identity"
+                           instructions-equal?
+                           (choice)
+                           fail)
 
               ;; === Repetition ===
               ;; Π(g, i, p*) ≡ Choice |Π(g, x, p)| + 2
@@ -506,6 +537,21 @@
                                  (encode CHOICE 3 REPEAT)
                                  a
                                  (encode PARTIAL-COMMIT -1)))
+
+              (test-assert "repeat, empty nullable"
+                           instructions-equal?
+                           (repeat (text ""))
+                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
+
+              (test-assert "repeat, predicate nullable"
+                           instructions-equal?
+                           (repeat (is? (char #\a)))
+                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
+
+              (test-assert "repeat, nested nullable"
+                           instructions-equal?
+                           (repeat (repeat (char #\a)))
+                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
 
               ;; === Not Predicate ===
               ;; Π(g, i, !p) ≡ Choice |Π(g, x, p)| + 2
@@ -529,6 +575,47 @@
                            (list (encode CHOICE 3 IS)
                                  a
                                  (encode BACK-COMMIT 2)
-                                 (encode FAIL))))))
+                                 (encode FAIL)))
+              ;; === Sets ===
+              (test-assert "character set [abc]"
+                           instructions-equal?
+                           (one-of "abc")
+                           (list (encode ONE-OF (make-charset "abbbaac"))))
 
+              (test-assert "character set [^abc]"
+                           instructions-equal?
+                           (none-of "abc")
+                           (list (encode NONE-OF (make-charset "cba"))))
+
+              (test-assert "empty set"
+                           instructions-equal?
+                           (one-of "")
+                           fail)
+
+              (test-assert "universal set"
+                           instructions-equal?
+                           (none-of "")
+                           any)
+
+              ;; === Grammars ===
+              (test-assert "grammar, baseline"
+                           instructions-equal?
+                           (grammar [R1 (sequence (text "ab") (call R2))]
+                                    [R2 (text "c")])
+                           (list (encode GRAMMAR 10 2)
+                                 (encode JUMP 9)
+                                 (encode RULE 'R1)
+                                 a
+                                 b
+                                 (encode CALL 'R2 7)
+                                 (encode RETURN)
+                                 (encode RULE 'R2)
+                                 c
+                                 (encode RETURN)))
+
+              (test-assert "grammar, direct left recursion"
+                           instructions-equal?
+                           (grammar [R (call R)])
+                           (list (encode ERROR 'R ERROR-LEFT-RECURSION))))))
+         
          )
