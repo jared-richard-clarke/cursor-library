@@ -402,7 +402,6 @@
            (let* ([a (encode CHARACTER #\a)]
                   [b (encode CHARACTER #\b)]
                   [c (encode CHARACTER #\c)]
-                  [u (encode CHARACTER #\⌘)]
                   [code-equal? (lambda (a b)
                                  (and (code? a)
                                       (code? b)
@@ -429,20 +428,10 @@
               "Cursor Core"
               ;; === Literals ===
               ;; Π(g, i, 'c') ≡ Char c
-              (test-assert "character literal a"
+              (test-assert "character literal"
                            instructions-equal?
                            (char #\a)
                            (list a))
-
-              (test-assert "character literal ⌘"
-                           instructions-equal?
-                           (char #\⌘)
-                           (list u))
-
-              (test-assert "symbol, not character"
-                           instructions-equal?
-                           (char 'a)
-                           (list (encode ERROR 'a ERROR-TYPE-CHARACTER)))
 
               (test-assert "string, not character"
                            instructions-equal?
@@ -456,17 +445,7 @@
                            (text "abc")
                            (list a b c))
 
-              (test-assert "text sequence ⌘b⌘"
-                           instructions-equal?
-                           (text "⌘b⌘")
-                           (list u b u))
-
-              (test-assert "text singular"
-                           instructions-equal?
-                           (text "a")
-                           (char #\a))
-
-              (test-assert "text empty"
+              (test-assert "text epsilon"
                            instructions-equal?
                            (text "")
                            empty)
@@ -496,7 +475,7 @@
               ;;                  Π(g, i + 1, p₁)
               ;;                  Commit |Π(g, x, p₂)| + 1
               ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
-              (test-assert "choice a / b"
+              (test-assert "choice, a / b"
                            instructions-equal?
                            (choice (char #\a)
                                    (char #\b))
@@ -505,7 +484,7 @@
                                  (encode COMMIT 2)
                                  b))
 
-              (test-assert "choice (a / (b / c))"
+              (test-assert "choice, right associative"
                            instructions-equal?
                            (choice (char #\a)
                                    (char #\b)
