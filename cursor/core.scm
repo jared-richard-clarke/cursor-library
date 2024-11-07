@@ -592,6 +592,7 @@
                                  c
                                  (encode RETURN)))
 
+              ;; Left Recursion: A → Bβ such that B ⇒ Aγ
               (test-assert "grammar, direct left recursion"
                            instructions-equal?
                            (grammar [R (call R)])
