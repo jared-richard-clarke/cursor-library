@@ -60,7 +60,7 @@
          (define ERROR-FUNCTION-ARITY "mismatched arity")
          (define ERROR-MALFORMED-CODE "malformed instruction")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "pattern within may cause infinite loop")
+         (define ERROR-NULLABLE       "expression within may cause infinite loop")
          (define ERROR-LEFT-RECURSION "rule may be left recursive")
 
          ;; === Data ===
@@ -338,7 +338,8 @@
                     (list (encode OPEN-CALL id))
                     (list (encode ERROR OPEN-CALL ERROR-TYPE-SYMBOL))))]))
 
-         ;; (grammar [rule instruction-list] ...) = rule <- instruction-list ...
+         ;; (grammar [id pattern] ...) = id <- pattern
+         ;;                              ...
          (define-syntax grammar
            (lambda (stx)
              (syntax-case stx ()
@@ -416,6 +417,13 @@
                                                  (charset? a-x)
                                                  (charset? b-x)
                                                  (charset-equal? a-x b-x))
+                                            ;; Capture comparison.
+                                            ;; Cannot meaningfully compare arbitrary functions.
+                                            ;; Check only for their presence within captures.
+                                            (and (eq? a-type CAPTURE-START)
+                                                 (eq? a-type b-type)
+                                                 (procedure? a-x)
+                                                 (procedure? b-x))
                                             ;; Default comparison.
                                             (equal? (list a-type a-x a-y)
                                                     (list b-type b-x b-y))))))]
@@ -522,12 +530,12 @@
                            (repeat (text ""))
                            (list (encode ERROR 'repeat ERROR-NULLABLE)))
 
-              (test-assert "repeat, predicate nullable"
+              (test-assert "repeat, predicate may be nullable"
                            instructions-equal?
                            (repeat (is? (char #\a)))
                            (list (encode ERROR 'repeat ERROR-NULLABLE)))
 
-              (test-assert "repeat, nested nullable"
+              (test-assert "repeat, nested repetitions may be nullable"
                            instructions-equal?
                            (repeat (repeat (char #\a)))
                            (list (encode ERROR 'repeat ERROR-NULLABLE)))
@@ -576,6 +584,28 @@
                            (none-of "")
                            any)
 
+              ;; === Captures ===
+              (test-assert "capture, baseline"
+                           instructions-equal?
+                           (capture (char #\a))
+                           (list (encode CAPTURE-START)
+                                 a
+                                 (encode CAPTURE-STOP)))
+
+              (test-assert "capture, true positive"
+                           instructions-equal?
+                           (capture identity (char #\a))
+                           (list (encode CAPTURE-START identity)
+                                 a
+                                 (encode CAPTURE-STOP)))
+
+              (test-assert "capture, false positive, + = identity"
+                           instructions-equal?
+                           (capture + (char #\a))
+                           (list (encode CAPTURE-START identity)
+                                 a
+                                 (encode CAPTURE-STOP)))
+
               ;; === Grammars ===
               (test-assert "grammar, baseline"
                            instructions-equal?
@@ -596,6 +626,13 @@
               (test-assert "grammar, direct left recursion"
                            instructions-equal?
                            (grammar [R (call R)])
-                           (list (encode ERROR 'R ERROR-LEFT-RECURSION))))))
+                           (list (encode ERROR 'R ERROR-LEFT-RECURSION)))
+
+              (test-assert "grammar, indirect left recursion"
+                           instructions-equal?
+                           (grammar [A (sequence (call B) (char #\x))]
+                                    [B (sequence (call C) (char #\y))]
+                                    [C (sequence (call A) (char #\z))])
+                           (list (encode ERROR 'A ERROR-LEFT-RECURSION))))))
          
          )
