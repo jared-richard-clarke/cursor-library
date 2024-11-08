@@ -1,5 +1,6 @@
 (library (cursor tools)
-         (export test-assert
+         (export identity
+                 test-assert
                  test-chunk
                  enum
                  zip-with
@@ -8,6 +9,8 @@
                  reduce-right
                  vector-fold)
          (import (rnrs))
+
+         (define identity (lambda (x) x))
 
          (define-syntax thunk
            (syntax-rules ()
