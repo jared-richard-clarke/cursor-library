@@ -18,6 +18,7 @@
                  text
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
+                 (cursor data)
                  (cursor tools)
                  (cursor collections charset))
 
