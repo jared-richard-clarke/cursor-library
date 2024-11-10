@@ -7,7 +7,8 @@
                  scan-left
                  scan
                  reduce-right
-                 vector-fold)
+                 vector-fold
+                 peek-map)
          (import (rnrs))
 
          (define identity (lambda (x) x))
@@ -81,5 +82,19 @@
                (if (>= index size)
                    accum
                    (loop (+ index 1) size (fn accum (vector-ref xs index)))))))
+
+         (define peek-map
+           (lambda (fn xs)
+             (let ([peek? (lambda (x)
+                            (and (pair? x) (pair? (cdr x))))])
+               (let recur ([fn fn]
+                           [xs xs]
+                           [peekable? (peek? xs)])
+                 (if (null? xs)
+                     xs
+                     (let ([x  (car xs)]
+                           [xs (cdr xs)])
+                       (cons (fn x xs peekable?)
+                             (recur fn xs (peek? xs)))))))))
 
          )
