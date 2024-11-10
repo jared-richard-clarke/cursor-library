@@ -12,8 +12,8 @@
                  is-not?
                  one-of
                  none-of
-                 grammar
                  call
+                 grammar
                  capture
                  text
                  (rename (unit-tests core:unit-tests)))
@@ -49,6 +49,13 @@
                         (and (pair? x) (not (code? (car x)))))
                     (list (encode ERROR x ERROR-MALFORMED-CODE))]
                    [else x])))
+
+         (define encoding-error?
+           (lambda (xs)
+             (exists (lambda (x)
+                       (or (not (code? x))
+                           (eq? (code-type x) ERROR)))
+                     xs)))
 
          (define nullable?
            (lambda (xs)
@@ -110,7 +117,8 @@
                                                               (begin (hashtable-set! rule-count op-x 1)
                                                                      (recur (+ index 1)))))])]
                                                 [(or (eq? type GRAMMAR)
-                                                     (eq? type CALL))
+                                                     (eq? type CALL)
+                                                     (eq? type JUMP))
                                                  (recur op-y)]
                                                 [(eq? type CHOICE)
                                                  (recur (+ index 1))
@@ -304,25 +312,32 @@
                             (let ([size-x (length rule-x)]
                                   [size-y (length rule-y)]
                                   ...)
-                              (let* ([symbols      (quote (rule-x rule-y ...))]
-                                     [offsets      (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
-                                     [total        (+ size-x size-y ...)]
-                                     [open-rules   (append (list (encode GRAMMAR (+ total 2) 2))
-                                                           (list (encode JUMP (+ total 1)))
-                                                           rule-x
-                                                           rule-y ...)]
-                                     [closed-rules (map (lambda (x)
-                                                          (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
-                                                                 (let ([offset (assq (code-op-x x) offsets)])
-                                                                   (if offset
-                                                                       (encode CALL (car offset) (cdr offset))
-                                                                       (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
-                                                                [else x]))
-                                                        open-rules)])
-                                (if (exists (lambda (x)
-                                              (or (not (code? x))
-                                                  (eq? (code-type x) ERROR)))
-                                            closed-rules)
+                              (let* ([symbols    (quote (rule-x rule-y ...))]
+                                     [offsets    (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
+                                     [total      (+ size-x size-y ...)]
+                                     ;; Combine rules into list of grammar instructions.
+                                     [open-rules (append (list (encode GRAMMAR (+ total 2) 2))
+                                                         (list (encode JUMP (+ total 1)))
+                                                         rule-x
+                                                         rule-y ...)]
+                                     ;; Close open calls, adding the appropriate offsets.
+                                     [closed-rules
+                                      (peek-map (lambda (x xs peekable?)
+                                                  (cond [(and (code? x) (eq? OPEN-CALL (code-type x)))
+                                                         (let ([offset (assq (code-op-x x) offsets)])
+                                                           (if offset
+                                                               (if (and peekable?
+                                                                        (let ([next (car xs)])
+                                                                          (and (code? next) (eq? RETURN (code-type next)))))
+                                                                   ;; tail call
+                                                                   (encode JUMP (cdr offset) (car offset))
+                                                                   ;; standard call
+                                                                   (encode CALL (car offset) (cdr offset)))
+                                                               (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
+                                                        [else x]))
+                                                open-rules)])
+                                ;; If grammar otherwise free of errors, check for possible left recursion.
+                                (if (encoding-error? closed-rules)
                                     closed-rules
                                     (check-grammar closed-rules)))))))])))
 
@@ -568,7 +583,7 @@
                                  (encode RULE 'R1)
                                  a
                                  b
-                                 (encode CALL 'R2 7)
+                                 (encode JUMP 7 'R2)
                                  (encode RETURN)
                                  (encode RULE 'R2)
                                  c
