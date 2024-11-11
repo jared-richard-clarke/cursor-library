@@ -117,9 +117,9 @@
                                                               (begin (hashtable-set! rule-count op-x 1)
                                                                      (recur (+ index 1)))))])]
                                                 [(or (eq? type GRAMMAR)
-                                                     (eq? type CALL)
-                                                     (eq? type JUMP))
+                                                     (eq? type CALL))
                                                  (recur op-y)]
+                                                [(eq? type JUMP) (recur op-x)]
                                                 [(eq? type CHOICE)
                                                  (recur (+ index 1))
                                                  (unless error-flag
