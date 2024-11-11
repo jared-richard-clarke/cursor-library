@@ -330,7 +330,7 @@
                                                                         (let ([next (car xs)])
                                                                           (and (code? next) (eq? RETURN (code-type next)))))
                                                                    ;; tail call
-                                                                   (encode JUMP (car offset) (cdr offset))
+                                                                   (encode JUMP (cdr offset) (car offset))
                                                                    ;; standard call
                                                                    (encode CALL (car offset) (cdr offset)))
                                                                (encode ERROR (code-op-x x) ERROR-UNDEFINED-RULE)))]
@@ -583,7 +583,7 @@
                                  (encode RULE 'R1)
                                  a
                                  b
-                                 (encode JUMP 'R2 7)
+                                 (encode JUMP 7 'R2)
                                  (encode RETURN)
                                  (encode RULE 'R2)
                                  c
