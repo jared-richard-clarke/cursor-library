@@ -388,7 +388,7 @@
                                             ;; Cannot meaningfully compare arbitrary functions.
                                             ;; Check only for their presence within captures.
                                             (and (eq? a-type CAPTURE-START)
-                                                 (eq? a-type b-type)
+                                                 (eq? b-type CAPTURE-START)
                                                  (procedure? a-x)
                                                  (procedure? b-x))
                                             ;; Default comparison.
