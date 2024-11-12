@@ -6,8 +6,8 @@
                  zip-with
                  scan-left
                  scan
-                 reduce-right
                  vector-fold
+                 vector-for-all
                  peek-map)
          (import (rnrs))
 
@@ -65,23 +65,23 @@
            (lambda (fn xs)
              (scan-left fn (car xs) (cdr xs))))
 
-         (define reduce-right
-           (lambda (fn xs)
-             (fold-right (lambda (x accum)
-                           (if (null? accum)
-                               x
-                               (fn x accum)))
-                         '()
-                         xs)))
-
          (define vector-fold
            (lambda (fn xs)
-             (let loop ([index 1]
-                        [size  (vector-length xs)]
-                        [accum (vector-ref xs 0)])
-               (if (>= index size)
-                   accum
-                   (loop (+ index 1) size (fn accum (vector-ref xs index)))))))
+             (let ([size (vector-length xs)])
+               (let loop ([index 1]
+                          [accum (vector-ref xs 0)])
+                 (if (>= index size)
+                     accum
+                     (loop (+ index 1) (fn accum (vector-ref xs index))))))))
+
+         (define vector-for-all
+           (lambda (fn xs)
+             (let ([size (vector-length xs)])
+               (let loop ([index 0])
+                 (cond [(>= index size) #t]
+                       [(fn (vector-ref xs index))
+                        (loop (+ index 1))]
+                       [else #f])))))
 
          (define peek-map
            (lambda (fn xs)
