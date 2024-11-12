@@ -79,8 +79,10 @@
              (let ([tx (charset-table set-x)]
                    [ty (charset-table set-y)])
                (and (= (hashtable-size tx) (hashtable-size ty))
-                    (let ([keys (vector->list (hashtable-keys tx))])
-                      (for-all (lambda (key) (hashtable-contains? ty key)) keys))))))
+                    (let ([keys (hashtable-keys tx)])
+                      (vector-for-all (lambda (key)
+                                        (hashtable-contains? ty key))
+                                      keys))))))
 
          (define unit-tests
            (let ([a #\a]
