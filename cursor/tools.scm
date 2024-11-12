@@ -4,6 +4,7 @@
                  test-chunk
                  enum
                  zip-with
+                 zip
                  scan-left
                  scan
                  vector-fold
@@ -54,6 +55,10 @@
                  '()
                  (cons (fn (car xs) (car ys))
                        (zip-with fn (cdr xs) (cdr ys))))))
+
+         (define zip
+           (lambda (xs ys)
+             (zip-with cons xs ys)))
 
          (define scan-left
            (lambda (fn base xs)
