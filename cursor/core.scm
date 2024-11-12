@@ -313,7 +313,7 @@
                                   [size-y (length rule-y)]
                                   ...)
                               (let* ([symbols    (quote (rule-x rule-y ...))]
-                                     [offsets    (zip-with cons symbols (scan + (list 2 size-x size-y ...)))]
+                                     [offsets    (zip symbols (scan + (list 2 size-x size-y ...)))]
                                      [total      (+ size-x size-y ...)]
                                      ;; Combine rules into list of grammar instructions.
                                      [open-rules (append (list (encode GRAMMAR (+ total 2) 2))
