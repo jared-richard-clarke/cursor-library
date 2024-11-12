@@ -1,6 +1,8 @@
 (library (cursor collections charset)
          (export make-charset
                  charset?
+                 charset-union
+                 charset-difference
                  charset-has?
                  charset-equal?
                  (rename (unit-tests charset:unit-tests)))
@@ -37,6 +39,7 @@
              (let ([table (charset-table self)])
                (hashtable-size table))))
 
+         ;; A ∪ B = { x ∣ x ∊ A or x ∊ B }
          (define charset-union
            (lambda (set-x set-y)
              (let* ([set-z (make-charset)]
@@ -50,6 +53,20 @@
                                   (hashtable-set! tz y #t))
                                 xs
                                 ys)
+               set-z)))
+
+         ;; A ∖ B = { x | x ∊ A and x ∉ B }
+         (define charset-difference
+           (lambda (set-x set-y)
+             (let* ([set-z (make-charset)]
+                    [tx    (charset-table set-x)]
+                    [ty    (charset-table set-y)]
+                    [tz    (charset-table set-z)]
+                    [xs    (hashtable-keys tx)])
+               (vector-for-each (lambda (x)
+                                  (unless (hashtable-contains? ty x)
+                                    (hashtable-set! tz x #t)))
+                                xs)
                set-z)))
 
          (define charset-has?
