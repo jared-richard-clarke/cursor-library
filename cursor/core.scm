@@ -199,11 +199,17 @@
                               (let ([offset-x (length px)]
                                     [offset-y (car py)]
                                     [py       (cdr py)])
-                                (cons (+ offset-x offset-y 2)
-                                      (append (list (encode CHOICE (+ offset-x 2)))
-                                              px
-                                              (list (encode COMMIT (+ offset-y 1)))
-                                              py)))))])
+                                (cond [(and (= offset-x 1)
+                                            (eq? CHARSET (code-op-y (car px)))
+                                            (eq? CHARSET (code-op-y (car py))))
+                                       (cons offset-y
+                                             (append (merge-sets (car px) (car py))
+                                                     (cdr py)))]
+                                      [else (cons (+ offset-x offset-y 2)
+                                                  (append (list (encode CHOICE (+ offset-x 2)))
+                                                          px
+                                                          (list (encode COMMIT (+ offset-y 1)))
+                                                          py))]))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -265,15 +271,28 @@
 
          ;; === Sets: Character Classes ===
          ;;
-         ;; "none-of" is complement to the universal set. The implication is that
-         ;; "one-of" is part of the universal set if paired with "none-of".
-         ;;  --------------------------------------------------------------------
-         ;; |         | one-of                     | none-of                     |
-         ;; |---------+----------------------------+-----------------------------|
-         ;; | one-of  | one-of ∪ one-of  = one-of  | none-of                     |
-         ;; |---------+----------------------------+-----------------------------|
-         ;; | none-of | none-of                    | none-of ∪ none-of = none-of |
-         ;;  --------------------------------------------------------------------
+         ;;    -------------------------------------------> y
+         ;;    ---------------------------------------------
+         ;; | |         | one-of         | none-of          |
+         ;; | |---------+----------------+------------------|
+         ;; | | one-of  | x ∪ y = one-of | y \ x = none-of  |
+         ;; | |---------+----------------+------------------|
+         ;; V | none-of | x = none-of    | x ∪ y = none-of  |
+         ;; x  ---------------------------------------------
+
+         (define merge-sets
+           (lambda (cx cy)
+             (let ([type-x (code-type cx)]
+                   [set-x  (code-op-x cx)]
+                   [type-y (code-type cy)]
+                   [set-y  (code-op-x cy)])
+               (list (if (eq? type-x ONE-OF)
+                         (if (eq? type-y ONE-OF)
+                             (encode ONE-OF  (charset-union set-x set-y))
+                             (encode NONE-OF (charset-difference set-y set-x)))
+                         (if (eq? type-y ONE-OF)
+                             cx
+                             (encode NONE-OF (charset-union set-x set-y))))))))
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
@@ -283,7 +302,7 @@
              (cond [(string? xs)
                     (if (string=? xs "")
                         fail
-                        (list (encode ONE-OF (make-charset xs))))]
+                        (list (encode ONE-OF (make-charset xs) CHARSET)))]
                    [else (list (encode ERROR 'one-of ERROR-TYPE-STRING))])))
 
          ;; (none-of "abc") = [^abc]
@@ -294,7 +313,7 @@
              (cond [(string? xs)
                     (if (string=? xs "")
                         any
-                        (list (encode NONE-OF (make-charset xs))))]
+                        (list (encode NONE-OF (make-charset xs) CHARSET)))]
                    [else (list (encode ERROR 'none-of ERROR-TYPE-STRING))])))
 
          ;; === Grammar ===
@@ -545,12 +564,12 @@
               (test-assert "character set [abc]"
                            instructions-equal?
                            (one-of "abc")
-                           (list (encode ONE-OF (make-charset "abbbaac"))))
+                           (list (encode ONE-OF (make-charset "abbbaac") CHARSET)))
 
               (test-assert "character set [^abc]"
                            instructions-equal?
                            (none-of "abc")
-                           (list (encode NONE-OF (make-charset "cba"))))
+                           (list (encode NONE-OF (make-charset "cba") CHARSET)))
 
               (test-assert "empty set"
                            instructions-equal?
