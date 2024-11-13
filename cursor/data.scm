@@ -24,6 +24,7 @@
                  IS-NOT
                  ONE-OF
                  NONE-OF
+                 CHARSET
                  MATCH
          ;; constants
                  MAX-RULES
@@ -60,6 +61,7 @@
                IS-NOT
                ONE-OF
                NONE-OF
+               CHARSET
                MATCH)
 
          (define MAX-RULES 1000)
