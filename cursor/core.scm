@@ -195,14 +195,15 @@
 
          (define fold-choices
            (let ([or-else (lambda (px py)
-                            (let ([offset-x (check-length px)]
-                                  [offset-y (car py)]
-                                  [py       (cdr py)])
-                              (cons (+ offset-x offset-y 2)
-                                    (append (list (encode CHOICE (+ offset-x 2)))
-                                            (check-code px)
-                                            (list (encode COMMIT (+ offset-y 1)))
-                                            py))))])
+                            (let ([px (check-code px)])
+                              (let ([offset-x (length px)]
+                                    [offset-y (car py)]
+                                    [py       (cdr py)])
+                                (cons (+ offset-x offset-y 2)
+                                      (append (list (encode CHOICE (+ offset-x 2)))
+                                              px
+                                              (list (encode COMMIT (+ offset-y 1)))
+                                              py)))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -263,6 +264,16 @@
                        (list (encode FAIL-TWICE))))))
 
          ;; === Sets: Character Classes ===
+         ;;
+         ;; "none-of" is complement to the universal set. The implication is that
+         ;; "one-of" is part of the universal set if paired with "none-of".
+         ;;  --------------------------------------------------------------------
+         ;; |         | one-of                     | none-of                     |
+         ;; |---------+----------------------------+-----------------------------|
+         ;; | one-of  | one-of ∪ one-of  = one-of  | none-of                     |
+         ;; |---------+----------------------------+-----------------------------|
+         ;; | none-of | none-of                    | none-of ∪ none-of = none-of |
+         ;;  --------------------------------------------------------------------
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
