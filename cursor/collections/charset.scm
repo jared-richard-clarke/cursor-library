@@ -39,7 +39,7 @@
              (let ([table (charset-table self)])
                (hashtable-size table))))
 
-         ;; A ∪ B = { x ∣ x ∊ A or x ∊ B }
+         ;; A ∪ B = { x ∣ x ∈ A or x ∈ B }
          (define charset-union
            (lambda (set-x set-y)
              (let* ([set-z (make-charset)]
@@ -55,7 +55,7 @@
                                 ys)
                set-z)))
 
-         ;; A ∖ B = { x | x ∈ A and x ∉ B }
+         ;; A \ B = { x | x ∈ A and x ∉ B }
          (define charset-difference
            (lambda (set-x set-y)
              (let* ([set-z (make-charset)]
