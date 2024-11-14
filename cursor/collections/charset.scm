@@ -5,7 +5,7 @@
                  charset-difference
                  charset-has?
                  charset-equal?
-                 charset-print
+                 charset->string
                  (rename (unit-tests charset:unit-tests)))
          (import (rnrs)
                  (cursor tools))
@@ -78,24 +78,24 @@
                                         (hashtable-contains? ty key))
                                       keys))))))
 
-         (define charset-print
+         (define charset->string
            (lambda (self)
              (let ([elements (hashtable-keys (charset-table self))]
                    [header   "charset"]
-                   [open     "{"]
-                   [close    "}"]
-                   [space    " "])
+                   [open     #\{]
+                   [close    #\}]
+                   [space    #\space])
                (let-values ([(port flush) (open-string-output-port)])
                  (begin (put-string port header)
-                        (put-string port open)
-                        (put-string port space)
+                        (put-char port open)
+                        (put-char port space)
                         (vector-for-each (lambda (element)
                                            (if (char-whitespace? element)
                                                (put-datum port element)
                                                (put-char port element))
-                                           (put-string port space))
+                                           (put-char port space))
                                          elements)
-                        (put-string port close)
+                        (put-char port close)
                         (flush))))))
 
          (define unit-tests
