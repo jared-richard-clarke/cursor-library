@@ -199,17 +199,11 @@
                               (let ([offset-x (length px)]
                                     [offset-y (car py)]
                                     [py       (cdr py)])
-                                (cond [(and (= offset-x 1)
-                                            (eq? CHARSET (code-op-y (car px)))
-                                            (eq? CHARSET (code-op-y (car py))))
-                                       (cons offset-y
-                                             (append (merge-sets (car px) (car py))
-                                                     (cdr py)))]
-                                      [else (cons (+ offset-x offset-y 2)
-                                                  (append (list (encode CHOICE (+ offset-x 2)))
-                                                          px
-                                                          (list (encode COMMIT (+ offset-y 1)))
-                                                          py))]))))])
+                                (cons (+ offset-x offset-y 2)
+                                      (append (list (encode CHOICE (+ offset-x 2)))
+                                              px
+                                              (list (encode COMMIT (+ offset-y 1)))
+                                              py)))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -268,31 +262,6 @@
                (append (list (encode CHOICE (+ offset 2) IS-NOT))
                        (check-code px)
                        (list (encode FAIL-TWICE))))))
-
-         ;; === Sets: Character Classes ===
-         ;;
-         ;;    -------------------------------------------> y
-         ;;    ---------------------------------------------
-         ;; | |         | one-of         | none-of          |
-         ;; | |---------+----------------+------------------|
-         ;; | | one-of  | x ∪ y = one-of | y \ x = none-of  |
-         ;; | |---------+----------------+------------------|
-         ;; V | none-of | x = none-of    | x ∪ y = none-of  |
-         ;; x  ---------------------------------------------
-
-         (define merge-sets
-           (lambda (cx cy)
-             (let ([type-x (code-type cx)]
-                   [set-x  (code-op-x cx)]
-                   [type-y (code-type cy)]
-                   [set-y  (code-op-x cy)])
-               (list (if (eq? type-x ONE-OF)
-                         (if (eq? type-y ONE-OF)
-                             (encode ONE-OF  (charset-union set-x set-y))
-                             (encode NONE-OF (charset-difference set-y set-x)))
-                         (if (eq? type-y ONE-OF)
-                             cx
-                             (encode NONE-OF (charset-union set-x set-y))))))))
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
