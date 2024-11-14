@@ -108,7 +108,7 @@
                                           (cond [(eq? type RULE)
                                                  (set! step-count (+ step-count 1))
                                                  (cond [error-flag]
-                                                       [(>= step-count MAX-RULES) (set! error-flag #t)]
+                                                       [(> step-count MAX-RULES) (set! error-flag #t)]
                                                        [else
                                                         (let ([total (hashtable-ref rule-count op-x #f)])
                                                           (if total
