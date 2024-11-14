@@ -80,11 +80,11 @@
 
          (define charset-print
            (lambda (self)
-             (let ([elements  (hashtable-keys (charset-table self))]
-                   [header    "charset"]
-                   [open      "{"]
-                   [close     "}"]
-                   [space     " "])
+             (let ([elements (hashtable-keys (charset-table self))]
+                   [header   "charset"]
+                   [open     "{"]
+                   [close    "}"]
+                   [space    " "])
                (let-values ([(port flush) (open-string-output-port)])
                  (begin (put-string port header)
                         (put-string port open)
