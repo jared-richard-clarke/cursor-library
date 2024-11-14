@@ -5,13 +5,10 @@
                  charset-difference
                  charset-has?
                  charset-equal?
+                 charset-print
                  (rename (unit-tests charset:unit-tests)))
          (import (rnrs)
                  (cursor tools))
-
-         ;; === constants ===
-         (define TYPE 'charset)
-         (define ERROR-TYPE-STRING "argument is not a string")
 
          ;; === record-type: charset ===
          (define-record-type charset
@@ -25,7 +22,7 @@
                 (new (make-eqv-hashtable))]
                [(xs)
                 (unless (string? xs)
-                  (assertion-violation TYPE ERROR-TYPE-STRING xs))
+                  (assertion-violation 'charset "argument is not a string" xs))
                 (let ([characters (string->list xs)]
                       [hashtable  (make-eqv-hashtable)])
                   (new (fold-left (lambda (accum x)
@@ -48,11 +45,8 @@
                     [tz    (charset-table set-z)]
                     [xs    (hashtable-keys tx)]
                     [ys    (hashtable-keys ty)])
-               (vector-for-each (lambda (x y)
-                                  (hashtable-set! tz x #t)
-                                  (hashtable-set! tz y #t))
-                                xs
-                                ys)
+               (vector-for-each (lambda (x) (hashtable-set! tz x #t)) xs)
+               (vector-for-each (lambda (y) (hashtable-set! tz y #t)) ys)
                set-z)))
 
          ;; A \ B = { x | x ∈ A and x ∉ B }
@@ -84,6 +78,26 @@
                                         (hashtable-contains? ty key))
                                       keys))))))
 
+         (define charset-print
+           (lambda (self)
+             (let ([elements  (hashtable-keys (charset-table self))]
+                   [header    "charset"]
+                   [open      "{"]
+                   [close     "}"]
+                   [space     " "])
+               (let-values ([(port flush) (open-string-output-port)])
+                 (begin (put-string port header)
+                        (put-string port open)
+                        (put-string port space)
+                        (vector-for-each (lambda (element)
+                                           (if (char-whitespace? element)
+                                               (put-datum port element)
+                                               (put-char port element))
+                                           (put-string port space))
+                                         elements)
+                        (put-string port close)
+                        (flush))))))
+
          (define unit-tests
            (let ([a #\a]
                  [b #\b]
@@ -108,6 +122,18 @@
               (test-assert "different inputs, same set"
                            charset-equal?
                            set-abcd
-                           (make-charset "aabbccddccbbaa")))))
+                           (make-charset "aabbccddccbbaa"))
+
+              (test-assert "set operation, union"
+                           charset-equal?
+                           set-abcd
+                           (charset-union (make-charset "abc")
+                                          (make-charset "adc")))
+
+              (test-assert "set operation, difference"
+                           charset-equal?
+                           set-abcd
+                           (charset-difference (make-charset "abcdefg")
+                                               (make-charset "efghijk"))))))
 
          )
