@@ -368,8 +368,8 @@
            (lambda (xs)
              (unless (and (pair? xs) (code? (car xs)))
                (raise (make-compiler-error 'compiler-input ERROR-TYPE-INSTRUCTIONS)))
-             (let ([parser (lambda (xs)
-                             (lambda () (display xs)))])
+             (let ([build-parser (lambda (xs)
+                                   (lambda () (display xs)))])
                (let* ([code-size   (length xs)]
                       [match-code  (encode MATCH)]
                       [build-error (lambda (xs)
@@ -413,7 +413,7 @@
                                                   (eq? ERROR (code-type (car codes))))
                                               (build-error codes)]
                                              [else (loop (cdr codes))])))])
-                 (parser (transform xs))))))
+                 (build-parser (transform xs))))))
 
          ;; === Unit Tests ===
 
