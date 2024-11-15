@@ -28,12 +28,18 @@
                  MATCH
          ;; constants
                  MAX-RULES
+                 MAX-ERRORS
          ;; record-type: code
                  encode     ;; constructor
                  code?      ;; predicate
                  code-type  ;; field
                  code-op-x  ;; field
                  code-op-y) ;; field
+         ;; record-type: compiler-error -> condition
+                 make-compiler-error    ;; constructor
+                 compiler-error?        ;; predicate
+                 compiler-error-who     ;; field
+                 compiler-error-message ;; field
          (import (rnrs)
                  (cursor tools))
 
@@ -64,7 +70,8 @@
                CHARSET
                MATCH)
 
-         (define MAX-RULES 1000)
+         (define MAX-RULES  1000)
+         (define MAX-ERRORS 10)
 
          ;; Instruction Set: (list code code ...)
          ;;   where code = (encode type op-x op-y)
@@ -74,7 +81,6 @@
          ;; An instruction containing a type identifier followed by two operands.
          (define-record-type (code encode code?)
            (fields type op-x op-y)
-           (nongenerative)
            (sealed #t)
            (protocol
             (lambda (new)
@@ -82,5 +88,13 @@
                 [(type)           (new type '() '())]
                 [(type op-x)      (new type op-x '())]
                 [(type op-x op-y) (new type op-x op-y)]))))
+         
+         ;; record-type: compiler-error -> condition
+         ;;
+         ;; Reports errors within parsing expression grammars.
+         (define-record-type (&compiler-error make-compiler-error compiler-error?)
+           (parent &condition)
+           (fields who message)
+           (sealed #t))
 
          )
