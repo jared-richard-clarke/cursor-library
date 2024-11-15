@@ -24,7 +24,6 @@
                  IS-NOT
                  ONE-OF
                  NONE-OF
-                 CHARSET
                  MATCH
          ;; constants
                  MAX-RULES
@@ -67,7 +66,6 @@
                IS-NOT
                ONE-OF
                NONE-OF
-               CHARSET
                MATCH)
 
          (define MAX-RULES  1000)
@@ -77,7 +75,6 @@
          ;;   where code = (encode type op-x op-y)
 
          ;; record-type: code
-         ;;
          ;; An instruction containing a type identifier followed by two operands.
          (define-record-type (code encode code?)
            (fields type op-x op-y)
@@ -90,7 +87,6 @@
                 [(type op-x op-y) (new type op-x op-y)]))))
          
          ;; record-type: compiler-error -> condition
-         ;;
          ;; Reports errors within parsing expression grammars.
          (define-record-type (&compiler-error make-compiler-error compiler-error?)
            (parent &condition)
