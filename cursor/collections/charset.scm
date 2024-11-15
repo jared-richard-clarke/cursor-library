@@ -13,7 +13,6 @@
          ;; === record-type: charset ===
          (define-record-type charset
            (fields table)
-           (nongenerative)
            (sealed #t)
            (protocol
             (lambda (new)
