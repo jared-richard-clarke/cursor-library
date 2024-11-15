@@ -24,15 +24,16 @@
 
          ;; === Error Messages ===
 
-         (define ERROR-TYPE-CHARACTER "not a character")
-         (define ERROR-TYPE-SYMBOL    "not a symbol")
-         (define ERROR-TYPE-STRING    "not a string")
-         (define ERROR-TYPE-FUNCTION  "not a function")
-         (define ERROR-FUNCTION-ARITY "mismatched arity")
-         (define ERROR-MALFORMED-CODE "malformed instruction")
-         (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "expression within may cause infinite loop")
-         (define ERROR-LEFT-RECURSION "rule may be left recursive")
+         (define ERROR-TYPE-CHARACTER    "not a character")
+         (define ERROR-TYPE-SYMBOL       "not a symbol")
+         (define ERROR-TYPE-STRING       "not a string")
+         (define ERROR-TYPE-FUNCTION     "not a function")
+         (define ERROR-TYPE-INSTRUCTIONS "not a list of instructions")
+         (define ERROR-FUNCTION-ARITY    "mismatched arity")
+         (define ERROR-MALFORMED-CODE    "malformed instruction")
+         (define ERROR-UNDEFINED-RULE    "undefined rule in grammar")
+         (define ERROR-NULLABLE          "expression within may cause infinite loop")
+         (define ERROR-LEFT-RECURSION    "rule may be left recursive")
 
          ;; === Helper Functions ===
 
@@ -362,6 +363,51 @@
                             [(= size 1) (car characters)]
                             [else       (apply append characters)]))]
                    [else (list (encode ERROR 'text ERROR-TYPE-STRING))])))
+
+         (define compile
+           (lambda (xs)
+             (unless (and (pair? xs) (code? (car xs)))
+               (raise (make-compiler-error 'input ERROR-TYPE-INSTRUCTIONS)))
+             (let* ([code-size   (length xs)]
+                    [match-code  (encode MATCH)]
+                    [build-error (lambda (xs)
+                                   (let loop ([codes   xs]
+                                              [errors  '()]
+                                              [counter 0])
+                                     (cond [(or (= counter MAX-ERRORS)
+                                                (null? codes))
+                                            (raise (apply condition (reverse errors)))]
+                                           [(not (code? (car codes)))
+                                            (loop (cdr codes)
+                                                  (cons (make-compiler-error (car codes) ERROR-MALFORMED-CODE))
+                                                  (+ counter 1))]
+                                           [(eq? ERROR (code-type (car codes)))
+                                            (let* ([code    (car codes)]
+                                                   [who     (code-op-x code)]
+                                                   [message (code-op-y code)]
+                                                   [error   (make-compiler-error who message)])
+                                              (loop (cdr codes)
+                                                    (cons error errors)
+                                                    (+ counter 1)))]
+                                           [else (loop (cdr codes)
+                                                       errors
+                                                       counter)])))]
+                    [build-code  (lambda (xs)
+                                   (let ([buffer (make-vector (+ code-size 1))])
+                                     (let loop ([codes xs]
+                                                [index 0])
+                                       (cond [(or (= index code-size)
+                                                  (null? codes))
+                                              (vector-set! buffer (+ index 1) match-code)
+                                              buffer]
+                                             [(not (code? (car codes)))
+                                              (build-error codes)]
+                                             [(eq? ERROR (code-type (car codes)))
+                                              (build-error codes)]
+                                             [else (vector-set! buffer index (car codes))
+                                                   (loop (cdr codes)
+                                                         (+ index 1))]))))])
+               (build-code xs))))
 
          ;; === Unit Tests ===
 
