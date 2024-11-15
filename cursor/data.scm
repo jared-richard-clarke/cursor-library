@@ -88,7 +88,7 @@
          
          ;; record-type: compiler-error -> condition
          ;; Reports errors within parsing expression grammars.
-         (define-record-type (&compiler-error make-compiler-error compiler-error?)
+         (define-record-type compiler-error
            (parent &condition)
            (fields who message)
            (sealed #t))
