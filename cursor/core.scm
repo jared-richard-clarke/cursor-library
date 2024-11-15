@@ -271,7 +271,7 @@
              (cond [(string? xs)
                     (if (string=? xs "")
                         fail
-                        (list (encode ONE-OF (make-charset xs) CHARSET)))]
+                        (list (encode ONE-OF (make-charset xs))))]
                    [else (list (encode ERROR 'one-of ERROR-TYPE-STRING))])))
 
          ;; (none-of "abc") = [^abc]
@@ -282,7 +282,7 @@
              (cond [(string? xs)
                     (if (string=? xs "")
                         any
-                        (list (encode NONE-OF (make-charset xs) CHARSET)))]
+                        (list (encode NONE-OF (make-charset xs))))]
                    [else (list (encode ERROR 'none-of ERROR-TYPE-STRING))])))
 
          ;; === Grammar ===
