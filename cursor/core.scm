@@ -400,9 +400,8 @@
                                                   (null? codes))
                                               (vector-set! buffer (+ index 1) match-code)
                                               buffer]
-                                             [(not (code? (car codes)))
-                                              (build-error codes)]
-                                             [(eq? ERROR (code-type (car codes)))
+                                             [(or (not (code? (car codes)))
+                                                  (eq? ERROR (code-type (car codes))))
                                               (build-error codes)]
                                              [else (vector-set! buffer index (car codes))
                                                    (loop (cdr codes)
