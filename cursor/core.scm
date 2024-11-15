@@ -369,7 +369,7 @@
              (unless (and (pair? xs) (code? (car xs)))
                (raise (make-compiler-error 'compiler-input ERROR-TYPE-INSTRUCTIONS)))
              (let ([return-parser (lambda (xs)
-                                   (lambda () (display xs)))])
+                                    (lambda () (display xs)))])
                (let* ([code-size   (length xs)]
                       [match-code  (encode MATCH)]
                       [build-error (lambda (xs)
