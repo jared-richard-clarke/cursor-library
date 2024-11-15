@@ -402,13 +402,18 @@
                                                     (null? codes))
                                                 (vector-set! buffer (+ index 1) match-code)
                                                 buffer]
-                                               [(or (not (code? (car codes)))
-                                                    (eq? ERROR (code-type (car codes))))
-                                                (build-error codes)]
                                                [else (vector-set! buffer index (car codes))
                                                      (loop (cdr codes)
-                                                           (+ index 1))]))))])
-                 (parser (build-code xs))))))
+                                                           (+ index 1))]))))]
+                      [transform   (lambda (xs)
+                                     (let loop ([codes xs])
+                                       (cond [(null? codes)
+                                              (build-code xs)]
+                                             [(or (not (code? (car codes)))
+                                                  (eq? ERROR (code-type (car codes))))
+                                              (build-error codes)]
+                                             [else (loop (cdr codes))])))])
+                 (parser (transform xs))))))
 
          ;; === Unit Tests ===
 
