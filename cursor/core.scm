@@ -48,13 +48,14 @@
              (if (and (pair? x) (code? (car x)))
                  x
                  (list (encode ERROR x ERROR-MALFORMED-CODE)))))
-
+         
          (define encoding-error?
            (lambda (xs)
-             (exists (lambda (x)
-                       (or (not (code? x))
-                           (eq? (code-type x) ERROR)))
-                     xs)))
+             (or (not (list? xs))
+                 (exists (lambda (x)
+                           (or (not (code? x))
+                               (eq? (code-type x) ERROR)))
+                         xs))))
 
          (define nullable?
            (lambda (xs)
