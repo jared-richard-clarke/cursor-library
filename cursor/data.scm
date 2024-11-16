@@ -33,12 +33,12 @@
                  code?      ;; predicate
                  code-type  ;; field
                  code-op-x  ;; field
-                 code-op-y) ;; field
+                 code-op-y ;; field
          ;; record-type: compiler-error -> condition
-                 make-compiler-error    ;; constructor
-                 compiler-error?        ;; predicate
-                 compiler-error-who     ;; field
-                 compiler-error-message ;; field
+                 make-compiler-error     ;; constructor
+                 compiler-error?         ;; predicate
+                 compiler-error-who      ;; field
+                 compiler-error-message) ;; field
          (import (rnrs)
                  (cursor tools))
 
