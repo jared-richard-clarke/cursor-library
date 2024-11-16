@@ -45,14 +45,14 @@
 
          (define check-code
            (lambda (x)
-             (if (and (pair? x) (code? (car x)))
-                 x
-                 (list (encode ERROR x ERROR-MALFORMED-CODE)))))
+             (cond [(code? x) (list x)]
+                   [(and (pair? x) (code? (car x))) x]
+                   [else (list (encode ERROR x ERROR-MALFORMED-CODE))])))
 
          (define fold-code
            (lambda xs
              (let recur ([xs xs])
-               (cond [(null? (cdr xs)) (check-code xs)]
+               (cond [(null? (cdr xs)) (check-code (car xs))]
                      [(code? (car xs)) (cons (car xs) (recur (cdr xs)))]
                      [else (append (check-code (car xs)) (recur (cdr xs)))]))))
 
@@ -384,7 +384,7 @@
                                               (raise (apply condition (reverse errors)))]
                                              [(not (code? (car codes)))
                                               (loop (cdr codes)
-                                                    (cons (make-compiler-error (car codes) ERROR-MALFORMED-CODE))
+                                                    (cons (make-compiler-error (car codes) ERROR-MALFORMED-CODE) errors)
                                                     (+ counter 1))]
                                              [(eq? ERROR (code-type (car codes)))
                                               (let* ([code    (car codes)]
@@ -403,7 +403,7 @@
                                                   [index 0])
                                          (cond [(or (= index code-size)
                                                     (null? codes))
-                                                (vector-set! buffer (+ index 1) match-code)
+                                                (vector-set! buffer index match-code)
                                                 buffer]
                                                [else (vector-set! buffer index (car codes))
                                                      (loop (cdr codes)
@@ -588,12 +588,12 @@
               (test-assert "character set [abc]"
                            instructions-equal?
                            (one-of "abc")
-                           (list (encode ONE-OF (make-charset "abbbaac") CHARSET)))
+                           (list (encode ONE-OF (make-charset "abbbaac"))))
 
               (test-assert "character set [^abc]"
                            instructions-equal?
                            (none-of "abc")
-                           (list (encode NONE-OF (make-charset "cba") CHARSET)))
+                           (list (encode NONE-OF (make-charset "cba"))))
 
               (test-assert "empty set"
                            instructions-equal?
