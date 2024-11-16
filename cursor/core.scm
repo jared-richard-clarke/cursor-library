@@ -48,7 +48,14 @@
              (if (and (pair? x) (code? (car x)))
                  x
                  (list (encode ERROR x ERROR-MALFORMED-CODE)))))
-         
+
+         (define fold-code
+           (lambda xs
+             (let recur ([xs xs])
+               (cond [(null? (cdr xs)) (check-code xs)]
+                     [(code? (car xs)) (cons (car xs) (recur (cdr xs)))]
+                     [else (append (check-code (car xs)) (recur (cdr xs)))]))))
+
          (define encoding-error?
            (lambda (xs)
              (or (not (list? xs))
@@ -186,10 +193,7 @@
            (case-lambda
             [()  empty]
             [(x) (check-code x)]
-            [xs  (fold-right (lambda (px py)
-                               (append (check-code px) py))
-                             '()
-                             xs)]))
+            [xs  (apply fold-code xs)]))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
@@ -200,10 +204,10 @@
                                     [offset-y (car py)]
                                     [py       (cdr py)])
                                 (cons (+ offset-x offset-y 2)
-                                      (append (list (encode CHOICE (+ offset-x 2)))
-                                              px
-                                              (list (encode COMMIT (+ offset-y 1)))
-                                              py)))))])
+                                      (fold-code (encode CHOICE (+ offset-x 2))
+                                                 px
+                                                 (encode COMMIT (+ offset-y 1))
+                                                 py)))))])
              (lambda (xs)
                (if (null? (cdr xs))
                    (cons (check-length (car xs)) (check-code (car xs)))
@@ -231,9 +235,9 @@
              (let ([pattern (check-code px)])
                (cond [(not (nullable? pattern))
                       (let ([offset (length pattern)])
-                        (append (list (encode CHOICE (+ offset 2) REPEAT))
-                                pattern
-                                (list (encode PARTIAL-COMMIT (- offset)))))]
+                        (fold-code (encode CHOICE (+ offset 2) REPEAT)
+                                   pattern
+                                   (encode PARTIAL-COMMIT (- offset))))]
                      [else
                       (list (encode ERROR 'repeat ERROR-NULLABLE))]))))
 
@@ -241,7 +245,7 @@
          ;; (repeat+1 px) = px • px*
          (define repeat+1
            (lambda (px)
-             (append (check-code px) (repeat px))))
+             (fold-code px (repeat px))))
 
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
@@ -250,18 +254,18 @@
            (lambda (px)
              (let ([offset-x (check-length px)]
                    [offset-y 2])
-               (append (list (encode CHOICE (+ offset-x 2) IS))
-                       (check-code px)
-                       (list (encode BACK-COMMIT offset-y))
-                       fail))))
+               (fold-code (encode CHOICE (+ offset-x 2) IS)
+                          px
+                          (encode BACK-COMMIT offset-y)
+                          fail))))
 
          ;; (is-not? px) = !px
          (define is-not?
            (lambda (px)
              (let ([offset (check-length px)])
-               (append (list (encode CHOICE (+ offset 2) IS-NOT))
-                       (check-code px)
-                       (list (encode FAIL-TWICE))))))
+               (fold-code (encode CHOICE (+ offset 2) IS-NOT)
+                          px
+                          (encode FAIL-TWICE)))))
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
@@ -305,8 +309,8 @@
                [(grammar [rule-x body-x] [rule-y body-y] ...)
                 (with-syntax ([(size-x size-y ...)
                                (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let ([rule-x (sequence (encode RULE (quote rule-x)) body-x (encode RETURN))]
-                                [rule-y (sequence (encode RULE (quote rule-y)) body-y (encode RETURN))]
+                  (syntax (let ([rule-x (fold-code (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                [rule-y (fold-code (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                 ...)
                             (let ([size-x (length rule-x)]
                                   [size-y (length rule-y)]
@@ -315,10 +319,10 @@
                                      [offsets    (zip symbols (scan + (list 2 size-x size-y ...)))]
                                      [total      (+ size-x size-y ...)]
                                      ;; Combine rules into list of grammar instructions.
-                                     [open-rules (append (list (encode GRAMMAR (+ total 2) 2))
-                                                         (list (encode JUMP (+ total 1)))
-                                                         rule-x
-                                                         rule-y ...)]
+                                     [open-rules (fold-code (encode GRAMMAR (+ total 2) 2)
+                                                            (encode JUMP (+ total 1))
+                                                            rule-x
+                                                            rule-y ...)]
                                      ;; Close open calls, adding the appropriate offsets.
                                      [closed-rules
                                       (peek-map (lambda (x xs peekable?)
@@ -347,9 +351,9 @@
            (case-lambda
              [(px) (capture '() px)]
              [(fn px)
-              (append (list (encode CAPTURE-START (if (procedure? fn) fn '())))
-                      (check-code px)
-                      (list (encode CAPTURE-STOP)))]))
+              (fold-code (encode CAPTURE-START (if (procedure? fn) fn '()))
+                         px
+                         (encode CAPTURE-STOP))]))
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
