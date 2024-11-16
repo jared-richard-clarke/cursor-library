@@ -353,14 +353,16 @@
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
+         ;; (text "abc") = a • b • c
+         ;; (text "")    = ε
          (define text
            (lambda (xs)
              (cond [(string? xs)
-                    (let* ([characters (map char (string->list xs))]
+                    (let* ([characters (map (lambda (x) (encode CHARACTER x)) (string->list xs))]
                            [size       (length characters)])
-                      (cond [(< size 1) empty]
-                            [(= size 1) (car characters)]
-                            [else       (apply append characters)]))]
+                      (if (< size 1)
+                          empty
+                          characters))]
                    [else (list (encode ERROR 'text ERROR-TYPE-STRING))])))
 
          (define compile
