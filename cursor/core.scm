@@ -353,8 +353,6 @@
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
-         ;; (text "abc") = a • b • c
-         ;; (text "")    = ε
          (define text
            (lambda (xs)
              (cond [(string? xs)
