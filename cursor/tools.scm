@@ -9,7 +9,8 @@
                  scan
                  vector-fold
                  vector-for-all
-                 peek-map)
+                 peek-map
+                 string-buffer)
          (import (rnrs))
 
          (define identity (lambda (x) x))
@@ -101,5 +102,7 @@
                            [xs (cdr xs)])
                        (cons (fn x xs peekable?)
                              (recur fn xs (peek? xs)))))))))
+
+         (define string-buffer open-string-output-port)
 
          )
