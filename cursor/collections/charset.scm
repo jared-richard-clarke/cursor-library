@@ -84,17 +84,17 @@
                    [open     #\{]
                    [close    #\}]
                    [space    #\space])
-               (let-values ([(port flush) (open-string-output-port)])
-                 (begin (put-string port header)
-                        (put-char port open)
-                        (put-char port space)
+               (let-values ([(buffer flush) (string-buffer)])
+                 (begin (put-string buffer header)
+                        (put-char buffer open)
+                        (put-char buffer space)
                         (vector-for-each (lambda (element)
                                            (if (char-whitespace? element)
-                                               (put-datum port element)
-                                               (put-char port element))
-                                           (put-char port space))
+                                               (put-datum buffer element)
+                                               (put-char buffer element))
+                                           (put-char buffer space))
                                          elements)
-                        (put-char port close)
+                        (put-char buffer close)
                         (flush))))))
 
          (define unit-tests
