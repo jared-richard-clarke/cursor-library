@@ -40,21 +40,28 @@
          (define format-errors
            (lambda (xs)
              (let-values ([(buffer flush) (string-buffer)])
-               (let ([bracket-open  "["]
-                     [bracket-close "]"]
-                     [who           " who: "]
-                     [message       " message: "])
-                 (let loop ([xs xs])
-                   (if (null? xs)
+               (let ([open    #\[]
+                     [close   #\]]
+                     [comma   #\,]
+                     [space   #\space]
+                     [who     "who: "]
+                     [message "message: "])
+                 (let loop ([codes xs])
+                   (if (null? codes)
                        (flush)
-                       (let ([code (car xs)])
+                       (let ([code (car codes)])
                          (let ([op-x (code-op-x code)]
                                [op-y (code-op-y code)])
-                           (begin (put-string buffer bracket-open)
-                                  (put-string buffer who)     (put-datum  buffer op-x)
+                           (begin (put-char buffer open)
+                                  (put-char buffer space)
+                                  (put-string buffer who) (put-datum buffer op-x) (put-char buffer comma)
+                                  (put-char buffer space)
                                   (put-string buffer message) (put-string buffer op-y)
-                                  (put-string buffer bracket-close)
-                                  (loop (cdr xs)))))))))))
+                                  (put-char buffer space)
+                                  (put-char buffer close)
+                                  (unless (null? (cdr codes))
+                                    (put-char buffer space))
+                                  (loop (cdr codes)))))))))))
 
          (define check-length
            (lambda (x)
@@ -400,7 +407,7 @@
                                                     [counter 0])
                                            (cond [(or (= counter MAX-ERRORS)
                                                       (null? codes))
-                                                  (return-result #f (apply format-errors (reverse errors)))]
+                                                  (return-result #f (format-errors (reverse errors)))]
                                                  [(not (code? (car codes)))
                                                   (loop (cdr codes)
                                                         (cons (encode ERROR (car codes) ERROR-MALFORMED-CODE) errors)
