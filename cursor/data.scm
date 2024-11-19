@@ -34,11 +34,11 @@
                  code-type  ;; field
                  code-op-x  ;; field
                  code-op-y  ;; field
-         ;; record-type: compiler-error -> condition
-                 make-compiler-error     ;; constructor
-                 compiler-error?         ;; predicate
-                 compiler-error-who      ;; field
-                 compiler-error-message) ;; field
+         ;; record-type: result
+                 return-result ;; constructor
+                 result?       ;; predicate
+                 result-ok     ;; field
+                 result-value) ;; field
          (import (rnrs)
                  (cursor tools))
 
@@ -85,12 +85,9 @@
                 [(type)           (new type '() '())]
                 [(type op-x)      (new type op-x '())]
                 [(type op-x op-y) (new type op-x op-y)]))))
-         
-         ;; record-type: compiler-error -> condition
-         ;; Reports errors within parsing expression grammars.
-         (define-record-type compiler-error
-           (parent &condition)
-           (fields who message)
+
+         (define-record-type (result return-result result?)
+           (fields ok value)
            (sealed #t))
 
          )
