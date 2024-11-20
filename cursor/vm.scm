@@ -17,8 +17,8 @@
            (protocol
             (lambda (new)
               (case-lambda
-               [(type offset)           (new type '() offset)]
-               [(type procedure offset) (new type procedure offset)]))))
+                [(type offset)           (new type '() offset)]
+                [(type procedure offset) (new type procedure offset)]))))
 
          (define run-vm
            (lambda (subject instructions)
@@ -108,6 +108,6 @@
                          (lambda (ip sp stack captures)
                            'todo)])
                  ;; === start virtual machine ===
-                 (state 0 0 '() '()))))))
+                 (state 0 0 '() '())))))
 
          )
