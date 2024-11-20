@@ -10,7 +10,8 @@
                  vector-fold
                  vector-for-all
                  peek-map
-                 string-buffer)
+                 string-buffer
+                 string->vector)
          (import (rnrs))
 
          (define identity (lambda (x) x))
@@ -104,5 +105,9 @@
                              (recur fn xs (peek? xs)))))))))
 
          (define string-buffer open-string-output-port)
+
+         (define string->vector
+           (lambda (xs)
+             (list->vector (string->list xs))))
 
          )
