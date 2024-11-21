@@ -34,11 +34,11 @@
                  code-type  ;; field
                  code-op-x  ;; field
                  code-op-y  ;; field
-         ;; record-type: result
-                 return-result ;; constructor
-                 result?       ;; predicate
-                 result-ok     ;; field
-                 result-value) ;; field
+         ;; record-type: &peg-error -> &condition
+                 make-peg-error     ;; constructor
+                 peg-error?         ;; predicate
+                 peg-error-who      ;; field
+                 peg-error-message) ;; field
          (import (rnrs)
                  (cursor tools))
 
@@ -86,8 +86,12 @@
                 [(type op-x)      (new type op-x '())]
                 [(type op-x op-y) (new type op-x op-y)]))))
 
-         (define-record-type (result return-result result?)
-           (fields ok value)
+         ;; record-type: &peg-error -> &condition
+         ;; Flags syntax errors during compilation of PEG parser.
+         (define-record-type (&peg-error make-peg-error peg-error?)
+           (parent &condition)
+           (fields (immutable who peg-error-who)
+                   (immutable message peg-error-message))
            (sealed #t))
 
          )
