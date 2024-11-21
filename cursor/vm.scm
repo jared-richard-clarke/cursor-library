@@ -5,7 +5,7 @@
                  (cursor tools))
 
          (define-record-type entry
-           (fields ip (mutable sp) captures)
+           (fields ip (mutable sp) (mutable captures))
            (sealed #t))
 
          (define-record-type capture
@@ -58,10 +58,17 @@
                                      [(eq? type PARTIAL-COMMIT)
                                       (let ([entry (car stack)])
                                         (begin (set-entry-sp! entry sp)
+                                               (set-entry-captures! entry captures)
                                                (state (+ ip op-x)
                                                       sp
                                                       stack
                                                       captures)))]
+                                     [(eq? type BACK-COMMIT)
+                                      (let ([entry (car stack)])
+                                        (state (+ ip op-x)
+                                               (entry-sp entry)
+                                               (cdr stack)
+                                               (entry-captures entry)))]
                                      [(eq? type FAIL)
                                       (fail-state ip
                                                   sp
