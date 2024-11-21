@@ -8,12 +8,14 @@
            (fields ip
                    (mutable sp)
                    stack
-                   captures))
+                   captures)
+           (sealed #t))
 
          (define-record-type capture
            (fields type
                    function
                    offset)
+           (sealed #t)
            (protocol
             (lambda (new)
               (case-lambda
