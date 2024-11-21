@@ -67,7 +67,7 @@
                                                       stack
                                                       captures)))]
                                      [(eq? type CALL)
-                                      (state (+ ip op-y)
+                                      (state op-y
                                              sp
                                              (cons (+ ip 1) stack)
                                              captures)]
