@@ -12,13 +12,13 @@
 
          (define-record-type capture
            (fields type
-                   procedure
+                   function
                    offset)
            (protocol
             (lambda (new)
               (case-lambda
-                [(type offset)           (new type '() offset)]
-                [(type procedure offset) (new type procedure offset)]))))
+                [(type offset)          (new type '() offset)]
+                [(type function offset) (new type function offset)]))))
 
          (define run-vm
            (lambda (subject instructions)
