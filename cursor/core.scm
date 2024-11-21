@@ -37,32 +37,6 @@
 
          ;; === Helper Functions ===
 
-         (define format-errors
-           (lambda (xs)
-             (let-values ([(buffer flush) (string-buffer)])
-               (let ([open    #\[]
-                     [close   #\]]
-                     [comma   #\,]
-                     [space   #\space]
-                     [who     "who: "]
-                     [message "message: "])
-                 (let loop ([codes xs])
-                   (if (null? codes)
-                       (flush)
-                       (let ([code (car codes)])
-                         (let ([op-x (code-op-x code)]
-                               [op-y (code-op-y code)])
-                           (begin (put-char buffer open)
-                                  (put-char buffer space)
-                                  (put-string buffer who) (put-datum buffer op-x) (put-char buffer comma)
-                                  (put-char buffer space)
-                                  (put-string buffer message) (put-string buffer op-y)
-                                  (put-char buffer space)
-                                  (put-char buffer close)
-                                  (unless (null? (cdr codes))
-                                    (put-char buffer space))
-                                  (loop (cdr codes)))))))))))
-
          (define check-length
            (lambda (x)
              (if (list? x)
@@ -395,51 +369,52 @@
 
          (define compile
            (lambda (xs)
-             (if (not (and (pair? xs) (code? (car xs))))
-                 (return-result #f ERROR-TYPE-INSTRUCTIONS)
-                 (let ([parser (lambda (xs)
-                                 (lambda () (display xs)))])
-                   (let* ([code-size   (length xs)]
-                          [match-code  (encode MATCH)]
-                          [build-error (lambda (xs)
-                                         (let loop ([codes   xs]
-                                                    [errors  '()]
-                                                    [counter 0])
-                                           (cond [(or (= counter MAX-ERRORS)
-                                                      (null? codes))
-                                                  (return-result #f (format-errors (reverse errors)))]
-                                                 [(not (code? (car codes)))
-                                                  (loop (cdr codes)
-                                                        (cons (encode ERROR (car codes) ERROR-MALFORMED-CODE) errors)
-                                                        (+ counter 1))]
-                                                 [(eq? ERROR (code-type (car codes)))
-                                                  (let ([error (car codes)])
-                                                    (loop (cdr codes)
-                                                          (cons error errors)
-                                                          (+ counter 1)))]
-                                                 [else (loop (cdr codes)
-                                                             errors
-                                                             counter)])))]
-                          [build-code  (lambda (xs)
-                                         (let ([buffer (make-vector (+ code-size 1))])
-                                           (let loop ([codes xs]
-                                                      [index 0])
-                                             (cond [(or (= index code-size)
-                                                        (null? codes))
-                                                    (vector-set! buffer index match-code)
-                                                    (return-result #t (parser buffer))]
-                                                   [else (vector-set! buffer index (car codes))
-                                                         (loop (cdr codes)
-                                                               (+ index 1))]))))]
-                          [build       (lambda (xs)
-                                         (let loop ([codes xs])
-                                           (cond [(null? codes)
-                                                  (build-code xs)]
-                                                 [(or (not (code? (car codes)))
-                                                      (eq? ERROR (code-type (car codes))))
-                                                  (build-error codes)]
-                                                 [else (loop (cdr codes))])))])
-                     (build xs))))))
+             (unless (and (pair? xs) (code? (car xs)))
+               (raise (make-peg-error "compile input" ERROR-TYPE-INSTRUCTIONS)))
+             (let ([parser (lambda (xs)
+                             (lambda () (display xs)))])
+               (let* ([code-size   (length xs)]
+                      [match-code  (encode MATCH)]
+                      [compile-errors (lambda (xs)
+                                        (let loop ([codes   xs]
+                                                   [errors  '()]
+                                                   [counter 0])
+                                          (cond [(or (= counter MAX-ERRORS)
+                                                     (null? codes))
+                                                 (raise (apply condition (reverse errors)))]
+                                                [(not (code? (car codes)))
+                                                 (loop (cdr codes)
+                                                       (cons (make-peg-error (car codes) ERROR-MALFORMED-CODE) errors)
+                                                       (+ counter 1))]
+                                                [(eq? ERROR (code-type (car codes)))
+                                                 (let ([who     (code-op-x (car codes))]
+                                                       [message (code-op-y (car codes))])
+                                                   (loop (cdr codes)
+                                                         (cons (make-peg-error who message) errors)
+                                                         (+ counter 1)))]
+                                                [else (loop (cdr codes)
+                                                            errors
+                                                            counter)])))]
+                      [compile-codes  (lambda (xs)
+                                        (let ([buffer (make-vector (+ code-size 1))])
+                                          (let loop ([codes xs]
+                                                     [index 0])
+                                            (cond [(or (= index code-size)
+                                                       (null? codes))
+                                                   (vector-set! buffer index match-code)
+                                                   (parser buffer)]
+                                                  [else (vector-set! buffer index (car codes))
+                                                        (loop (cdr codes)
+                                                              (+ index 1))]))))]
+                      [compiler-run   (lambda (xs)
+                                        (let loop ([codes xs])
+                                          (cond [(null? codes)
+                                                 (compile-codes xs)]
+                                                [(or (not (code? (car codes)))
+                                                     (eq? ERROR (code-type (car codes))))
+                                                 (compile-errors codes)]
+                                                [else (loop (cdr codes))])))])
+                 (compiler-run xs)))))
 
          ;; === Unit Tests ===
 
