@@ -113,7 +113,7 @@
                                                [type (code-type code)]
                                                [op-x (code-op-x code)]
                                                [op-y (code-op-y code)])
-                                          (cond [(eq? type RULE)
+                                          (cond [(eq? type CALL)
                                                  (set! step-count (+ step-count 1))
                                                  (cond [error-flag]
                                                        [(> step-count MAX-RULES) (set! error-flag #t)]
@@ -121,12 +121,9 @@
                                                         (let ([total (hashtable-ref rule-count op-x #f)])
                                                           (if total
                                                               (begin (hashtable-set! rule-count op-x (+ total 1))
-                                                                     (recur (+ index 1)))
+                                                                     (recur op-y))
                                                               (begin (hashtable-set! rule-count op-x 1)
-                                                                     (recur (+ index 1)))))])]
-                                                [(or (eq? type GRAMMAR)
-                                                     (eq? type CALL))
-                                                 (recur op-y)]
+                                                                     (recur op-y))))])]
                                                 [(eq? type JUMP) (recur op-x)]
                                                 [(eq? type CHOICE)
                                                  (recur (+ index 1))
@@ -310,8 +307,8 @@
                [(grammar [rule-x body-x] [rule-y body-y] ...)
                 (with-syntax ([(size-x size-y ...)
                                (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let ([rule-x (fold-code (encode RULE (quote rule-x)) body-x (encode RETURN))]
-                                [rule-y (fold-code (encode RULE (quote rule-y)) body-y (encode RETURN))]
+                  (syntax (let ([rule-x (fold-code body-x (encode RETURN))]
+                                [rule-y (fold-code body-y (encode RETURN))]
                                 ...)
                             (let ([size-x (length rule-x)]
                                   [size-y (length rule-y)]
@@ -320,7 +317,7 @@
                                      [offsets    (zip symbols (scan + (list 2 size-x size-y ...)))]
                                      [total      (+ size-x size-y ...)]
                                      ;; Combine rules into list of grammar instructions.
-                                     [open-rules (fold-code (encode GRAMMAR (+ total 2) 2)
+                                     [open-rules (fold-code (encode OPEN-CALL (quote rule-x))
                                                             (encode JUMP (+ total 1))
                                                             rule-x
                                                             rule-y ...)]
@@ -376,25 +373,18 @@
                              (lambda () (display xs)))])
                (let* ([code-size       (length xs)]
                       [match-code      (encode MATCH)]
-                      [offset-grammars (lambda (xs)
-                                         (let loop ([index  0]
-                                                    [offset 0])
-                                           (if (= index size)
+                      [offset-calls    (lambda (xs)
+                                         (let loop ([index 0])
+                                           (if (= index code-size)
                                                xs
-                                               (let* ([code (vector-ref xs index)]
-                                                      [type (code-type code)]
-                                                      [op-x (code-op-x code)]
-                                                      [op-y (code-op-y code)])
-                                                 (cond [(and (eq? type GRAMMAR) (> index 0))
-                                                        (vector-set! xs index (encode GRAMMAR op-x (+ op-y index)))
-                                                        (loop (+ index 1)
-                                                              index)]
-                                                       [(and (eq? type CALL) (> offset 0))
-                                                        (vector-set! xs index (encode CALL op-x (+ op-y offset)))
-                                                        (loop (+ index 1)
-                                                              offset)]
-                                                       [else (loop (+ index 1)
-                                                                   offset)])))))]
+                                               (let ([code (vector-ref xs index)])
+                                                 (let ([type (code-type code)]
+                                                       [op-x (code-op-x code)]
+                                                       [op-y (code-op-y code)])
+                                                   (if (eq? type CALL)
+                                                       (begin (vector-set xs index (encode CALL op-x (- index op-y)))
+                                                              (loop (+ index 1)))
+                                                       (loop (+ index 1))))))))]
                       [compile-errors  (lambda (xs)
                                          (let loop ([codes   xs]
                                                     [errors  '()]
@@ -422,11 +412,11 @@
                                              (cond [(or (= index code-size)
                                                         (null? codes))
                                                     (vector-set! buffer index match-code)
-                                                    (parser (offset-grammars buffer))]
+                                                    (parser (offset-calls buffer))]
                                                    [else (vector-set! buffer index (car codes))
                                                          (loop (cdr codes)
                                                                (+ index 1))]))))]
-                      [compiler-run    (lambda (xs)
+                      [run-compiler    (lambda (xs)
                                          (let loop ([codes xs])
                                            (cond [(null? codes)
                                                   (compile-codes xs)]
@@ -434,7 +424,7 @@
                                                       (eq? ERROR (code-type (car codes))))
                                                   (compile-errors codes)]
                                                  [else (loop (cdr codes))])))])
-                 (compiler-run xs)))))
+                 (run-compiler xs)))))
 
          ;; === Unit Tests ===
 
@@ -567,17 +557,17 @@
               (test-assert "repeat, empty nullable"
                            instructions-equal?
                            (repeat (text ""))
-                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
+                           (list (encode ERROR "repeat" ERROR-NULLABLE)))
 
               (test-assert "repeat, predicate may be nullable"
                            instructions-equal?
                            (repeat (is? (char #\a)))
-                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
+                           (list (encode ERROR "repeat" ERROR-NULLABLE)))
 
               (test-assert "repeat, nested repetitions may be nullable"
                            instructions-equal?
                            (repeat (repeat (char #\a)))
-                           (list (encode ERROR 'repeat ERROR-NULLABLE)))
+                           (list (encode ERROR "repeat" ERROR-NULLABLE)))
 
               ;; === Not Predicate ===
               ;; Π(g, i, !p) ≡ Choice |Π(g, x, p)| + 2
@@ -650,14 +640,12 @@
                            instructions-equal?
                            (grammar [R1 (sequence (text "ab") (call R2))]
                                     [R2 (text "c")])
-                           (list (encode GRAMMAR 10 2)
+                           (list (encode CALL 'R1 2)
                                  (encode JUMP 9)
-                                 (encode RULE 'R1)
                                  a
                                  b
                                  (encode JUMP 7 'R2)
                                  (encode RETURN)
-                                 (encode RULE 'R2)
                                  c
                                  (encode RETURN)))
 
