@@ -16,7 +16,6 @@
                  grammar
                  capture
                  text
-                 compile
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor data)
@@ -113,7 +112,7 @@
                                                [type (code-type code)]
                                                [op-x (code-op-x code)]
                                                [op-y (code-op-y code)])
-                                          (cond [(eq? type CALL)
+                                          (cond [(eq? type RULE)
                                                  (set! step-count (+ step-count 1))
                                                  (cond [error-flag]
                                                        [(> step-count MAX-RULES) (set! error-flag #t)]
@@ -121,9 +120,12 @@
                                                         (let ([total (hashtable-ref rule-count op-x #f)])
                                                           (if total
                                                               (begin (hashtable-set! rule-count op-x (+ total 1))
-                                                                     (recur op-y))
+                                                                     (recur (+ index 1)))
                                                               (begin (hashtable-set! rule-count op-x 1)
-                                                                     (recur op-y))))])]
+                                                                     (recur (+ index 1)))))])]
+                                                [(or (eq? type GRAMMAR)
+                                                     (eq? type CALL))
+                                                 (recur op-y)]
                                                 [(eq? type JUMP) (recur op-x)]
                                                 [(eq? type CHOICE)
                                                  (recur (+ index 1))
@@ -307,8 +309,8 @@
                [(grammar [rule-x body-x] [rule-y body-y] ...)
                 (with-syntax ([(size-x size-y ...)
                                (generate-temporaries (syntax (rule-x rule-y ...)))])
-                  (syntax (let ([rule-x (fold-code body-x (encode RETURN))]
-                                [rule-y (fold-code body-y (encode RETURN))]
+                  (syntax (let ([rule-x (fold-code (encode RULE (quote rule-x)) body-x (encode RETURN))]
+                                [rule-y (fold-code (encode RULE (quote rule-y)) body-y (encode RETURN))]
                                 ...)
                             (let ([size-x (length rule-x)]
                                   [size-y (length rule-y)]
@@ -317,7 +319,7 @@
                                      [offsets    (zip symbols (scan + (list 2 size-x size-y ...)))]
                                      [total      (+ size-x size-y ...)]
                                      ;; Combine rules into list of grammar instructions.
-                                     [open-rules (fold-code (encode OPEN-CALL (quote rule-x))
+                                     [open-rules (fold-code (encode GRAMMAR (+ total 2) 2)
                                                             (encode JUMP (+ total 1))
                                                             rule-x
                                                             rule-y ...)]
@@ -381,8 +383,8 @@
                                                  (let ([type (code-type code)]
                                                        [op-x (code-op-x code)]
                                                        [op-y (code-op-y code)])
-                                                   (if (eq? type CALL)
-                                                       (begin (vector-set xs index (encode CALL op-x (- index op-y)))
+                                                   (if (or (eq? type CALL) (eq? type GRAMMAR))
+                                                       (begin (vector-set! xs index (encode type op-x (- index op-y)))
                                                               (loop (+ index 1)))
                                                        (loop (+ index 1))))))))]
                       [compile-errors  (lambda (xs)
@@ -640,12 +642,14 @@
                            instructions-equal?
                            (grammar [R1 (sequence (text "ab") (call R2))]
                                     [R2 (text "c")])
-                           (list (encode CALL 'R1 2)
+                           (list (encode GRAMMAR 10 2)
                                  (encode JUMP 9)
+                                 (encode RULE 'R1)
                                  a
                                  b
                                  (encode JUMP 7 'R2)
                                  (encode RETURN)
+                                 (encode RULE 'R2)
                                  c
                                  (encode RETURN)))
 
