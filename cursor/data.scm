@@ -15,6 +15,7 @@
                  RULE
                  CALL
                  OPEN-CALL
+                 TAIL-CALL
                  RETURN
                  JUMP
                  CAPTURE-START
@@ -57,6 +58,7 @@
                RULE
                CALL
                OPEN-CALL
+               TAIL-CALL
                RETURN
                JUMP
                CAPTURE-START
