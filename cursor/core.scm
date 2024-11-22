@@ -383,10 +383,15 @@
                                                  (let ([type (code-type code)]
                                                        [op-x (code-op-x code)]
                                                        [op-y (code-op-y code)])
-                                                   (if (or (eq? type CALL) (eq? type GRAMMAR))
-                                                       (begin (vector-set! xs index (encode type op-x (- index op-y)))
-                                                              (loop (+ index 1)))
-                                                       (loop (+ index 1))))))))]
+                                                         ;; === standard call ===
+                                                   (cond [(or (eq? type CALL) (eq? type GRAMMAR))
+                                                          (vector-set! xs index (encode type op-x (- index op-y)))
+                                                          (loop (+ index 1))]
+                                                         ;; === tail call ===
+                                                         [(and (eq? type JUMP) (not (null? op-y)))
+                                                          (vector-set! xs index (encode type (- index op-x) op-y))
+                                                          (loop (+ index 1))]
+                                                         [else (loop (+ index 1))]))))))]
                       [compile-errors  (lambda (xs)
                                          (let loop ([codes   xs]
                                                     [errors  '()]
