@@ -10,12 +10,7 @@
 
          (define-record-type capture
            (fields type function offset)
-           (sealed #t)
-           (protocol
-            (lambda (new)
-              (case-lambda
-                [(type offset)          (new type '() offset)]
-                [(type function offset) (new type function offset)]))))
+           (sealed #t))
 
          (define run-vm
            (lambda (subject instructions)
@@ -79,9 +74,8 @@
                                                   sp
                                                   (cdr stack)
                                                   captures)]
-                                     [(or (eq? type CALL)
-                                          (eq? type GRAMMAR))
-                                      (state op-y
+                                     [(eq? type CALL)
+                                      (state (+ ip op-y)
                                              sp
                                              (cons (+ ip 1) stack)
                                              captures)]
@@ -115,7 +109,7 @@
                                       (state (+ ip 1)
                                              sp
                                              stack
-                                             (cons (make-capture CAPTURE-STOP sp) captures))]
+                                             (cons (make-capture CAPTURE-STOP op-y sp) captures))]
                                      [(eq? type MATCH)
                                       (cons sp captures)]))))]
                         [fail-state
