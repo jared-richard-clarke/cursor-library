@@ -74,8 +74,9 @@
                                                   sp
                                                   (cdr stack)
                                                   captures)]
-                                     [(eq? type CALL)
-                                      (state (+ ip op-y)
+                                     [(or (eq? type CALL)
+                                          (eq? type GRAMMAR))
+                                      (state (+ op-y 1)
                                              sp
                                              (cons (+ ip 1) stack)
                                              captures)]
