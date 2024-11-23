@@ -383,12 +383,12 @@
                                                   [op-x (code-op-x code)]
                                                   [op-y (code-op-y code)])
                                                     ;; === standard call ===
-                                              (cond [(or (eq? type CALL) (eq? type GRAMMAR))
-                                                     (vector-set! xs index (encode type op-x (- op-y index)))
+                                              (cond [(and (or (eq? type CALL) (eq? type GRAMMAR)) (> index 0))
+                                                     (vector-set! xs index (encode type op-x (- index op-y)))
                                                      (loop (+ index 1))]
                                                     ;; === tail call ===
                                                     [(and (eq? type JUMP) (eq? op-y TAIL-CALL))
-                                                     (vector-set! xs index (encode type (- op-x index) op-y))
+                                                     (vector-set! xs index (encode type (- index op-x) op-y))
                                                      (loop (+ index 1))]
                                                     [else (loop (+ index 1))]))))))])
                (let loop ([codes xs]
