@@ -315,7 +315,7 @@
                                      [offsets    (zip symbols (scan + (list 2 size-x size-y ...)))]
                                      [total      (+ size-x size-y ...)]
                                      ;; Combine rules into list of grammar instructions.
-                                     [open-rules (fold-code (encode GRAMMAR (+ total 2) 2)
+                                     [open-rules (fold-code (encode GRAMMAR (quote rule-x) 2)
                                                             (encode JUMP (+ total 1))
                                                             rule-x
                                                             rule-y ...)]
@@ -329,7 +329,7 @@
                                                                         (let ([next (car xs)])
                                                                           (and (code? next) (eq? RETURN (code-type next)))))
                                                                    ;; tail call
-                                                                   (encode JUMP (cdr offset) TAIL-CALL)
+                                                                   (encode JUMP (cdr offset) (car offset))
                                                                    ;; standard call
                                                                    (encode CALL (car offset) (cdr offset)))
                                                                (raise (make-peg-error "(grammar _)"
@@ -373,24 +373,38 @@
                               (lambda () (display xs)))]
                     [code-size    (length xs)]
                     [match-code   (encode MATCH)]
+                    [offsets      (make-eqv-hashtable)]
                     [buffer       (make-vector (+ code-size 1))]
                     [offset-calls (lambda (xs)
-                                    (let loop ([index 0])
-                                      (if (= index code-size)
-                                          xs
-                                          (let ([code (vector-ref xs index)])
-                                            (let ([type (code-type code)]
-                                                  [op-x (code-op-x code)]
-                                                  [op-y (code-op-y code)])
-                                                    ;; === standard call ===
-                                              (cond [(and (or (eq? type CALL) (eq? type GRAMMAR)) (> index 0))
-                                                     (vector-set! xs index (encode type op-x (- index op-y)))
-                                                     (loop (+ index 1))]
-                                                    ;; === tail call ===
-                                                    [(and (eq? type JUMP) (eq? op-y TAIL-CALL))
-                                                     (vector-set! xs index (encode type (- index op-x) op-y))
-                                                     (loop (+ index 1))]
-                                                    [else (loop (+ index 1))]))))))])
+                                    (letrec ([loop-1 (lambda (index)
+                                                       (if (= index code-size)
+                                                           (loop-2 0)
+                                                           (let ([code (vector-ref xs index)])
+                                                             (let ([type (code-type code)]
+                                                                   [op-x (code-op-x code)])
+                                                               (if (eq? type RULE)
+                                                                   (begin (hashtable-set! offsets op-x index)
+                                                                          (loop-1 (+ index 1)))
+                                                                   (loop-1 (+ index 1)))))))]
+                                             [loop-2 (lambda (index)
+                                                       (if (= index code-size)
+                                                           xs
+                                                           (let ([code (vector-ref xs index)])
+                                                             (let ([type (code-type code)]
+                                                                   [op-x (code-op-x code)]
+                                                                   [op-y (code-op-y code)])
+                                                                     ;; === standard call ===
+                                                               (cond [(or (eq? type CALL) (eq? type GRAMMAR))
+                                                                      (let ([offset (hashtable-ref offsets op-x 0)])
+                                                                        (vector-set! xs index (encode type op-x (- offset op-y)))
+                                                                        (loop-2 (+ index 1)))]
+                                                                     ;; === tail call ===
+                                                                     [(and (eq? type JUMP) (symbol? op-y))
+                                                                      (let ([offset (hashtable-ref offsets op-y 0)])
+                                                                        (vector-set! xs index (encode type (- offset op-x) op-y))
+                                                                        (loop-2 (+ index 1)))]
+                                                                     [else (loop-2 (+ index 1))])))))])
+                                      (loop-1 0)))])
                (let loop ([codes xs]
                           [index 0])
                  (cond [(or (= index code-size)
@@ -595,7 +609,7 @@
                            instructions-equal?
                            (grammar [R1 (sequence (text "ab") (call R2))]
                                     [R2 (text "c")])
-                           (list (encode GRAMMAR 10 2)
+                           (list (encode GRAMMAR 'R1 2)
                                  (encode JUMP 9)
                                  (encode RULE 'R1)
                                  a
@@ -607,3 +621,4 @@
                                  (encode RETURN))))))
          
          )
+
