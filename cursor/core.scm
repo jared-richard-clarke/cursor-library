@@ -386,11 +386,11 @@
                                                        [op-y (code-op-y code)])
                                                          ;; === standard call ===
                                                    (cond [(or (eq? type CALL) (eq? type GRAMMAR))
-                                                          (vector-set! xs index (encode type op-x (- index op-y)))
+                                                          (vector-set! xs index (encode type op-x (- op-y index)))
                                                           (loop (+ index 1))]
                                                          ;; === tail call ===
                                                          [(and (eq? type JUMP) (not (null? op-y)))
-                                                          (vector-set! xs index (encode type (- index op-x) op-y))
+                                                          (vector-set! xs index (encode type (- op-x index) op-y))
                                                           (loop (+ index 1))]
                                                          [else (loop (+ index 1))]))))))]
                       [compile-errors  (lambda (xs)
