@@ -28,7 +28,6 @@
                  MATCH
          ;; constants
                  MAX-RULES
-                 MAX-ERRORS
          ;; record-type: code
                  encode     ;; constructor
                  code?      ;; predicate
@@ -39,7 +38,8 @@
                  make-peg-error     ;; constructor
                  peg-error?         ;; predicate
                  peg-error-who      ;; field
-                 peg-error-message) ;; field
+                 peg-error-what     ;; field
+                 peg-error-why)     ;; field
          (import (rnrs)
                  (cursor tools))
 
@@ -70,8 +70,7 @@
                NONE-OF
                MATCH)
 
-         (define MAX-RULES  1000)
-         (define MAX-ERRORS 10)
+         (define MAX-RULES 1000)
 
          ;; Instruction Set: (list code code ...)
          ;;   where code = (encode type op-x op-y)
@@ -92,8 +91,9 @@
          ;; Flags syntax errors during compilation of PEG parser.
          (define-record-type (&peg-error make-peg-error peg-error?)
            (parent &condition)
-           (fields (immutable who peg-error-who)
-                   (immutable message peg-error-message))
+           (fields (immutable who  peg-error-who)
+                   (immutable what peg-error-what)
+                   (immutable why  peg-error-why))
            (sealed #t))
 
          )
