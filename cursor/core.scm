@@ -366,9 +366,7 @@
          (define compile
            (lambda (xs)
              (unless (and (pair? xs) (code? (car xs)))
-               (raise (make-peg-error "(compile _)"
-                                      xs
-                                      ERROR-TYPE-PEG)))
+               (raise (make-peg-error "(compile _)" xs ERROR-TYPE-PEG)))
              (let* ([parser (lambda (xs)
                               (lambda () (display xs)))]
                     [code-size    (length xs)]
