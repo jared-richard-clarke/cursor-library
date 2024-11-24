@@ -16,7 +16,7 @@
                  grammar
                  capture
                  text
-                 compile
+                 close
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor data)
@@ -360,10 +360,10 @@
                           characters))]
                    [else (raise (make-peg-error "(text _)" xs ERROR-TYPE-STRING))])))
 
-         (define compile
+         (define close
            (lambda (xs)
              (unless (and (pair? xs) (code? (car xs)))
-               (raise (make-peg-error "(compile _)" xs ERROR-TYPE-PEG)))
+               (raise (make-peg-error "(close _)" xs ERROR-TYPE-PEG)))
              (let* ([parser (lambda (xs)
                               (lambda () (display xs)))]
                     [code-size    (length xs)]
