@@ -374,8 +374,8 @@
                     [offsets      (make-eqv-hashtable)]
                     [buffer       (make-vector (+ code-size 1))]
                     [offset-calls (lambda (xs)
-                                    ;; loop-1: computes absolute offsets.
-                                    ;; loop-2: computes relative offsets.
+                                    ;; loop-1: computes and collects absolute offsets.
+                                    ;; loop-2: computes and sets relative offsets.
                                     (letrec ([loop-1 (lambda (index)
                                                        (if (= index code-size)
                                                            (loop-2 0)
