@@ -36,12 +36,6 @@
 
          ;; === Helper Functions ===
 
-         (define check-length
-           (lambda (x)
-             (if (list? x)
-                 (length x)
-                 1)))
-
          (define check-code
            (lambda (x)
              (cond [(code? x) (list x)]
@@ -201,7 +195,8 @@
                                                  py)))))])
              (lambda (xs)
                (if (null? (cdr xs))
-                   (cons (check-length (car xs)) (check-code (car xs)))
+                   (let ([x (check-code (car xs))])
+                     (cons (length x) x))
                    (or-else (car xs) (fold-choices (cdr xs)))))))
 
          ;; (choice px py ...) = px / py / ...
@@ -244,20 +239,22 @@
          ;; (is? px) = &px
          (define is?
            (lambda (px)
-             (let ([offset-x (check-length px)]
-                   [offset-y 2])
-               (fold-code (encode CHOICE (+ offset-x 2) IS)
-                          px
-                          (encode BACK-COMMIT offset-y)
-                          fail))))
+             (let ([px (check-code px)])
+               (let ([offset-x (length px)]
+                     [offset-y 2])
+                 (fold-code (encode CHOICE (+ offset-x 2) IS)
+                            px
+                            (encode BACK-COMMIT offset-y)
+                            fail)))))
 
          ;; (is-not? px) = !px
          (define is-not?
            (lambda (px)
-             (let ([offset (check-length px)])
-               (fold-code (encode CHOICE (+ offset 2) IS-NOT)
-                          px
-                          (encode FAIL-TWICE)))))
+             (let ([px (check-code px)])
+               (let ([offset (length px)])
+                 (fold-code (encode CHOICE (+ offset 2) IS-NOT)
+                            px
+                            (encode FAIL-TWICE))))))
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
@@ -614,11 +611,11 @@
                                  (encode RULE 'R1)
                                  a
                                  b
-                                 (encode JUMP 7 TAIL-CALL)
+                                 (encode JUMP 7 'R2)
                                  (encode RETURN)
                                  (encode RULE 'R2)
                                  c
-                                 (encode RETURN))))))
+                                 (encode RETURN)))
+              )))
          
          )
-
