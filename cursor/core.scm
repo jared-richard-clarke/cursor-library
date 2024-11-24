@@ -402,6 +402,7 @@
                                                                         (loop-2 (+ index 1)))]
                                                                      [else (loop-2 (+ index 1))])))))])
                                       (loop-1 0)))])
+               ;; Copy instructions into vector. Close with MATCH.
                (let loop ([codes xs]
                           [index 0])
                  (cond [(or (= index code-size)
