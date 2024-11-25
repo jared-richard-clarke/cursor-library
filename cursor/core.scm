@@ -375,7 +375,11 @@
                                     ;; loop-2: computes and sets relative offsets.
                                     (letrec ([loop-1 (lambda (index)
                                                        (if (= index code-size)
-                                                           (loop-2 0)
+                                                           ;; No need to enter second loop if there
+                                                           ;; are no offsets to be set.
+                                                           (if (= (hashtable-size offsets) 0)
+                                                               xs
+                                                               (loop-2 0))
                                                            (let ([code (vector-ref xs index)])
                                                              (let ([type (code-type code)]
                                                                    [op-x (code-op-x code)])
