@@ -407,6 +407,7 @@
                                                                      [else (loop-2 (+ index 1))])))))])
                                       (loop-1 0)))])
                ;; Copy instructions into vector. Close with MATCH.
+               ;; Wrap vector within closure of parse function.
                (let loop ([codes xs]
                           [index 0])
                  (cond [(or (= index code-size)
