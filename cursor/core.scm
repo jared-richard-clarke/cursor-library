@@ -54,8 +54,10 @@
            (lambda (x)
              (let recur ([x x] [grammar '()])
                (letrec ([check-sequence (lambda (xs)
-                                          (cond [(null? (cdr xs)) (recur (car xs) grammar)]
-                                                [(recur (car xs) grammar) (check-sequence (cdr xs))]
+                                          (cond [(null? (cdr xs))
+                                                 (recur (car xs) grammar)]
+                                                [(recur (car xs) grammar)
+                                                 (check-sequence (cdr xs))]
                                                 [else #f]))]
                         [check-choice (lambda (xs)
                                         (cond [(null? xs) #f]
@@ -67,11 +69,16 @@
                  (case type
                    [(FAIL ANY CHARACTER ONE-OF NONE-OF OPEN-CALL) #f]
                    [(EMPTY REPEAT IS IS-NOT) #t]
-                   [(SEQUENCE)     (check-sequence node-x)]
-                   [(CHOICE)       (check-choice node-x)]
-                   [(GRAMMAR)      (recur (vector-ref node-x 0) x)]
-                   [(CALL)         (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
-                   [(RULE CAPTURE) (recur node-y grammar)]
+                   [(SEQUENCE)
+                    (check-sequence node-x)]
+                   [(CHOICE)
+                    (check-choice node-x)]
+                   [(GRAMMAR)
+                    (recur (vector-ref node-x 0) x)]
+                   [(CALL)
+                    (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
+                   [(RULE CAPTURE)
+                    (recur node-y grammar)]
                    [else #f]))))))
 
          (define check-grammar
@@ -126,20 +133,20 @@
                                                                                (traverse-node node-y nullable-flag))
                                                                         (begin (hashtable-set! rule-count node-x 1)
                                                                                (traverse-node node-y nullable-flag))))])]
-                                                          [(EMPTY)    #t]
-                                                          [(FAIL
-                                                            ANY
-                                                            CHARACTER
-                                                            ONE-OF
-                                                            NONE-OF)  nullable-flag]
-                                                          [(SEQUENCE) (traverse-sequence node-x #f)]
-                                                          [(CHOICE)   (traverse-choice node-x nullable-flag)]
-                                                          [(CALL)     (traverse-rules node-y nullable-flag)]
-                                                          [(REPEAT
-                                                            IS
-                                                            IS-NOT)   (traverse-node node-x #t)]
-                                                          [(CAPTURE)  (traverse-node node-y nullable-flag)]
-                                                          [else       #f]))]))])
+                                                          [(EMPTY) #t]
+                                                          [(FAIL ANY CHARACTER ONE-OF NONE-OF)
+                                                           nullable-flag]
+                                                          [(SEQUENCE)
+                                                           (traverse-sequence node-x #f)]
+                                                          [(CHOICE)
+                                                           (traverse-choice node-x nullable-flag)]
+                                                          [(CALL)
+                                                           (traverse-rules node-y nullable-flag)]
+                                                          [(REPEAT IS IS-NOT)
+                                                           (traverse-node node-x #t)]
+                                                          [(CAPTURE)
+                                                           (traverse-node node-y nullable-flag)]
+                                                          [else #f]))]))])
                                      (traverse-rules start #f)))]
                      [find-rule  (lambda ()
                                    (let ([rules (hashtable-keys rule-count)])
@@ -314,7 +321,7 @@
          ;;                              ...
          ;; (grammar [id pattern] ...) -> (ast GRAMMAR (vector (ast RULE id pattern) ...))
          
-         (define-syntax grammar
+          (define-syntax grammar
            (syntax-rules ()
              [(_ [rule-x body-x]
                  [rule-y body-y]
@@ -335,21 +342,15 @@
                                                     (let ([type (ast-type node)])
                                                       (case type
                                                         ;; terminals
-                                                        [(EMPTY
-                                                          FAIL
-                                                          ANY
-                                                          CHARACTER
-                                                          CALL)    rule]
+                                                        [(EMPTY FAIL ANY CHARACTER CALL) rule]
                                                         ;; sequences
-                                                        [(SEQUENCE
-                                                          CHOICE)  (encode-ast type (map recur (ast-node-x node)))]
+                                                        [(SEQUENCE CHOICE)
+                                                         (encode-ast type (map recur (ast-node-x node)))]
                                                         ;; non-terminals
-                                                        [(REPEAT
-                                                          IS
-                                                          IS-NOT
-                                                          ONE-OF
-                                                          NONE-OF) (encode-ast type (recur (ast-node-x node)))]
-                                                        [(CAPTURE) (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
+                                                        [(REPEAT IS IS-NOT ONE-OF NONE-OF)
+                                                         (encode-ast type (recur (ast-node-x node)))]
+                                                        [(CAPTURE)
+                                                         (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
                                                         ;; skip
                                                         [(GRAMMAR) rule]
                                                         ;; open call -> call
@@ -359,7 +360,7 @@
                                                                (encode-ast CALL (car offset) (cdr offset))
                                                                (raise (make-peg-error "(grammar _)" (ast-node-x node) ERROR-UNDEFINED-RULE))))]
                                                         ;; wildcard
-                                                        [else      rule])))))
+                                                        [else rule])))))
                                     open-rules)])
                   ;; Check for possible left recursion.
                   (encode-ast GRAMMAR (check-grammar closed-rules))))]))
