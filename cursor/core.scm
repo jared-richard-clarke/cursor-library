@@ -316,13 +316,15 @@
          
          (define-syntax grammar
            (syntax-rules ()
-             [(_ [rule-x body-x] [rule-y body-y] ...)
+             [(_ [rule-x body-x]
+                 [rule-y body-y]
+                 ...)
               (let ([rule-x (encode-ast RULE (quote rule-x) (check-ast body-x))]
                     [rule-y (encode-ast RULE (quote rule-y) (check-ast body-y))]
                     ...)
                 (let* ([symbols    (quote (rule-x rule-y ...))]
                        [offsets    (zip symbols (iota (length symbols)))]
-                       ;; Collect grammar rules.
+                       ;; Collect rules.
                        [open-rules (vector rule-x rule-y ...)]
                        ;; Close open calls.
                        [closed-rules
@@ -333,15 +335,21 @@
                                                     (let ([type (ast-type node)])
                                                       (case type
                                                         ;; terminals
-                                                        [(EMPTY FAIL ANY CHARACTER CALL) rule]
+                                                        [(EMPTY
+                                                          FAIL
+                                                          ANY
+                                                          CHARACTER
+                                                          CALL)    rule]
                                                         ;; sequences
-                                                        [(SEQUENCE CHOICE)
-                                                         (encode-ast type (map recur (ast-node-x node)))]
+                                                        [(SEQUENCE
+                                                          CHOICE)  (encode-ast type (map recur (ast-node-x node)))]
                                                         ;; non-terminals
-                                                        [(REPEAT IS IS-NOT ONE-OF NONE-OF)
-                                                         (encode-ast type (recur (ast-node-x node)))]
-                                                        [(CAPTURE)
-                                                         (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
+                                                        [(REPEAT
+                                                          IS
+                                                          IS-NOT
+                                                          ONE-OF
+                                                          NONE-OF) (encode-ast type (recur (ast-node-x node)))]
+                                                        [(CAPTURE) (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
                                                         ;; skip
                                                         [(GRAMMAR) rule]
                                                         ;; open call -> call
@@ -351,9 +359,9 @@
                                                                (encode-ast CALL (car offset) (cdr offset))
                                                                (raise (make-peg-error "(grammar _)" (ast-node-x node) ERROR-UNDEFINED-RULE))))]
                                                         ;; wildcard
-                                                        [else rule])))))
+                                                        [else      rule])))))
                                     open-rules)])
-                  ;; Check grammar for possible left recursion.
+                  ;; Check for possible left recursion.
                   (encode-ast GRAMMAR (check-grammar closed-rules))))]))
 
          ;; (capture fn px)
