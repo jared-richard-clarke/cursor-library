@@ -61,7 +61,7 @@
                                                 [else #f]))]
                         [check-choice (lambda (xs)
                                         (cond [(null? xs) #f]
-                                              [(recur (cdr xs)) #t]
+                                              [(recur (cdr xs) grammar) #t]
                                               [else (recur (car xs) grammar)]))])
                (let ([type   (ast-type x)]
                      [node-x (ast-node-x x)]
