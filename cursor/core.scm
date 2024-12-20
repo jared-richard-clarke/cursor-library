@@ -46,9 +46,9 @@
                    [(let ([x (car xs)])
                       (and (ast? x)
                            (eq? type (ast-type x))))
-                    (append (ast-node-x x) (fold-ast (cdr xs)))]
+                    (append (ast-node-x x) (merge-ast type (cdr xs)))]
                    [else (cons (check-ast (car xs))
-                               (fold-ast (cdr xs)))])))
+                               (merge-ast type (cdr xs)))])))
 
          (define nullable?
            (lambda (x)
