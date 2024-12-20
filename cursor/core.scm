@@ -151,26 +151,22 @@
          ;; === Terminals ===
 
          ;; empty = ε
-         ;;
-         ;; (ast EMPTY '() '())
+         ;; empty -> (ast EMPTY)
          
          (define empty (encode-ast EMPTY))
 
          ;; fail
-         ;;
-         ;; (ast FAIL '() '())
+         ;; fail -> (ast FAIL)
          
          (define fail (encode-ast FAIL))
 
          ;; any = .
-         ;;
-         ;; (ast ANY '() '())
+         ;; any -> (ast ANY)
          
          (define any (encode-ast ANY))
 
          ;; (char #\a) = "a"
-         ;;
-         ;; (ast CHARACTER #\a '())
+         ;; (char #\a) -> (ast CHARACTER #\a)
          
          (define char
            (lambda (x)
@@ -184,9 +180,9 @@
          ;; (sequence px)        = px
          ;; (sequence)           = ε
          ;;
-         ;; px py ... -> (ast SEQUENCE (list px py ...) '())
-         ;; px        -> px
-         ;;           -> empty
+         ;; (sequence px py ...) -> (ast SEQUENCE (list px py ...))
+         ;; (sequence px)        -> px
+         ;; (sequence)           -> empty
          
          (define sequence
            (case-lambda
@@ -200,9 +196,9 @@
          ;; (choice px)        = px
          ;; (choice)           = fail
          ;;
-         ;; px py ... -> (ast CHOICE (list px py ...) '())
-         ;; px        -> px
-         ;;           -> fail
+         ;; (choice px py ...) -> (ast CHOICE (list px py ...))
+         ;; (choice px)        -> px
+         ;; (choice)           -> fail
          
          (define choice
            (case-lambda
@@ -210,9 +206,9 @@
              [(x) (check-ast x)]
              [xs  (encode-ast CHOICE (merge-ast CHOICE xs))]))
 
-         ;; (maybe px) = px? = px / ε
-         ;;
-         ;; (ast CHOICE (list px empty) '())
+         ;; (maybe px) = px?
+         ;;            = px / ε
+         ;; (maybe px) -> (ast CHOICE (list px empty))
          
          (define maybe
            (lambda (px)
@@ -221,8 +217,7 @@
          ;; === Repetition ===
 
          ;; (repeat px) = px*
-         ;;
-         ;; (ast REPEAT px '())
+         ;; (repeat px) -> (ast REPEAT px)
          
          (define repeat
            (lambda (px)
@@ -234,9 +229,8 @@
                                           ERROR-NULLABLE))))))
 
          ;; (repeat+1 px) = px+
-         ;; (repeat+1 px) = px • px*
-         ;;
-         ;; (ast SEQUENCE (list px (ast REPEAT px '())) '())
+         ;;               = px • px*
+         ;; (repeat+1 px) -> (ast SEQUENCE (list px (repeat px)))
          
          (define repeat+1
            (lambda (px)
@@ -245,16 +239,14 @@
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
          ;; (is? px) = &px
-         ;;
-         ;; (ast IS px '())
+         ;; (is? px) -> (ast IS px)
          
          (define is?
            (lambda (px)
              (encode-ast IS (check-ast px))))
 
          ;; (is-not? px) = !px
-         ;;
-         ;; (ast IS-NOT px '())
+         ;; (is-not? px) -> (ast IS-NOT px)
          
          (define is-not?
            (lambda (px)
@@ -264,8 +256,8 @@
          ;; (one-of "")    = ∅
          ;;   where ∅ = the empty set
          ;;
-         ;; "abc" -> (ast ONE-OF (charset "abc") '())
-         ;; ""    -> fail
+         ;; (one-of "abc") -> (ast ONE-OF (charset "abc"))
+         ;; (one-of "")    -> fail
          
          (define one-of
            (lambda (xs)
@@ -281,8 +273,8 @@
          ;; (none-of "")    = U
          ;;   where U = the universal set
          ;;
-         ;; "abc" -> (ast NONE-OF (charset "abc") '())
-         ;; ""    -> any
+         ;; (none-of "abc") -> (ast NONE-OF (charset "abc"))
+         ;; (none-of "")    -> any
          
          (define none-of
            (lambda (xs)
@@ -299,7 +291,7 @@
          ;; (call x)
          ;;   where x = symbol
          ;;
-         ;; x -> (ast OPEN-CALL x)
+         ;; (call x)  -> (ast OPEN-CALL x)
          
          (define-syntax call
            (syntax-rules ()
@@ -311,8 +303,7 @@
 
          ;; (grammar [id pattern] ...) = id <- pattern
          ;;                              ...
-         ;;
-         ;; (ast GRAMMAR (vector (ast RULE id pattern) ...))
+         ;; (grammar [id pattern] ...) -> (ast GRAMMAR (vector (ast RULE id pattern) ...))
          
          (define-syntax grammar
            (syntax-rules ()
@@ -358,7 +349,9 @@
 
          ;; (capture fn px)
          ;;   where fn = function
-         ;;         px = instruction-list
+         ;;         px = pattern
+         ;;
+         ;; (capture fn px) -> (ast CAPTURE fn px)
          
          (define capture
            (case-lambda
@@ -368,6 +361,8 @@
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
+         ;; (text "abc") -> (ast SEQUENCE (list (char #\a) (char #\b) (char #\c)))
+         ;; (text "")    -> empty
          
          (define text
            (lambda (xs)
@@ -378,5 +373,5 @@
                             [(= size 1) (car characters)]
                             [else       (encode-ast SEQUENCE characters)]))]
                    [else (raise (make-peg-error "(text _)" xs ERROR-TYPE-STRING))])))
-
+         
          )
