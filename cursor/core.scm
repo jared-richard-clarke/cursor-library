@@ -90,14 +90,16 @@
                                             [traverse-sequence
                                              (lambda (xs nullable-flag)
                                                (cond [error-flag #f]
-                                                     [(null? (cdr xs)) (traverse-node (car xs) nullable-flag)]
+                                                     [(null? (cdr xs))
+                                                      (traverse-node (car xs) nullable-flag)]
                                                      [(traverse-node (car xs) nullable-flag)
                                                       (traverse-sequence (cdr xs) nullable-flag)]
                                                      [else #f]))]
                                             [traverse-choice
                                              (lambda (xs nullable-flag)
                                                (cond [error-flag #f]
-                                                     [(null? (cdr xs)) (traverse-node (car xs) nullable-flag)]
+                                                     [(null? (cdr xs))
+                                                      (traverse-node (car xs) nullable-flag)]
                                                      [else
                                                       (let ([nullable-flag (traverse-node (car xs) nullable-flag)])
                                                         (if error-flag
@@ -114,7 +116,9 @@
                                                           [(RULE)
                                                            (set! step-count (+ step-count 1))
                                                            (cond [error-flag #f]
-                                                                 [(> step-count max-count) (set! error-flag #t) #f]
+                                                                 [(> step-count max-count)
+                                                                  (set! error-flag #t)
+                                                                  #f]
                                                                  [else
                                                                   (let ([total (hashtable-ref rule-count node-x #f)])
                                                                     (if total
@@ -122,14 +126,20 @@
                                                                                (traverse-node node-y nullable-flag))
                                                                         (begin (hashtable-set! rule-count node-x 1)
                                                                                (traverse-node node-y nullable-flag))))])]
-                                                          [(EMPTY) #t]
-                                                          [(FAIL ANY CHARACTER ONE-OF NONE-OF) nullable-flag]
+                                                          [(EMPTY)    #t]
+                                                          [(FAIL
+                                                            ANY
+                                                            CHARACTER
+                                                            ONE-OF
+                                                            NONE-OF)  nullable-flag]
                                                           [(SEQUENCE) (traverse-sequence node-x #f)]
-                                                          [(CHOICE) (traverse-choice node-x nullable-flag)]
-                                                          [(CALL) (traverse-rules node-y nullable-flag)]
-                                                          [(REPEAT IS IS-NOT) (traverse-node node-x #t)]
-                                                          [(CAPTURE) (traverse-node node-y nullable-flag)]
-                                                          [else #f]))]))])
+                                                          [(CHOICE)   (traverse-choice node-x nullable-flag)]
+                                                          [(CALL)     (traverse-rules node-y nullable-flag)]
+                                                          [(REPEAT
+                                                            IS
+                                                            IS-NOT)   (traverse-node node-x #t)]
+                                                          [(CAPTURE)  (traverse-node node-y nullable-flag)]
+                                                          [else       #f]))]))])
                                      (traverse-rules start #f)))]
                      [find-rule  (lambda ()
                                    (let ([rules (hashtable-keys rule-count)])
@@ -146,7 +156,6 @@
                           (check-rule index)
                           (loop (+ index 1))]
                          [else nodes]))))))
-
 
          ;; === Terminals ===
 
