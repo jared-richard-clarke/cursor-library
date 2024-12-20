@@ -85,7 +85,7 @@
                (let ([check-rule (lambda (start)
                                    (letrec ([traverse-rules
                                              (lambda (index nullable-flag)
-                                               (cond [(or error-flag nullable-flag (>= index size)) #f]
+                                               (cond [(or error-flag (>= index size)) #f]
                                                      [else (traverse-node (vector-ref nodes index) nullable-flag)]))]
                                             [traverse-sequence
                                              (lambda (xs nullable-flag)
