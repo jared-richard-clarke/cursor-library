@@ -27,18 +27,18 @@
                  ONE-OF
                  NONE-OF
                  MATCH
-         ;; record-type: ast        
+          ;; record-type: ast        
                  encode-ast ;; constructor
                  ast?       ;; predicate
                  ast-type   ;; field
                  ast-node-x ;; field
                  ast-node-y ;; field
-         ;; record-type: &peg-error -> &condition
-                 make-peg-error     ;; constructor
-                 peg-error?         ;; predicate
-                 peg-error-who      ;; field
-                 peg-error-what     ;; field
-                 peg-error-why)     ;; field
+          ;; record-type: &peg-error -> &condition
+                 make-peg-error ;; constructor
+                 peg-error?     ;; predicate
+                 peg-error-who  ;; field
+                 peg-error-what ;; field
+                 peg-error-why) ;; field
          (import (rnrs)
                  (cursor tools))
 
@@ -87,11 +87,12 @@
                    node-x
                    node-y)
            (sealed #t)
-           (lambda (new)
+           (protocol
+            (lambda (new)
              (case-lambda
-              [(type)               (new type '() '())]
-              [(type node-x)        (new type node '())]
-              [(type node-x node-y) (new type node-x node-y)])))
+               [(type)               (new type '() '())]
+               [(type node-x)        (new type node-x '())]
+               [(type node-x node-y) (new type node-x node-y)]))))
 
          ;; record-type: &peg-error -> &condition
          ;; Flags syntax errors during compilation of PEG parser.
