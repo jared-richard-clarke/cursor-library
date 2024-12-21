@@ -53,33 +53,35 @@
          (define nullable?
            (lambda (x)
              (let recur ([x x] [grammar '()])
-               (letrec ([check-sequence (lambda (xs)
+               (letrec ([check-sequence (lambda (xs grammar)
                                           (cond [(null? (cdr xs))
                                                  (recur (car xs) grammar)]
                                                 [(recur (car xs) grammar)
-                                                 (check-sequence (cdr xs))]
+                                                 (check-sequence (cdr xs) grammar)]
                                                 [else #f]))]
-                        [check-choice (lambda (xs)
-                                        (cond [(null? xs) #f]
-                                              [(recur (cdr xs) grammar) #t]
-                                              [else (recur (car xs) grammar)]))])
-               (let ([type   (ast-type x)]
-                     [node-x (ast-node-x x)]
-                     [node-y (ast-node-y x)])
-                 (case type
-                   [(FAIL ANY CHARACTER ONE-OF NONE-OF OPEN-CALL) #f]
-                   [(EMPTY REPEAT IS IS-NOT) #t]
-                   [(SEQUENCE)
-                    (check-sequence node-x)]
-                   [(CHOICE)
-                    (check-choice node-x)]
-                   [(GRAMMAR)
-                    (recur (vector-ref node-x 0) x)]
-                   [(CALL)
-                    (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
-                   [(RULE CAPTURE)
-                    (recur node-y grammar)]
-                   [else #f]))))))
+                        [check-choice (lambda (xs grammar)
+                                        (cond [(null? (cdr xs))
+                                               (recur (car xs) grammar)]
+                                              [(check-choice (cdr xs) grammar)
+                                               (recur (car xs) grammar)]
+                                              [else #f]))])
+                 (let ([type   (ast-type x)]
+                       [node-x (ast-node-x x)]
+                       [node-y (ast-node-y x)])
+                   (case type
+                     [(FAIL ANY CHARACTER ONE-OF NONE-OF OPEN-CALL) #f]
+                     [(EMPTY REPEAT IS IS-NOT) #t]
+                     [(SEQUENCE)
+                      (check-sequence node-x grammar)]
+                     [(CHOICE)
+                      (check-choice node-x grammar)]
+                     [(GRAMMAR)
+                      (recur (vector-ref node-x 0) x)]
+                     [(CALL)
+                      (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
+                     [(RULE CAPTURE)
+                      (recur node-y grammar)]
+                     [else #f]))))))
 
          (define check-grammar
            (lambda (xs)
