@@ -344,12 +344,12 @@
                                                     (let ([type (ast-type node)])
                                                       (case type
                                                         ;; terminals
-                                                        [(EMPTY FAIL ANY CHARACTER CALL) node]
+                                                        [(EMPTY FAIL ANY CHARACTER CALL ONE-OF NONE-OF) node]
                                                         ;; sequences
                                                         [(SEQUENCE CHOICE)
                                                          (encode-ast type (map recur (ast-node-x node)))]
                                                         ;; non-terminals
-                                                        [(REPEAT IS IS-NOT ONE-OF NONE-OF)
+                                                        [(REPEAT IS IS-NOT)
                                                          (encode-ast type (recur (ast-node-x node)))]
                                                         [(CAPTURE)
                                                          (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
