@@ -323,7 +323,7 @@
          ;;                              ...
          ;; (grammar [id pattern] ...) -> (ast GRAMMAR (vector (ast RULE id pattern) ...))
          
-          (define-syntax grammar
+         (define-syntax grammar
            (syntax-rules ()
              [(_ [rule-x body-x]
                  [rule-y body-y]
@@ -344,7 +344,7 @@
                                                     (let ([type (ast-type node)])
                                                       (case type
                                                         ;; terminals
-                                                        [(EMPTY FAIL ANY CHARACTER CALL) rule]
+                                                        [(EMPTY FAIL ANY CHARACTER CALL) node]
                                                         ;; sequences
                                                         [(SEQUENCE CHOICE)
                                                          (encode-ast type (map recur (ast-node-x node)))]
@@ -354,7 +354,7 @@
                                                         [(CAPTURE)
                                                          (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
                                                         ;; skip
-                                                        [(GRAMMAR) rule]
+                                                        [(GRAMMAR) node]
                                                         ;; open call -> call
                                                         [(OPEN-CALL)
                                                          (let ([offset (assq (ast-node-x node) offsets)])
@@ -362,7 +362,7 @@
                                                                (encode-ast CALL (car offset) (cdr offset))
                                                                (raise (make-peg-error "(grammar _)" (ast-node-x node) ERROR-UNDEFINED-RULE))))]
                                                         ;; wildcard
-                                                        [else rule])))))
+                                                        [else node])))))
                                     open-rules)])
                   ;; Check for possible left recursion.
                   (encode-ast GRAMMAR (check-grammar closed-rules))))]))
