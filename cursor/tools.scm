@@ -259,7 +259,7 @@
          ;; (let-values ([(buffer flush) (string-buffer)])
          ;;   (put-string buffer "abc")
          ;;   (put-string buffer "def")
-         ;;   (flush buffer))
+         ;;   (flush))
          ;;
          ;; ->  "abcdef"
          
