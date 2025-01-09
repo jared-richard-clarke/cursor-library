@@ -106,11 +106,21 @@
 
          (define check-grammar
            (lambda (xs)
-             (let ([nodes      xs]
-                   [size       (vector-length xs)]
+             (let ([nodes xs]
+                   ;; The total number of rules. Provides an upper bound for
+                   ;; looping over the vector.
+                   [size (vector-length xs)]
+                   ;; Maps the number of calls per rule. If the grammar is
+                   ;; left-recursive, the rule with the highest number of
+                   ;; calls is most likely left-recursive.
                    [rule-count (make-eqv-hashtable)]
-                   [step-count 0]
-                   [max-count  1000]
+                   ;; Tracks the total number of rule calls.
+                   [call-count 0]
+                   ;; If a set of rules has accumulatively been called more than a 1000 times,
+                   ;; then there probably is left-recursion in there somewhere. This limit is
+                   ;; arbitrary.
+                   [max-count 1000]
+                   ;; Error flag allows a left-recursive simulation to terminate.
                    [error-flag #f])
                (let ([check-rule (lambda (start)
                                    (letrec ([traverse-rules
@@ -144,9 +154,9 @@
                                                             [node-y (ast-node-y x)])
                                                         (case type
                                                           [(RULE)
-                                                           (set! step-count (+ step-count 1))
+                                                           (set! call-count (+ call-count 1))
                                                            (cond [error-flag #f]
-                                                                 [(> step-count max-count)
+                                                                 [(> call-count max-count)
                                                                   (set! error-flag #t)
                                                                   #f]
                                                                  [else
@@ -171,6 +181,8 @@
                                                            (traverse-node node-y nullable-flag)]
                                                           [else #f]))]))])
                                      (traverse-rules start #f)))]
+                     ;; Look up rule with the highest call count. This rule is most likely
+                     ;; responsible for left recursion.
                      [find-rule  (lambda ()
                                    (let ([rules (hashtable-keys rule-count)])
                                      (vector-fold (lambda (rule-x rule-y)
@@ -180,6 +192,7 @@
                                                           rule-x
                                                           rule-y)))
                                                   rules)))])
+                 ;; Check each rule in grammar.
                  (let loop ([index 0])
                    (cond [error-flag (raise (make-peg-error "(grammar _)" (find-rule) ERROR-LEFT-RECURSION))]
                          [(< index size)
