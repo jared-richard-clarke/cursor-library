@@ -109,7 +109,7 @@
                    ;; The rules list being simulated over.
              (let ([nodes xs]
                    ;; The total number of rules. Provides an upper bound for
-                   ;; looping over the vector.
+                   ;; looping over the rules list.
                    [size (vector-length xs)]
                    ;; Maps the number of calls per rule. If the grammar is
                    ;; left-recursive, the rule with the highest number of
