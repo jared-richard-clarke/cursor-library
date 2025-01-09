@@ -65,12 +65,16 @@
          (define nullable?
            (lambda (x)
              (let recur ([x x] [grammar '()])
+                        ;; Checks sequence pairwise, checking the subsequent
+                        ;; node only if the previous node is nullable.
                (letrec ([check-sequence (lambda (xs grammar)
                                           (cond [(null? (cdr xs))
                                                  (recur (car xs) grammar)]
                                                 [(recur (car xs) grammar)
                                                  (check-sequence (cdr xs) grammar)]
                                                 [else #f]))]
+                        ;; Checks choice pairwise, checking the previous node
+                        ;; only if the subsequent node is nullable.
                         [check-choice (lambda (xs grammar)
                                         (cond [(null? (cdr xs))
                                                (recur (car xs) grammar)]
