@@ -35,11 +35,18 @@
 
          ;; === Helper Functions ===
 
+         ;; (check-ast ast) -> ast | raise peg-error
+         ;; Returns the given argument if it is an AST. Otherwise,
+         ;; throws an error.
+
          (define check-ast
            (lambda (x)
              (if (ast? x)
                  x
                  (raise (make-peg-error "undefined" x ERROR-TYPE-CODE)))))
+
+         ;; (flatten-ast symbol (list ast)) -> (list ast)
+         ;; Flattens a nested list of ASTs of the given type by one level.
 
          (define flatten-ast
            (lambda (type xs)
@@ -50,6 +57,10 @@
                     (append (ast-node-x (car xs)) (flatten-ast type (cdr xs)))]
                    [else (cons (check-ast (car xs))
                                (flatten-ast type (cdr xs)))])))
+
+         ;; (nullable? ast) -> boolean
+         ;; Checks if an AST might trigger an infinite loop.
+         ;; This is an approximation.
 
          (define nullable?
            (lambda (x)
@@ -83,6 +94,15 @@
                      [(RULE CAPTURE)
                       (recur node-y grammar)]
                      [else #f]))))))
+
+         ;; (check-grammar (vector ast)) -> (vector ast) | raise peg-error
+         ;; Checks if a list of grammar rules is potentially left-recursive
+         ;; by running a simulation on that list. This is an approximation.
+         ;;
+         ;; Raises an error on potential left recursion. Otherwise, returns
+         ;; list unchanged.
+         ;;
+         ;; Side Note: The rules list is a vector for O(1) lookup.
 
          (define check-grammar
            (lambda (xs)
