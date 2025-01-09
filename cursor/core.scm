@@ -124,7 +124,7 @@
                    [error-flag #f])
                ;; Runs simulation over rule, checking for left recursion.
                (let ([check-rule (lambda (start)
-                                            ;; Boundary and error checks before indexing into the next rule.
+                                            ;; Boundary and error check before indexing into the next rule.
                                    (letrec ([traverse-rules
                                              (lambda (index nullable-flag)
                                                (cond [(or error-flag (>= index size)) #f]
