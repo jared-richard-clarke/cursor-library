@@ -103,9 +103,10 @@
          ;; list unchanged.
          ;;
          ;; Side Note: The rules list is a vector for O(1) lookup.
-
+         
          (define check-grammar
            (lambda (xs)
+                   ;; The rules list being simulated over.
              (let ([nodes xs]
                    ;; The total number of rules. Provides an upper bound for
                    ;; looping over the vector.
@@ -121,11 +122,15 @@
                    [max-count 1000]
                    ;; Error flag allows a left-recursive simulation to terminate.
                    [error-flag #f])
+               ;; Runs simulation over rule, checking for left recursion.
                (let ([check-rule (lambda (start)
+                                            ;; Boundary and error checks before indexing into the next rule.
                                    (letrec ([traverse-rules
                                              (lambda (index nullable-flag)
                                                (cond [(or error-flag (>= index size)) #f]
                                                      [else (traverse-node (vector-ref nodes index) nullable-flag)]))]
+                                            ;; Traverses sequence pairwise, checking the subsequent node only if
+                                            ;; the previous node is nullable and the error flag is set to false.
                                             [traverse-sequence
                                              (lambda (xs nullable-flag)
                                                (cond [error-flag #f]
@@ -134,6 +139,8 @@
                                                      [(traverse-node (car xs) nullable-flag)
                                                       (traverse-sequence (cdr xs) nullable-flag)]
                                                      [else #f]))]
+                                            ;; Traverses choice pairwise. Each node must be checked unless
+                                            ;; the error flag is set to true.
                                             [traverse-choice
                                              (lambda (xs nullable-flag)
                                                (cond [error-flag #f]
@@ -144,6 +151,7 @@
                                                         (if error-flag
                                                             #f
                                                             (traverse-choice (cdr xs) nullable-flag)))]))]
+                                            ;; Delegates the traversal of a node according to its type.
                                             [traverse-node
                                              (lambda (x nullable-flag)
                                                (cond [error-flag #f]
@@ -191,7 +199,7 @@
                                                           rule-x
                                                           rule-y)))
                                                   rules)))])
-                 ;; Check each rule in grammar. Raise error if error flag is set to true.
+                 ;; Loop over and check each rule in grammar. Raise error if error flag is set to true.
                  (let loop ([index 0])
                    (cond [error-flag (raise (make-peg-error "(grammar _)" (find-rule) ERROR-LEFT-RECURSION))]
                          [(< index size)
