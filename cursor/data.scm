@@ -33,6 +33,7 @@
                  ast-type   ;; field
                  ast-node-x ;; field
                  ast-node-y ;; field
+                 ast-equal?
           ;; record-type: &peg-error -> &condition
                  make-peg-error ;; constructor
                  peg-error?     ;; predicate
@@ -93,6 +94,53 @@
                [(type)               (new type '() '())]
                [(type node-x)        (new type node-x '())]
                [(type node-x node-y) (new type node-x node-y)]))))
+
+         ;; (ast-equal? ast ast) -> boolean
+         ;; Deep, structural comparison of asts.
+         (define ast-equal?
+           (lambda (a b)
+             (and (ast? a) (ast? b)
+                  (let ([type-a (ast-type a)]
+                        [type-b (ast-type b)])
+                    (and (eq? type-a type-b)
+                         (case type-a
+                           [(EMPTY FAIL ANY) #t]
+                           [(CHARACTER)
+                            (char=? (ast-node-x a) (ast-node-x b))]
+                           [(SEQUENCE CHOICE)
+                            (let ([node-a (ast-node-x a)]
+                                  [node-b (ast-node-x b)])
+                              (and (= (length node-a) (length node-b))
+                                   (for-all ast-equal? node-a node-b)))]
+                           [(REPEAT IS IS-NOT)
+                            (ast-equal? (ast-node-x a) (ast-node-x b))]
+                           [(ONE-OF NONE-OF)
+                            (charset-equal? (ast-node-x a) (ast-node-x b))]
+                           [(OPEN-CALL)
+                            (eq? (ast-node-x a) (ast-node-x b))]
+                           [(CALL)
+                            (and (eq? (ast-node-x a) (ast-node-x b))
+                                 (= (ast-node-y a) (ast-node-y b)))]
+                           [(GRAMMAR)
+                            (for-all ast-equal?
+                                     (vector->list (ast-node-x a))
+                                     (vector->list (ast-node-x b)))]
+                           [(RULE)
+                            (and (eq? (ast-node-x a) (ast-node-x b))
+                                 (ast-equal? (ast-node-y a) (ast-node-y b)))]
+                           ;; Capture comparison.
+                           ;; Cannot meaningfully compare arbitrary functions.
+                           ;; Check only for their presence or absence within
+                           ;; both captures.
+                           [(CAPTURE)
+                            (let ([a-f? (procedure? (ast-node-x a))]
+                                  [a-px (ast-node-y a)]
+                                  [b-f? (procedure? (ast-node-x b))]
+                                  [b-px (ast-node-y b)])
+                              (let ([present? (and a-f? b-f?)])
+                                (and (or present? (not present?))
+                                     (ast-equal? a-px b-px))))]
+                           [else #f]))))))
 
          ;; record-type: &peg-error -> &condition
          ;; Flags syntax errors during compilation of PEG parser.
