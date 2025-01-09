@@ -15,7 +15,8 @@
                  call
                  grammar
                  capture
-                 text)
+                 text
+                 (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor data)
                  (cursor tools)
@@ -393,5 +394,142 @@
                             [(= size 1) (car characters)]
                             [else       (encode-ast SEQUENCE characters)]))]
                    [else (raise (make-peg-error "(text _)" xs ERROR-TYPE-STRING))])))
+
+         ;; === Unit Tests ===
+
+         (define unit-tests
+           (let ([A (encode-ast CHARACTER #\a)]
+                 [B (encode-ast CHARACTER #\b)]
+                 [C (encode-ast CHARACTER #\c)])
+             
+             (test-chunk
+              "Cursor Core"
+              ;; === Literals ===
+              (test-assert "character literal"
+                           ast-equal?
+                           (char #\a)
+                           A)
+              
+              ;; === Concatenation ===
+              (test-assert "text sequence abc"
+                           ast-equal?
+                           (text "abc")
+                           (encode-ast SEQUENCE (list A B C)))
+
+              (test-assert "text epsilon"
+                           ast-equal?
+                           (text "")
+                           empty)
+
+              (test-assert "sequence abc"
+                           ast-equal?
+                           (sequence (char #\a)
+                                     (char #\b)
+                                     (char #\c))
+                           (encode-ast SEQUENCE (list A B C)))
+
+              (test-assert "sequence nested"
+                           ast-equal?
+                           (sequence (sequence (char #\a)
+                                               (char #\b))
+                                     (char #\c)
+                                     (text "ba"))
+                           (encode-ast SEQUENCE (list A B C B A)))
+
+              (test-assert "sequence identity"
+                           ast-equal?
+                           (sequence)
+                           empty)
+
+              ;; === Ordered Choice ===
+              (test-assert "choice, a / b"
+                           ast-equal?
+                           (choice (char #\a) (char #\b))
+                           (encode-ast CHOICE (list A B)))
+
+              (test-assert "choice identity"
+                           ast-equal?
+                           (choice)
+                           fail)
+
+              ;; === Repetition ===
+              (test-assert "repeat a*"
+                           ast-equal?
+                           (repeat (char #\a))
+                           (encode-ast REPEAT A))
+
+              (test-assert "repeat a+"
+                           ast-equal?
+                           (repeat+1 (char #\a))
+                           (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
+              
+              ;; === Not Predicate ===
+              (test-assert "predicate !a"
+                           assert-equal?
+                           (is-not? (char #\a))
+                           (encode-ast IS-NOT A))
+
+              ;; === Predicate ===
+              (test-assert "predicate &a"
+                           assert-equal?
+                           (is? (char #\a))
+                           (encode-ast IS A))
+
+              ;; === Sets ===
+              (test-assert "character set [abc]"
+                           ast-equal?
+                           (one-of "abc")
+                           (encode-ast ONE-OF (make-charset "abc")))
+
+              (test-assert "character set [^abc]"
+                           ast-equal?
+                           (none-of "abc")
+                           (encode-ast NONE-OF (make-charset "abc")))
+
+              (test-assert "empty set"
+                           ast-equal?
+                           (one-of "")
+                           fail)
+
+              (test-assert "universal set"
+                           ast-equal?
+                           (none-of "")
+                           any)
+
+              ;; === Captures ===
+              (test-assert "capture, baseline"
+                           ast-equal?
+                           (capture (char #\a))
+                           (encode-ast CAPTURE '() A))
+
+              (test-assert "capture, true positive"
+                           ast-equal?
+                           (capture identity (char #\a))
+                           (encode-ast CAPTURE identity A))
+
+              (test-assert "capture, false positive, + ≠ identity"
+                           ast-equal?
+                           (capture + (char #\a))
+                           (encode-ast CAPTURE identity A))
+
+              ;; === Grammars ===
+              (test-assert "grammar, baseline"
+                           ast-equal?
+                           (grammar [R1 (sequence (text "ab") (call R2))]
+                                    [R2 (text "c")])
+                           (encode-ast GRAMMAR
+                                       (encode-ast RULE
+                                                   (quote R1)
+                                                   (encode-ast SEQUENCE
+                                                               (list A
+                                                                     B
+                                                                     (encode-ast CALL
+                                                                                 (quote R2)
+                                                                                 1))))
+                                       (encode-ast RULE
+                                                   (quote R2)
+                                                   C)))
+              
+              )))
          
          )
