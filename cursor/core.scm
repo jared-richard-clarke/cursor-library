@@ -522,13 +522,13 @@
               
               ;; === Not Predicate ===
               (test-assert "predicate !a"
-                           assert-equal?
+                           ast-equal?
                            (is-not? (char #\a))
                            (encode-ast IS-NOT A))
 
               ;; === Predicate ===
               (test-assert "predicate &a"
-                           assert-equal?
+                           ast-equal?
                            (is? (char #\a))
                            (encode-ast IS A))
 
@@ -575,7 +575,7 @@
                            (grammar [R1 (sequence (text "ab") (call R2))]
                                     [R2 (text "c")])
                            (encode-ast GRAMMAR
-                                       (encode-ast RULE
+                                       (vector (encode-ast RULE
                                                    (quote R1)
                                                    (encode-ast SEQUENCE
                                                                (list A
@@ -583,10 +583,10 @@
                                                                      (encode-ast CALL
                                                                                  (quote R2)
                                                                                  1))))
-                                       (encode-ast RULE
-                                                   (quote R2)
-                                                   C)))
-              
+                                               (encode-ast RULE
+                                                           (quote R2)
+                                                           C))))
+
               )))
          
          )
