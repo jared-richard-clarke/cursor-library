@@ -41,15 +41,15 @@
                  x
                  (raise (make-peg-error "undefined" x ERROR-TYPE-CODE)))))
 
-         (define merge-ast
+         (define flatten-ast
            (lambda (type xs)
              (cond [(null? xs) xs]
                    [(let ([x (car xs)])
                       (and (ast? x)
                            (eq? type (ast-type x))))
-                    (append (ast-node-x (car xs)) (merge-ast type (cdr xs)))]
+                    (append (ast-node-x (car xs)) (flatten-ast type (cdr xs)))]
                    [else (cons (check-ast (car xs))
-                               (merge-ast type (cdr xs)))])))
+                               (flatten-ast type (cdr xs)))])))
 
          (define nullable?
            (lambda (x)
@@ -207,7 +207,7 @@
            (case-lambda
              [()  empty]
              [(x) (check-ast x)]
-             [xs  (encode-ast SEQUENCE (merge-ast SEQUENCE xs))]))
+             [xs  (encode-ast SEQUENCE (flatten-ast SEQUENCE xs))]))
 
          ;; === Ordered Choice: Limited Backtracking ===
 
@@ -236,7 +236,7 @@
            (case-lambda
              [()  fail]
              [(x) (check-ast x)]
-             [xs  (encode-ast CHOICE (merge-ast CHOICE xs))]))
+             [xs  (encode-ast CHOICE (flatten-ast CHOICE xs))]))
 
          ;; (maybe px) = px?
          ;;            = px / ε
