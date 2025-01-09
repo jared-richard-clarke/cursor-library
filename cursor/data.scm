@@ -97,6 +97,7 @@
 
          ;; (ast-equal? ast ast) -> boolean
          ;; Deep, structural comparison of asts.
+         
          (define ast-equal?
            (lambda (a b)
              (and (ast? a) (ast? b)
