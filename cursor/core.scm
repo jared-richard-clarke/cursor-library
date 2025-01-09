@@ -223,10 +223,6 @@
          
          ;; Rules for consolidating sets within a choice operation.
          ;;
-         ;; "none-of" is the universal set minus the provided characters.
-         ;; The universal set, in this context, contains all characters
-         ;; as defined by Scheme — particularly R6RS.
-         ;;
          ;;    -------------------------------------------> y
          ;;    ---------------------------------------------
          ;; | |         | one-of         | none-of          |
@@ -311,6 +307,10 @@
          ;;
          ;; (none-of "abc") -> (ast NONE-OF (charset "abc"))
          ;; (none-of "")    -> any
+         ;;
+         ;; Operation returns the universal set minus the provided characters.
+         ;; In this context, the universal set contains all characters
+         ;; as provided by R6RS — particularly Chez Scheme.
          
          (define none-of
            (lambda (xs)
