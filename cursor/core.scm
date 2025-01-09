@@ -218,6 +218,23 @@
          ;; (choice px py ...) -> (ast CHOICE (list px py ...))
          ;; (choice px)        -> px
          ;; (choice)           -> fail
+
+         ;; === Ordered Choice: Sets ===
+         
+         ;; Rules for consolidating sets within a choice operation.
+         ;;
+         ;; "none-of" is the universal set minus the provided characters.
+         ;; The universal set, in this context, contains all characters
+         ;; as defined by Scheme — particularly R6RS.
+         ;;
+         ;;    -------------------------------------------> y
+         ;;    ---------------------------------------------
+         ;; | |         | one-of         | none-of          |
+         ;; | |---------+----------------+------------------|
+         ;; | | one-of  | x ∪ y = one-of | y \ x = none-of  |
+         ;; | |---------+----------------+------------------|
+         ;; V | none-of | x = none-of    | x ∪ y = none-of  |
+         ;; x  ---------------------------------------------
          
          (define choice
            (case-lambda
