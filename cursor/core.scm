@@ -117,8 +117,7 @@
                    ;; Tracks the total number of rule calls.
                    [call-count 0]
                    ;; If a set of rules has accumulatively been called more than a 1000 times,
-                   ;; then there probably is left-recursion in there somewhere. This limit is
-                   ;; arbitrary.
+                   ;; then it is probably left-recursive. This limit is arbitrary.
                    [max-count 1000]
                    ;; Error flag allows a left-recursive simulation to terminate.
                    [error-flag #f])
@@ -192,7 +191,7 @@
                                                           rule-x
                                                           rule-y)))
                                                   rules)))])
-                 ;; Check each rule in grammar.
+                 ;; Check each rule in grammar. Raise error if error flag is set to true.
                  (let loop ([index 0])
                    (cond [error-flag (raise (make-peg-error "(grammar _)" (find-rule) ERROR-LEFT-RECURSION))]
                          [(< index size)
