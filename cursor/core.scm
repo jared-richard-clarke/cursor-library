@@ -262,54 +262,12 @@
          ;; (choice px py ...) -> (ast CHOICE (list px py ...))
          ;; (choice px)        -> px
          ;; (choice)           -> fail
-
-         ;; === Ordered Choice: Sets ===
-         
-         ;; Rules for consolidating sets within a choice operation.
-         ;;
-         ;; +-----------------------------------------------> y
-         ;; | +-----------------------------------------------+
-         ;; | |         | one-of           | none-of          |
-         ;; | |---------+------------------+------------------|
-         ;; | | one-of  | x ∪ y -> one-of  | y \ x -> none-of |
-         ;; | |---------+------------------+------------------|
-         ;; V | none-of | x \ y -> none-of | x ∪ y -> none-of |
-         ;; x +-----------------------------------------------+
          
          (define choice
-           (let* ([combine-set
-                   (lambda (a b)
-                     (let ([type-a (ast-type a)]
-                           [set-a  (ast-node-x a)]
-                           [type-b (ast-type b)]
-                           [set-b  (ast-node-x b)])
-                       (cond [(and (eq? type-a ONE-OF)
-                                   (eq? type-b ONE-OF))
-                              (encode-ast ONE-OF (charset-union set-a set-b))]
-                             [(and (eq? type-a ONE-OF)
-                                   (eq? type-b NONE-OF))
-                              (encode-ast NONE-OF (charset-difference set-b set-a))]
-                             [(and (eq? type-a NONE-OF)
-                                   (eq? type-b ONE-OF))
-                              (encode-ast NONE-OF (charset-difference set-a set-b))]
-                             [else
-                              (encode-ast NONE-OF (charset-union set-a set-b))])))]
-                  [fold-sets
-                   (lambda (xs)
-                     (reverse (fold-left (lambda (accum x)
-                                           (let* ([tail  (car accum)]
-                                                  [head  (cdr accum)]
-                                                  [set-a (ast-node-x tail)]
-                                                  [set-b (ast-node-x x)])
-                                             (if (and (charset? set-a) (charset? set-b))
-                                                 (cons (combine-set tail x) head)
-                                                 (cons x (cons tail head)))))
-                                         (cons (car xs) '())
-                                         (cdr xs))))])
-             (case-lambda
-              [()  fail]
-              [(x) (check-ast x)]
-              [xs  (encode-ast CHOICE (fold-sets (flatten-ast CHOICE xs)))])))
+           (case-lambda
+            [()  fail]
+            [(x) (check-ast x)]
+            [xs  (encode-ast CHOICE (flatten-ast CHOICE xs))]))
 
          ;; (maybe px) = px?
          ;;            = px / ε
