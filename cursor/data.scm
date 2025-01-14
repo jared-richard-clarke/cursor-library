@@ -45,7 +45,6 @@
 
          ;; Symbols that identify nodes within abstract syntax trees
          ;; and instructions within instruction lists.
-         
          (enum ERROR
                EMPTY
                ANY
@@ -82,7 +81,6 @@
          ;; The leaves and branches within an abstract syntax tree.
          ;; The type identifies the node. The child nodes are themselves
          ;; "ast"s or lists or vectors containing zero or more "ast"s.
-
          (define-record-type (ast encode-ast ast?)
            (fields type
                    node-x
@@ -96,8 +94,7 @@
                [(type node-x node-y) (new type node-x node-y)]))))
 
          ;; (ast-equal? ast ast) -> boolean
-         ;; Deep, structural comparison of asts.
-         
+         ;; Deep, structural comparison of asts.  
          (define ast-equal?
            (lambda (a b)
              (and (ast? a) (ast? b)
@@ -145,7 +142,6 @@
 
          ;; record-type: &peg-error -> &condition
          ;; Flags syntax errors during compilation of PEG parser.
-         
          (define-record-type (&peg-error make-peg-error peg-error?)
            (parent &condition)
            (fields (immutable who  peg-error-who)
