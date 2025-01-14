@@ -535,7 +535,7 @@
               (test-assert "character set error"
                            error-equal?
                            (catch (one-of (list #\a #\b #\c)))
-                           (make-peg-error "(none-of _)"
+                           (make-peg-error "(one-of _)"
                                            (list #\a #\b #\c)
                                            ERROR-TYPE-STRING))
 
