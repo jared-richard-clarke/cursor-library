@@ -1,5 +1,6 @@
 (library (cursor tools)
          (export identity
+                 catch
                  test-assert
                  test-chunk
                  enum
@@ -19,7 +20,6 @@
          ;;   where x = any
          ;;
          ;; Returns its input unchanged.
-         
          (define identity (lambda (x) x))
 
          ;; (thunk x y ...) -> (lambda () x y ...)
@@ -28,11 +28,22 @@
          ;;
          ;; Macro wraps one or more expressions in a lambda expression.
          ;; Useful in delaying computations.
-         
          (define-syntax thunk
            (syntax-rules ()
              [(_ x y ...)
               (lambda () x y ...)]))
+
+         ;; (catch y z ...) -> (guard (x [else x]) y z ...)
+         ;;   where x = exception object
+         ;;         y = any
+         ;;         z = any
+         ;;
+         ;; Macro wraps one or more expressions in a guard expression,
+         ;; which catches raised expections and returns them as values.
+         (define-syntax catch
+           (syntax-rules ()
+             [(_ y z ...)
+              (guard (x [else x]) y z ...)]))
 
          ;; (test-assert label predicate x y)
          ;;   where label     = string
@@ -49,7 +60,6 @@
          ;;
          ;; (test-thunk) -> test commutative failed:
          ;;                 lhs: (- 1 6) -> -5, rhs: (- 6 1) -> 5
-         
          (define-syntax test-assert
            (syntax-rules ()
              [(_ label compare x y)
@@ -70,7 +80,6 @@
          ;; Macro calls a sequence of zero or more test thunks, printing failures
          ;; to the current output port. Designed explcitly to run "test-assert".
          ;; "label" should be used to identify test chunk in current output port.
-         
          (define test-chunk
            (lambda (label . tests)
              (let ([start (string-append "Begin Test: " label)]
@@ -88,7 +97,6 @@
          ;;         y = identifier
          ;;
          ;; Macro binds one or more identifiers to their symbols.
-         
          (define-syntax enum
            (syntax-rules ()
              [(_ x y ...)
@@ -109,7 +117,6 @@
          ;; (iota 10)     -> '(0 1 2 3 4  5  6  7  8  9)
          ;; (iota 10 1)   -> '(1 2 3 4 5  6  7  8  9 10)
          ;; (iota 10 1 2) -> '(1 3 5 7 9 11 13 15 17 19)
-         
          (define iota
            (case-lambda
             [(count)
@@ -134,7 +141,6 @@
          ;; the longer list are discarded.
          ;;
          ;; (zip-with + '(1 2 3) '(1 2 3)) -> '(2 4 6)
-         
          (define zip-with
            (lambda (fn xs ys)
              (if (or (null? xs) (null? ys))
@@ -150,7 +156,6 @@
          ;; excess elements of the longer list are discarded.
          ;;
          ;; (zip '(a b c) '(1 2 3)) -> '((a. 1) (b . 2) (c . 3))
-         
          (define zip
            (lambda (xs ys)
              (zip-with cons xs ys)))
@@ -165,7 +170,6 @@
          ;; A base or starting accumulator must be provided.
          ;;
          ;; (scan-left + 0 '(1 2 3 4)) -> '(0 1 3 6 10)
-         
          (define scan-left
            (lambda (fn base xs)
              (if (null? xs)
@@ -180,7 +184,6 @@
          ;; Consequently, the list must be non-empty.
          ;;
          ;; (scan '(1 2 3 4)) -> '(1 3 6 10)
-         
          (define scan
            (lambda (fn xs)
              (scan-left fn (car xs) (cdr xs))))
@@ -195,7 +198,6 @@
          ;; must be non-empty.
          ;;
          ;; (vector-fold + '#(1 2 3 4)) -> 10
-         
          (define vector-fold
            (lambda (fn xs)
              (let ([size (vector-length xs)])
@@ -212,7 +214,6 @@
          ;; Checks if all elements satisfy the given predicate.
          ;;
          ;; (vector-for-all even? '(2 4 10)) -> #t
-         
          (define vector-for-all
            (lambda (fn xs)
              (let ([size (vector-length xs)])
@@ -233,7 +234,6 @@
          ;; The provided function must take three arguments: the current element,
          ;; the provided list, and the boolean flag "peekable?". Peeking is
          ;; a valid operation only if the flag is set to true.
-         
          (define peek-map
            (lambda (fn xs)
              (let ([peek? (lambda (x)
@@ -262,7 +262,6 @@
          ;;   (flush))
          ;;
          ;; ->  "abcdef"
-         
          (define string-buffer open-string-output-port)
 
          ;; (string->vector xs) -> (vector char ...)
@@ -271,7 +270,6 @@
          ;; Transforms a string into a vector of unicode-encoded characters.
          ;;
          ;; (string->vector "abc") -> '#(#\a #\b #\c)
-         
          (define string->vector
            (lambda (xs)
              (list->vector (string->list xs))))
