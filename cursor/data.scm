@@ -141,7 +141,7 @@
                            [else #f]))))))
 
          ;; record-type: &peg-error -> &condition
-         ;; Flags syntax errors during compilation of PEG parser.
+         ;; Flags syntax errors during construction of PEG abstract syntax tree.
          (define-record-type (&peg-error make-peg-error peg-error?)
            (parent &condition)
            (fields (immutable who  peg-error-who)
