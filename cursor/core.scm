@@ -418,7 +418,11 @@
          (define unit-tests
            (let ([A (encode-ast CHARACTER #\a)]
                  [B (encode-ast CHARACTER #\b)]
-                 [C (encode-ast CHARACTER #\c)])
+                 [C (encode-ast CHARACTER #\c)]
+                 [error-equal? (lambda (x y)
+                                 (and (peg-error? x) (peg-error? y)
+                                      (equal? (list (peg-error-who x) (peg-error-what x) (peg-error-why x))
+                                              (list (peg-error-who y) (peg-error-what y) (peg-error-why y)))))])
              
              (test-chunk
               "Cursor Core"
@@ -427,12 +431,22 @@
                            ast-equal?
                            (char #\a)
                            A)
+
+              (test-assert "character error"
+                           error-equal?
+                           (catch (char "a"))
+                           (make-peg-error "(char _)" "a" ERROR-TYPE-CHARACTER))
               
               ;; === Concatenation ===
               (test-assert "text sequence abc"
                            ast-equal?
                            (text "abc")
                            (encode-ast SEQUENCE (list A B C)))
+
+              (test-assert "text sequence error"
+                           error-equal?
+                           (catch (text #\a))
+                           (make-peg-error "(text _)" #\a ERROR-TYPE-STRING))
 
               (test-assert "text epsilon"
                            ast-equal?
@@ -465,6 +479,13 @@
                            (choice (char #\a) (char #\b))
                            (encode-ast CHOICE (list A B)))
 
+              (test-assert "choice nested"
+                           ast-equal?
+                           (choice (char #\a)
+                                   (choice (char #\b)
+                                           (char #\c)))
+                           (encode-ast CHOICE (list A B C)))
+
               (test-assert "choice identity"
                            ast-equal?
                            (choice)
@@ -480,6 +501,13 @@
                            ast-equal?
                            (repeat+1 (char #\a))
                            (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
+
+              (test-assert "repeat nullable"
+                           error-equal?
+                           (catch (repeat empty))
+                           (make-peg-error "(repeat _)"
+                                           "possibly empty, (is? _), (is-not? _), or (repeat _)"
+                                           ERROR-NULLABLE))
               
               ;; === Not Predicate ===
               (test-assert "predicate !a"
@@ -503,6 +531,13 @@
                            ast-equal?
                            (none-of "abc")
                            (encode-ast NONE-OF (make-charset "abc")))
+
+              (test-assert "character set error"
+                           error-equal?
+                           (catch (one-of (list #\a #\b #\c)))
+                           (make-peg-error "(none-of _)"
+                                           (list #\a #\b #\c)
+                                           ERROR-TYPE-STRING))
 
               (test-assert "empty set"
                            ast-equal?
@@ -548,6 +583,24 @@
                                                            (quote R2)
                                                            C))))
 
+              (test-assert "undefined rule"
+                           error-equal?
+                           (catch (grammar [A (sequence (char #\a) (call C))]
+                                           [B (char #\b)]))
+                           (make-peg-error "(grammar _)" (quote C) ERROR-UNDEFINED-RULE))
+
+              ;; Left Recursion: A → Bβ such that B ⇒ Aγ
+              (test-assert "grammar, direct left recursion"
+                           error-equal?
+                           (catch (grammar [R (call R)]))
+                           (make-peg-error "(grammar _)" (quote R) ERROR-LEFT-RECURSION))
+
+              (test-assert "grammar, indirect left recursion"
+                           error-equal?
+                           (catch (grammar [A (sequence (call B) (char #\x))]
+                                           [B (sequence (call C) (char #\y))]
+                                           [C (sequence (call A) (char #\z))]))
+                           (make-peg-error "(grammar _)" (quote A) ERROR-LEFT-RECURSION))
               )))
          
          )
