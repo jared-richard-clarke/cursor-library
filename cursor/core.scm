@@ -76,8 +76,9 @@
                                         (cond [(null? (cdr xs))
                                                (recur (car xs) grammar)]
                                               [(check-choice (cdr xs) grammar)
-                                               (recur (car xs) grammar)]
-                                              [else #f]))])
+                                               #t]
+                                              [else
+                                               (recur (car xs) grammar)]))])
                  (let ([type   (ast-type x)]
                        [node-x (ast-node-x x)]
                        [node-y (ast-node-y x)])
