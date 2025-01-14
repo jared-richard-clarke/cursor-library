@@ -33,17 +33,17 @@
              [(_ x y ...)
               (lambda () x y ...)]))
 
-         ;; (catch y z ...) -> (guard (x [else x]) y z ...)
-         ;;   where x = exception object
+         ;; (catch x y ...) -> (guard (e [else e]) x y ...)
+         ;;   where e = exception object
+         ;;         x = any
          ;;         y = any
-         ;;         z = any
          ;;
          ;; Macro wraps one or more expressions in a guard expression,
          ;; which catches raised exceptions and returns them as values.
          (define-syntax catch
            (syntax-rules ()
-             [(_ y z ...)
-              (guard (x [else x]) y z ...)]))
+             [(_ x y ...)
+              (guard (e [else e]) x y ...)]))
 
          ;; (test-assert label predicate x y)
          ;;   where label     = string
