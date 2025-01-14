@@ -39,7 +39,7 @@
          ;;         z = any
          ;;
          ;; Macro wraps one or more expressions in a guard expression,
-         ;; which catches raised expections and returns them as values.
+         ;; which catches raised exceptions and returns them as values.
          (define-syntax catch
            (syntax-rules ()
              [(_ y z ...)
