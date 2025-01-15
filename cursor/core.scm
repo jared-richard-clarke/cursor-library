@@ -27,7 +27,6 @@
          (define ERROR-TYPE-CHARACTER "not a character")
          (define ERROR-TYPE-SYMBOL    "not a symbol")
          (define ERROR-TYPE-STRING    "not a string")
-         (define ERROR-TYPE-PEG       "not PEG expression")
          (define ERROR-TYPE-CODE      "undefined operation")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
          (define ERROR-NULLABLE       "expression within may cause infinite loop")
@@ -62,16 +61,16 @@
          (define nullable?
            (lambda (x)
              (let recur ([x x] [grammar '()])
-                        ;; Checks sequence pairwise, checking the subsequent
-                        ;; node only if the previous node is nullable.
-                        ;; Every node in a sequence can be nullable but the last.
+                        ;; Traverses sequence, checking the subsequent node
+                        ;; only if the previous node is nullable. Every node
+                        ;; in a sequence can be nullable but the last.
                (letrec ([check-sequence (lambda (xs grammar)
                                           (cond [(null? (cdr xs))
                                                  (recur (car xs) grammar)]
                                                 [(recur (car xs) grammar)
                                                  (check-sequence (cdr xs) grammar)]
                                                 [else #f]))]
-                        ;; Checks choice pairwise, checking the previous node
+                        ;; Traverses choice, checking the previous node
                         ;; only if the subsequent node is not nullable.
                         ;; Every node in a choice must NOT be nullable.
                         [check-choice (lambda (xs grammar)
@@ -122,8 +121,8 @@
                                              (lambda (index nullable-flag)
                                                (cond [(or error-flag (>= index size)) #f]
                                                      [else (traverse-node (vector-ref nodes index) nullable-flag)]))]
-                                            ;; Traverses sequence pairwise, checking the subsequent node only if
-                                            ;; the previous node is nullable and the error flag is set to false.
+                                            ;; Traverses sequence, checking the subsequent node only if the
+                                            ;; previous node is nullable and the error flag is set to false.
                                             [traverse-sequence
                                              (lambda (xs nullable-flag)
                                                (cond [error-flag #f]
@@ -132,7 +131,7 @@
                                                      [(traverse-node (car xs) nullable-flag)
                                                       (traverse-sequence (cdr xs) nullable-flag)]
                                                      [else #f]))]
-                                            ;; Traverses choice pairwise. Each node must be checked unless
+                                            ;; Traverses choice. Each node must be checked unless
                                             ;; the error flag is set to true.
                                             [traverse-choice
                                              (lambda (xs nullable-flag)
