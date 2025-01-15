@@ -575,13 +575,13 @@
                                     [R2 (text "c")])
                            (encode-ast GRAMMAR
                                        (vector (encode-ast RULE
-                                                   (quote R1)
-                                                   (encode-ast SEQUENCE
-                                                               (list A
-                                                                     B
-                                                                     (encode-ast CALL
-                                                                                 (quote R2)
-                                                                                 1))))
+                                                           (quote R1)
+                                                           (encode-ast SEQUENCE
+                                                                       (list A
+                                                                             B
+                                                                             (encode-ast CALL
+                                                                                         (quote R2)
+                                                                                         1))))
                                                (encode-ast RULE
                                                            (quote R2)
                                                            C))))
