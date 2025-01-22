@@ -4,6 +4,9 @@
                  (cursor core)
                  (cursor data))
 
+         (define ERROR-TYPE-AST   "not an abstract syntax tree")
+         (define ERROR-UNKOWN-AST "unknown AST type")
+
          ;; === Helper Functions ===
          ;;
          ;; Functions assume pairs are lists. This assumption is safe 
@@ -23,6 +26,24 @@
                      [else (cons (car xs) (recur (cdr xs)))]))))
 
          ;; === Compiler ===
+
+         (define compile
+           (lambda (x)
+             (unless (ast? x)
+               (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
+             (let ([type (ast-type x)])
+               (case type
+                 [(EMPTY ANY FAIL) (compile-symbol type)]
+                 [(CHAR)           (compile-character x)]
+                 [(SEQUENCE)       (compile-sequence x)]
+                 [(CHOICE)         (compile-choice x)]
+                 [(REPEAT)         (compile-repeat x)]
+                 [(IS)             (compile-is x)]
+                 [(IS-NOT)         (compile-is-not x)]
+                 [(ONE-OF NONE-OF) (compile-set x)]
+                 [(CAPTURE)        (compile-capture x)]
+                 [else
+                  (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
          
          (define compile-symbol
            (lambda (x)
