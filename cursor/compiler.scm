@@ -62,21 +62,20 @@
 
          (define fold-choices
            (lambda (xs)
-             (let ([or-else (lambda (x y)
-                              (let ([code-x (compile x)])
-                                (let ([offset-x (check-length code-x)]
-                                      [offset-y (car y)]
-                                      [code-y   (cdr y)])
+             (let ([or-else (lambda (code-x code-y)
+                              (let ([offset-x (check-length code-x)]
+                                    [offset-y (car code-y)]
+                                    [code-y   (cdr code-y)])
                                   (cons (+ offset-x offset-y 4)
                                         (fold-codes CHOICE (+ offset-x 2)
                                                     code-x
                                                     COMMIT (+ offset-y 1)
-                                                    code-y)))))])
+                                                    code-y))))])
                (let recur ([xs xs])
                  (if (null? (cdr xs))
-                     (let ([x (car xs)])
+                     (let ([x (compile (car xs))])
                        (cons (check-length x) x))
-                     (or-else (car xs) (recur (cdr xs))))))))
+                     (or-else (compile (car xs)) (recur (cdr xs))))))))
 
          ;; === Repetition ===
          ;;
