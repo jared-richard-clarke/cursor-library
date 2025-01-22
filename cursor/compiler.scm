@@ -5,7 +5,7 @@
                  (cursor data))
 
          (define ERROR-TYPE-AST   "not an abstract syntax tree")
-         (define ERROR-UNKOWN-AST "unknown AST type")
+         (define ERROR-UNKNOWN-AST "unknown AST type")
 
          ;; === Helper Functions ===
          ;;
