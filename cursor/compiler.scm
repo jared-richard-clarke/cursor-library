@@ -34,7 +34,7 @@
              (let ([type (ast-type x)])
                (case type
                  [(EMPTY ANY FAIL) (compile-symbol type)]
-                 [(CHAR)           (compile-character x)]
+                 [(CHARACTER)      (compile-character x)]
                  [(SEQUENCE)       (compile-sequence x)]
                  [(CHOICE)         (compile-choice x)]
                  [(REPEAT)         (compile-repeat x)]
