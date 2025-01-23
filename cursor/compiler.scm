@@ -3,10 +3,9 @@
          (import (rnrs)
                  (cursor core)
                  (cursor data))
-
          (define ERROR-TYPE-AST    "not an abstract syntax tree")
          (define ERROR-UNKNOWN-AST "unknown AST type")
-
+         
          ;; === Helper Functions ===
          ;;
          ;; Functions assume pairs are lists. This assumption is safe 
@@ -91,7 +90,7 @@
                                     [offset-y (car code-y)]
                                     [code-y   (cdr code-y)])
                                   (cons (+ offset-x offset-y 4)
-                                        (fold-codes CHOICE (+ offset-x 2)
+                                        (fold-codes CHOICE (+ offset-x 3)
                                                     code-x
                                                     COMMIT (+ offset-y 1)
                                                     code-y))))])
@@ -110,7 +109,7 @@
            (lambda (x)
              (let ([code (compile (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 2)
+                 (fold-codes CHOICE (+ offset 3)
                              code
                              PARTIAL-COMMIT (- offset))))))
 
@@ -124,7 +123,7 @@
            (lambda (x)
              (let ([code (compile (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 2)
+                 (fold-codes CHOICE (+ offset 3)
                              code
                              BACK-COMMIT 2
                              FAIL)))))
@@ -138,7 +137,7 @@
            (lambda (x)
              (let ([code (compile (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 2)
+                 (fold-codes CHOICE (+ offset 3)
                              code
                              FAIL-TWICE)))))
 
