@@ -21,7 +21,10 @@
          (define fold-codes
            (lambda xs
              (let recur ([xs xs])
-               (cond [(null? (cdr xs)) xs]
+               (cond [(null? (cdr xs))
+                      (if (pair? (car xs))
+                          (car xs)
+                          xs)]
                      [(pair? (car xs)) (append (car xs) (recur (cdr xs)))]
                      [else (cons (car xs) (recur (cdr xs)))]))))
 
