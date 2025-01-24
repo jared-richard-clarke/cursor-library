@@ -86,7 +86,7 @@
 
          (define fold-choices
            (lambda (xs)
-             (let ([or-else (lambda (code-x code-y)
+             (let ([combine (lambda (code-x code-y)
                               (let ([offset-x (check-length code-x)]
                                     [offset-y (car code-y)]
                                     [code-y   (cdr code-y)])
@@ -99,7 +99,7 @@
                  (if (null? (cdr xs))
                      (let ([x (compile (car xs))])
                        (cons (check-length x) x))
-                     (or-else (compile (car xs)) (recur (cdr xs))))))))
+                     (combine (compile (car xs)) (recur (cdr xs))))))))
 
          ;; === Repetition ===
          ;;
