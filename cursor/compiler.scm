@@ -1,9 +1,11 @@
 (library (cursor compiler)
-         (export compile)
+         (export compile
+                 (rename unit-tests compiler:unit-tests))
          (import (rnrs)
                  (cursor core)
-                 (cursor data))
-         
+                 (cursor data)
+                 (cursor collections charset))
+
          (define ERROR-TYPE-AST    "not an abstract syntax tree")
          (define ERROR-UNKNOWN-AST "unknown AST type")
          
@@ -36,7 +38,7 @@
                (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
              (let ([type (ast-type x)])
                (case type
-                 [(EMPTY ANY FAIL) (compile-symbol type)]
+                 [(EMPTY ANY FAIL) (compile-symbol x)]
                  [(CHARACTER)      (compile-character x)]
                  [(SEQUENCE)       (compile-sequence x)]
                  [(CHOICE)         (compile-choice x)]
@@ -138,7 +140,7 @@
            (lambda (x)
              (let ([code (compile (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 3)
+                 (fold-codes CHOICE (+ offset 2)
                              code
                              FAIL-TWICE)))))
 
@@ -159,5 +161,115 @@
                (fold-codes CAPTURE-START fn
                            code
                            CAPTURE-STOP))))
+
+         ;; === Unit Tests ===
+
+         (define unit-tests
+           (let ([A (char #\a)]
+                 [B (char #\b)]
+                 [C (char #\c)]
+                 [set-ABC (make-charset "abc")]
+                 [set-equal? (lambda (x y)
+                               (and (list? x)
+                                    (list? y)
+                                    (eq? (car x) (car y))
+                                    (charset-equal? (cadr x) (cadr y))))]
+                 [capture-equal? (lambda (x y)
+                                   (and (list? x)
+                                        (list? y)
+                                        (eq? (car x) CAPTURE-START)
+                                        (eq? (car y) CAPTURE-START)
+                                        (equal? (caddr x) (caddr y))))])
+             (test-chunk
+              "Cursor Compiler"
+              (test-assert "character literal"
+                           equal?
+                           (compile A)
+                           #\a)
+
+              (test-assert "text sequence abc"
+                           equal?
+                           (compile (text "abc"))
+                           '(#\a #\b #\c))
+              
+              (test-assert "text epsilon"
+                           equal?
+                           (compile (text ""))
+                           EMPTY)
+
+              (test-assert "sequence abc"
+                           equal?
+                           (compile (sequence A B C))
+                           '(#\a #\b #\c))
+
+              (test-assert "sequence nested"
+                           equal?
+                           (compile (sequence (sequence A B) (sequence C B (sequence A))))
+                           '(#\a #\b #\c #\b #\a))
+
+              (test-assert "sequence identity"
+                           equal?
+                           (compile (sequence))
+                           EMPTY)
+
+              (test-assert "choice, a / b"
+                           equal?
+                           (choice A B)
+                           '(CHOICE 4 #\a COMMIT 2 #\b))
+
+              (test-assert "choice, a / b / c"
+                           equal?
+                           (compile (choice A B C))
+                           '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
+
+              (test-assert "choice, a / (b / c)"
+                           equal?
+                           (compile (choice (choice A B) C))
+                           '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
+
+              (test-assert "choice identity"
+                           equal?
+                           (compile (choice))
+                           FAIL)
+
+              (test-assert "repeat a*"
+                           equal?
+                           (compile (repeat A))
+                           '(CHOICE 4 #\a PARTIAL-COMMIT -2))
+
+              (test-assert "repeat a+"
+                           equal?
+                           (compile (repeat+1 A))
+                           '(#\a CHOICE 4 #\a PARTIAL-COMMIT -2))
+
+              (test-assert "predicate &a"
+                           equal?
+                           (compile (is? A))
+                           '(CHOICE 4 #\a BACK-COMMIT 2 FAIL))
+
+              (test-assert "predicate !a"
+                           equal?
+                           (compile (is-not? A))
+                           '(CHOICE 3 #\a FAIL-TWICE))
+
+              (test-assert "character set [abc]"
+                           set-equal?
+                           (compile (one-of "abc"))
+                           (list ONE-OF set-ABC))
+
+              (test-assert "character set [^abc]"
+                           set-equal?
+                           (compile (none-of "abc"))
+                           (list NONE-OF set-ABC))
+
+              (test-assert "character set unique members"
+                           set-equal?
+                           (compile (one-of "abcbbc"))
+                           (list ONE-OF set-ABC))
+
+              (test-assert "capture, baseline"
+                           capture-equal?
+                           (compile (capture (sequence A B C)))
+                           '(CAPTURE-START () #\a #\b #\c CAPTURE-STOP)))))
 
 )
