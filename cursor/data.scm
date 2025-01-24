@@ -127,16 +127,19 @@
                             (and (eq? (ast-node-x a) (ast-node-x b))
                                  (ast-equal? (ast-node-y a) (ast-node-y b)))]
                            ;; Capture comparison.
-                           ;; Cannot meaningfully compare arbitrary functions.
-                           ;; Check only for their presence or absence within
-                           ;; both captures.
+                           ;; Function equality is undecidable.
+                           ;; We check only for their presence or absence
+                           ;; within both captures.
                            [(CAPTURE)
                             (let ([a-f? (procedure? (ast-node-x a))]
+                                  [a-n? (null? (ast-node-x a))]
                                   [a-px (ast-node-y a)]
                                   [b-f? (procedure? (ast-node-x b))]
+                                  [b-n? (null? (ast-node-x b))]
                                   [b-px (ast-node-y b)])
-                              (let ([present? (and a-f? b-f?)])
-                                (and (or present? (not present?))
+                              (let ([both-functions? (and a-f? b-f?)]
+                                    [both-nulls?     (and a-n? b-n?)])
+                                (and (or both-functions? both-nulls?)
                                      (ast-equal? a-px b-px))))]
                            [else #f]))))))
 
