@@ -22,13 +22,15 @@
 
          (define fold-codes
            (lambda xs
-             (let recur ([xs xs])
-               (cond [(null? (cdr xs))
-                      (if (pair? (car xs))
-                          (car xs)
-                          xs)]
-                     [(pair? (car xs)) (append (car xs) (recur (cdr xs)))]
-                     [else (cons (car xs) (recur (cdr xs)))]))))
+             (let recur ([codes xs])
+               (cond [(null? (cdr codes))
+                      (if (pair? (car codes))
+                          (car codes)
+                          codes)]
+                     [(pair? (car codes))
+                      (append (car codes) (recur (cdr codes)))]
+                     [else
+                      (cons (car codes) (recur (cdr codes)))]))))
 
          ;; === Compiler ===
 
@@ -65,15 +67,18 @@
          ;;
          ;; Π(g, i, p₁p₂) ≡ Π(g, i, p₁) Π(g, i + |Π(g, x, p₁)|, p₂)
          (define compile-sequence
-           (lambda (xs)
-             (let ([nodes (ast-node-x xs)])
-               (fold-right (lambda (node accum)
-                             (let ([code (compile node)])
-                               (if (pair? code)
-                                   (append code accum)
-                                   (cons code accum))))
-                           '()
-                           nodes))))
+           (lambda (x)
+             (let recur ([nodes (ast-node-x x)])
+               (cond [(null (cdr nodes))
+                      (let ([code (compile (car nodes))])
+                        (if (pair? code)
+                            code
+                            (list code)))]
+                     [else
+                      (let ([code (compile (car nodes))])
+                        (if (pair? code)
+                            (append code (recur (cdr nodes)))
+                            (cons code (recur (cdr nodes)))))]))))
 
          ;; === Ordered Choice ===
          ;;
@@ -82,12 +87,7 @@
          ;;                  Commit |Π(g, x, p₂)| + 1
          ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
          (define compile-choice
-           (lambda (xs)
-             (let ([nodes (ast-node-x xs)])
-               (cdr (fold-choices nodes)))))
-
-         (define fold-choices
-           (lambda (xs)
+           (lambda (x)
              (let ([combine (lambda (code-x code-y)
                               (let ([offset-x (check-length code-x)]
                                     [offset-y (car code-y)]
@@ -97,11 +97,11 @@
                                                     code-x
                                                     COMMIT (+ offset-y 1)
                                                     code-y))))])
-               (let recur ([xs xs])
-                 (if (null? (cdr xs))
-                     (let ([x (compile (car xs))])
-                       (cons (check-length x) x))
-                     (combine (compile (car xs)) (recur (cdr xs))))))))
+               (cdr (let recur ([nodes (ast-node-x x)])
+                      (if (null? (cdr nodes))
+                          (let ([code (compile (car nodes))])
+                            (cons (check-length code) code))
+                          (combine (compile (car nodes)) (recur (cdr nodes)))))))))
 
          ;; === Repetition ===
          ;;
