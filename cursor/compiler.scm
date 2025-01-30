@@ -204,8 +204,10 @@
                         (let ([offset (hashtable-ref offsets (second codes) 0)])
                           (if (and (peekable? (second codes))
                                    (eq? (third codes) RETURN))
-                              (cons JUMP (cons (- offset index))
+                              ;; open-call -> tail-call
+                              (cons JUMP (cons (- offset index)
                                                (recur (+ index 2) (cddr codes))))
+                              ;; open-call -> call
                               (cons CALL (cons (- offset index)
                                                (recur (+ index 2) (cddr codes))))))]
                        [else
