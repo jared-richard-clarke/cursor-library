@@ -421,6 +421,7 @@
            (let ([A (encode-ast CHARACTER #\a)]
                  [B (encode-ast CHARACTER #\b)]
                  [C (encode-ast CHARACTER #\c)]
+                 [identity     (lambda (x) x)]
                  [error-equal? (lambda (x y)
                                  (and (peg-error? x) (peg-error? y)
                                       (equal? (list (peg-error-who x) (peg-error-what x) (peg-error-why x))
