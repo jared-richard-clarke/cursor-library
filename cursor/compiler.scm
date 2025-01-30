@@ -49,6 +49,8 @@
                  [(IS-NOT)         (compile-is-not x)]
                  [(ONE-OF NONE-OF) (compile-set x)]
                  [(CAPTURE)        (compile-capture x)]
+                 [(CALL)           (compile-call x)]
+                 [(GRAMMAR)        (compile-grammar x)]
                  [else
                   (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
          
@@ -161,6 +163,54 @@
                (fold-codes CAPTURE-START fn
                            code
                            CAPTURE-STOP))))
+
+         ;; === Grammars ===
+
+         (define compile-call
+           (lambda (x)
+             (fold-codes OPEN-CALL (ast-node-x x))))
+         
+         (define compile-grammar
+           (lambda (x)
+             (let ([rules   (ast-node-x x)]
+                   [size    (vector-length (ast-node-x x))]
+                   [offsets (make-eqv-hashtable)])
+               (let loop ([index 0]
+                          [codes '()]
+                          [total 4])
+                 (cond [(>= index size)
+                        (let ([code (apply fold-codes (reverse codes))])
+                          (adjust-offsets code offsets))]
+                       [else
+                        (let* ([rule (vector-ref rules index)]
+                               [name (ast-node-x rule)]
+                               [code (fold-codes (compile (ast-node-y rule)) RETURN)])
+                          (hashtable-set! offsets name total)
+                          (loop (+ index 1)
+                                (cons code codes)
+                                (+ total (check-length code))))])))))
+
+         (define adjust-offsets
+           (lambda (xs offsets)
+             (let ([peekable? (lambda (x) (and (pair? x) (pair? (cdr x))))]
+                   [first     car]
+                   [second    cadr]
+                   [third     caddr])
+               (let recur ([index 0]
+                           [codes xs])
+                 (cond [(null? codes)
+                        codes]
+                       [(eq? (first codes) OPEN-CALL)
+                        (let ([offset (hashtable-ref offsets (second codes) 0)])
+                          (if (and (peekable? (second codes))
+                                   (eq? (third codes) RETURN))
+                              (cons JUMP (cons (- offset index))
+                                               (recur (+ index 2) (cddr codes))))
+                              (cons CALL (cons (- offset index)
+                                               (recur (+ index 2) (cddr codes))))))]
+                       [else
+                        (cons (car codes)
+                              (recur (+ index 1) (cdr codes)))]))))))
 
          ;; === Unit Tests ===
 
