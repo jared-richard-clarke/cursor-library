@@ -34,7 +34,7 @@
 
          ;; === Compiler ===
 
-         (define compile
+         (define compile-ast
            (lambda (x)
              (unless (ast? x)
                (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
@@ -72,12 +72,12 @@
            (lambda (x)
              (let recur ([nodes (ast-node-x x)])
                (cond [(null (cdr nodes))
-                      (let ([code (compile (car nodes))])
+                      (let ([code (compile-ast (car nodes))])
                         (if (pair? code)
                             code
                             (list code)))]
                      [else
-                      (let ([code (compile (car nodes))])
+                      (let ([code (compile-ast (car nodes))])
                         (if (pair? code)
                             (append code (recur (cdr nodes)))
                             (cons code (recur (cdr nodes)))))]))))
@@ -101,9 +101,9 @@
                                                     code-y))))])
                (cdr (let recur ([nodes (ast-node-x x)])
                       (if (null? (cdr nodes))
-                          (let ([code (compile (car nodes))])
+                          (let ([code (compile-ast (car nodes))])
                             (cons (check-length code) code))
-                          (combine (compile (car nodes)) (recur (cdr nodes)))))))))
+                          (combine (compile-ast (car nodes)) (recur (cdr nodes)))))))))
 
          ;; === Repetition ===
          ;;
@@ -112,7 +112,7 @@
          ;;               PartialCommit − |Π(g, x, p)|
          (define compile-repeat
            (lambda (x)
-             (let ([code (compile (ast-node-x x))])
+             (let ([code (compile-ast (ast-node-x x))])
                (let ([offset (check-length code)])
                  (fold-codes CHOICE (+ offset 3)
                              code
@@ -126,7 +126,7 @@
          ;;               Fail
          (define compile-is
            (lambda (x)
-             (let ([code (compile (ast-node-x x))])
+             (let ([code (compile-ast (ast-node-x x))])
                (let ([offset (check-length code)])
                  (fold-codes CHOICE (+ offset 3)
                              code
@@ -140,7 +140,7 @@
          ;;               FailTwice
          (define compile-is-not
            (lambda (x)
-             (let ([code (compile (ast-node-x x))])
+             (let ([code (compile-ast (ast-node-x x))])
                (let ([offset (check-length code)])
                  (fold-codes CHOICE (+ offset 2)
                              code
@@ -159,7 +159,7 @@
          (define compile-capture
            (lambda (x)
              (let ([fn   (ast-node-x x)]
-                   [code (compile (ast-node-y x))])
+                   [code (compile-ast (ast-node-y x))])
                (fold-codes CAPTURE-START fn
                            code
                            CAPTURE-STOP))))
@@ -169,7 +169,7 @@
          (define compile-call
            (lambda (x)
              (fold-codes OPEN-CALL (ast-node-x x))))
-         
+
          (define compile-grammar
            (lambda (x)
              (let ([rules   (ast-node-x x)]
@@ -186,7 +186,7 @@
                        [else
                         (let* ([rule (vector-ref rules index)]
                                [name (ast-node-x rule)]
-                               [code (fold-codes (compile (ast-node-y rule)) RETURN)])
+                               [code (fold-codes (compile-ast (ast-node-y rule)) RETURN)])
                           (hashtable-set! offsets name total)
                           (loop (+ index 1)
                                 (cons code codes)
@@ -238,7 +238,7 @@
               "Cursor Compiler"
               (test-assert "character literal"
                            equal?
-                           (compile A)
+                           (compile-ast A)
                            #\a)
 
               (test-assert "text sequence abc"
@@ -248,82 +248,82 @@
               
               (test-assert "text epsilon"
                            equal?
-                           (compile (text ""))
+                           (compile-ast (text ""))
                            EMPTY)
 
               (test-assert "sequence abc"
                            equal?
-                           (compile (sequence A B C))
+                           (compile-ast (sequence A B C))
                            '(#\a #\b #\c))
 
               (test-assert "sequence nested"
                            equal?
-                           (compile (sequence (sequence A B) (sequence C B (sequence A))))
+                           (compile-ast (sequence (sequence A B) (sequence C B (sequence A))))
                            '(#\a #\b #\c #\b #\a))
 
               (test-assert "sequence identity"
                            equal?
-                           (compile (sequence))
+                           (compile-ast (sequence))
                            EMPTY)
 
               (test-assert "choice, a / b"
                            equal?
-                           (choice A B)
+                           (compile-ast (choice A B))
                            '(CHOICE 4 #\a COMMIT 2 #\b))
 
               (test-assert "choice, a / b / c"
                            equal?
-                           (compile (choice A B C))
+                           (compile-ast (choice A B C))
                            '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
 
               (test-assert "choice, a / (b / c)"
                            equal?
-                           (compile (choice (choice A B) C))
+                           (compile-ast (choice (choice A B) C))
                            '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
 
               (test-assert "choice identity"
                            equal?
-                           (compile (choice))
+                           (compile-ast (choice))
                            FAIL)
 
               (test-assert "repeat a*"
                            equal?
-                           (compile (repeat A))
+                           (compile-ast (repeat A))
                            '(CHOICE 4 #\a PARTIAL-COMMIT -2))
 
               (test-assert "repeat a+"
                            equal?
-                           (compile (repeat+1 A))
+                           (compile-ast (repeat+1 A))
                            '(#\a CHOICE 4 #\a PARTIAL-COMMIT -2))
 
               (test-assert "predicate &a"
                            equal?
-                           (compile (is? A))
+                           (compile-ast (is? A))
                            '(CHOICE 4 #\a BACK-COMMIT 2 FAIL))
 
               (test-assert "predicate !a"
                            equal?
-                           (compile (is-not? A))
+                           (compile-ast (is-not? A))
                            '(CHOICE 3 #\a FAIL-TWICE))
 
               (test-assert "character set [abc]"
                            set-equal?
-                           (compile (one-of "abc"))
+                           (compile-ast (one-of "abc"))
                            (list ONE-OF set-ABC))
 
               (test-assert "character set [^abc]"
                            set-equal?
-                           (compile (none-of "abc"))
+                           (compile-ast (none-of "abc"))
                            (list NONE-OF set-ABC))
 
               (test-assert "character set unique members"
                            set-equal?
-                           (compile (one-of "abcbbc"))
+                           (compile-ast (one-of "abcbbc"))
                            (list ONE-OF set-ABC))
 
               (test-assert "capture, baseline"
                            capture-equal?
-                           (compile (capture (sequence A B C)))
+                           (compile-ast (capture (sequence A B C)))
                            '(CAPTURE-START () #\a #\b #\c CAPTURE-STOP)))))
 
 )
