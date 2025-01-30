@@ -6,8 +6,6 @@
                  iota
                  zip-with
                  zip
-                 scan-left
-                 scan
                  vector-fold
                  vector-for-all
                  string-buffer
@@ -151,34 +149,6 @@
          (define zip
            (lambda (xs ys)
              (zip-with cons xs ys)))
-
-         ;; (scan-left fn base xs) -> (list any ...)
-         ;;   where fn   = function
-         ;;         base = any
-         ;;         xs   = list
-         ;;
-         ;; Combines list elements pairwise, left to right, into an accumulative value
-         ;; using the provided binary function. Each combination is consed onto a list.
-         ;; A base or starting accumulator must be provided.
-         ;;
-         ;; (scan-left + 0 '(1 2 3 4)) -> '(0 1 3 6 10)
-         (define scan-left
-           (lambda (fn base xs)
-             (if (null? xs)
-                 (cons base xs)
-                 (cons base (scan-left fn (fn base (car xs)) (cdr xs))))))
-
-         ;; (scan fn xs) -> (list any ...)
-         ;;   where fn = function
-         ;;         xs = list
-         ;;
-         ;; Like "scan-left" but the first element in the list is the base accumulator.
-         ;; Consequently, the list must be non-empty.
-         ;;
-         ;; (scan '(1 2 3 4)) -> '(1 3 6 10)
-         (define scan
-           (lambda (fn xs)
-             (scan-left fn (car xs) (cdr xs))))
 
          ;; (vector-fold fn xs) -> any
          ;;   where fn = function
