@@ -179,7 +179,9 @@
                           [codes '()]
                           [total 4])
                  (cond [(>= index size)
-                        (let ([code (apply fold-codes (reverse codes))])
+                        (let ([code (fold-codes CALL (- total 2)
+                                                JUMP (- total 4)
+                                                (apply fold-codes (reverse codes)))])
                           (adjust-offsets code offsets))]
                        [else
                         (let* ([rule (vector-ref rules index)]
