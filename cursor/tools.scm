@@ -1,6 +1,5 @@
 (library (cursor tools)
-         (export identity
-                 catch
+         (export catch
                  test-assert
                  test-chunk
                  enum
@@ -11,16 +10,9 @@
                  scan
                  vector-fold
                  vector-for-all
-                 peek-map
                  string-buffer
                  string->vector)
          (import (rnrs))
-
-         ;; (identity x) -> x
-         ;;   where x = any
-         ;;
-         ;; Returns its input unchanged.
-         (define identity (lambda (x) x))
 
          ;; (thunk x y ...) -> (lambda () x y ...)
          ;;   where x = any
@@ -222,31 +214,6 @@
                        [(fn (vector-ref xs index))
                         (loop (+ index 1))]
                        [else #f])))))
-
-         ;; (peek-map fn xs) -> (list any ...)
-         ;;   where fn = (function x xs peekable?)
-         ;;                where x         = any
-         ;;                      xs        = list
-         ;;                      peekable? = boolean
-         ;;         xs = list
-         ;;
-         ;; Like "map" but provides the ability to peek ahead by one element.
-         ;; The provided function must take three arguments: the current element,
-         ;; the provided list, and the boolean flag "peekable?". Peeking is
-         ;; a valid operation only if the flag is set to true.
-         (define peek-map
-           (lambda (fn xs)
-             (let ([peek? (lambda (x)
-                            (and (pair? x) (pair? (cdr x))))])
-               (let recur ([fn fn]
-                           [xs xs]
-                           [peekable? (peek? xs)])
-                 (if (null? xs)
-                     xs
-                     (let ([x  (car xs)]
-                           [xs (cdr xs)])
-                       (cons (fn x xs peekable?)
-                             (recur fn xs (peek? xs)))))))))
 
          ;; (string-buffer) -> (values buffer fn)
          ;;                      where buffer = textual output port
