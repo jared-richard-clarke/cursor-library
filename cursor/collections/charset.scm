@@ -86,6 +86,7 @@
                    [space    #\space])
                (let-values ([(buffer flush) (string-buffer)])
                  (begin (put-string buffer header)
+                        (put-char buffer space)
                         (put-char buffer open)
                         (put-char buffer space)
                         (vector-for-each (lambda (element)
