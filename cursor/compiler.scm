@@ -99,9 +99,9 @@
                                     [offset-y (car code-y)]
                                     [code-y   (cdr code-y)])
                                   (cons (+ offset-x offset-y 4)
-                                        (fold-codes CHOICE (+ offset-x 3)
+                                        (fold-codes CHOICE (+ offset-x 4)
                                                     code-x
-                                                    COMMIT (+ offset-y 1)
+                                                    COMMIT (+ offset-y 2)
                                                     code-y))))])
                (cdr (let recur ([nodes (ast-node-x x)])
                       (if (null? (cdr nodes))
@@ -118,9 +118,9 @@
            (lambda (x)
              (let ([code (compile-ast (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 3)
+                 (fold-codes CHOICE (+ offset 4)
                              code
-                             PARTIAL-COMMIT (- (+ offset 1)))))))
+                             PARTIAL-COMMIT (- offset)))))))
 
          ;; === And Predicate ===
          ;;
@@ -140,12 +140,12 @@
                     [code   (compile-ast (ast-node-x x))]
                     [offset (check-length code)])
                (cond [(eq? type IS)
-                      (fold-codes CHOICE (+ offset 3)
+                      (fold-codes CHOICE (+ offset 4)
                              code
-                             BACK-COMMIT 2
+                             BACK-COMMIT 3
                              FAIL)]
                      [else
-                      (fold-codes CHOICE (+ offset 2)
+                      (fold-codes CHOICE (+ offset 3)
                              code
                              FAIL-TWICE)]))))
 
@@ -199,8 +199,8 @@
                           [codes '()]
                           [total 4])
                  (cond [(>= index size)
-                        (let ([code (fold-codes CALL 3
-                                                JUMP (- total 3)
+                        (let ([code (fold-codes CALL 4
+                                                JUMP (- total 2)
                                                 (apply fold-codes (reverse codes)))])
                           (adjust-offsets code offsets))]
                        [else
@@ -227,10 +227,10 @@
                           (if (and (peekable? (cdr codes))
                                    (eq? (third codes) RETURN))
                               ;; open-call -> tail-call
-                              (cons JUMP (cons (- offset (+ index 1))
+                              (cons JUMP (cons (- offset index)
                                                (recur (+ index 2) (cddr codes))))
                               ;; open-call -> call
-                              (cons CALL (cons (- offset (+ index 1))
+                              (cons CALL (cons (- offset index)
                                                (recur (+ index 2) (cddr codes))))))]
                        [else
                         (cons (car codes)
@@ -302,17 +302,17 @@
               (test-assert "choice, a / b"
                            code-equal?
                            (compile-ast (choice A B))
-                           '(CHOICE 4 #\a COMMIT 2 #\b))
+                           '(CHOICE 5 #\a COMMIT 3 #\b))
 
               (test-assert "choice, a / b / c"
                            code-equal?
                            (compile-ast (choice A B C))
-                           '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
+                           '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
               (test-assert "choice, a / (b / c)"
                            code-equal?
                            (compile-ast (choice (choice A B) C))
-                           '(CHOICE 4 #\a COMMIT 7 CHOICE 4 #\b COMMIT 2 #\c))
+                           '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
               (test-assert "choice identity"
                            code-equal?
@@ -322,22 +322,22 @@
               (test-assert "repeat a*"
                            code-equal?
                            (compile-ast (repeat A))
-                           '(CHOICE 4 #\a PARTIAL-COMMIT -2))
+                           '(CHOICE 5 #\a PARTIAL-COMMIT -1))
 
               (test-assert "repeat a+"
                            code-equal?
                            (compile-ast (repeat+1 A))
-                           '(#\a CHOICE 4 #\a PARTIAL-COMMIT -2))
+                           '(#\a CHOICE 5 #\a PARTIAL-COMMIT -1))
 
               (test-assert "predicate &a"
                            code-equal?
                            (compile-ast (is? A))
-                           '(CHOICE 4 #\a BACK-COMMIT 2 FAIL))
+                           '(CHOICE 5 #\a BACK-COMMIT 3 FAIL))
 
               (test-assert "predicate !a"
                            code-equal?
                            (compile-ast (is-not? A))
-                           '(CHOICE 3 #\a FAIL-TWICE))
+                           '(CHOICE 4 #\a FAIL-TWICE))
 
               (test-assert "character set [abc]"
                            code-equal?
@@ -373,14 +373,12 @@
                            code-equal?
                            (compile-ast (grammar [R1 (sequence A (call R2) C)]
                                                  [R2 B]))
-                           '(CALL 3 JUMP 8 #\a CALL 3 #\c RETURN #\b RETURN))
+                           '(CALL 4 JUMP 9 #\a CALL 4 #\c RETURN #\b RETURN))
 
               (test-assert "grammar, tail call"
                            code-equal?
                            (compile-ast (grammar [R1 (sequence A B (call R2))]
                                                  [R2 C]))
-                           '(CALL 3 JUMP 8 #\a #\b JUMP 2 RETURN #\c RETURN))
-
-              )))
+                           '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN)))))
 
 )
