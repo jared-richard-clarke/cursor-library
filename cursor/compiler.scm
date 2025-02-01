@@ -141,13 +141,13 @@
                     [offset (check-length code)])
                (cond [(eq? type IS)
                       (fold-codes CHOICE (+ offset 4)
-                             code
-                             BACK-COMMIT 3
-                             FAIL)]
+                                  code
+                                  BACK-COMMIT 3
+                                  FAIL)]
                      [else
                       (fold-codes CHOICE (+ offset 3)
-                             code
-                             FAIL-TWICE)]))))
+                                  code
+                                  FAIL-TWICE)]))))
 
          ;; === Sets: "one-of" and "none-of" ===
          
