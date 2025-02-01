@@ -35,6 +35,12 @@
 
          ;; === Compiler ===
 
+         (define compile
+           (lambda (x)
+             (unless (ast? x)
+               (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
+             (compile-ast x)))
+         
          (define compile-ast
            (lambda (x)
              (let ([type (ast-type x)])
@@ -51,12 +57,6 @@
                  [(GRAMMAR)        (compile-grammar x)]
                  [else
                   (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
-
-         (define compile
-           (lambda (x)
-             (unless (ast? x)
-               (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
-             (compile-ast x)))
          
          (define compile-symbol
            (lambda (x)
