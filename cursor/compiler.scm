@@ -270,8 +270,8 @@
                                                          (= x y)]
                                                         [(and (charset? x) (charset? y))
                                                          (charset-equal? x y)]
-                                                        ;; Function comparison is undecidable. Return true
-                                                        ;; and move on to the next comparison.
+                                                        ;; Function comparison is undecidable. Return
+                                                        ;; true and move on to the next comparison.
                                                         [(and (procedure? x) (procedure? y))
                                                          #t]
                                                         [else #f]))
