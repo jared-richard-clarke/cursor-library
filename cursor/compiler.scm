@@ -21,17 +21,17 @@
                  (length x)
                  1)))
 
-         (define fold-codes
+         (define fold-code
            (lambda xs
-             (let recur ([codes xs])
-               (cond [(null? (cdr codes))
-                      (if (pair? (car codes))
-                          (car codes)
-                          codes)]
-                     [(pair? (car codes))
-                      (append (car codes) (recur (cdr codes)))]
+             (let recur ([xs xs])
+               (cond [(null? (cdr xs))
+                      (if (pair? (car xs))
+                          (car xs)
+                          xs)]
+                     [(pair? (car xs))
+                      (append (car xs) (recur (cdr xs)))]
                      [else
-                      (cons (car codes) (recur (cdr codes)))]))))
+                      (cons (car xs) (recur (cdr xs)))]))))
 
          ;; === Compiler ===
 
@@ -39,8 +39,20 @@
            (lambda (x)
              (unless (ast? x)
                (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
-             (compile-ast x)))
-         
+             (let* ([code   (compile-ast x)]
+                    [size   (length code)]
+                    [buffer (make-vector (+ size 1))])
+               (let ([program
+                      (let loop ([index 0] [xs code])
+                        (cond [(= index size)
+                               (vector-set! buffer index MATCH)
+                               buffer]
+                              [else
+                               (vector-set! buffer index (car xs))
+                               (loop (+ index 1) (cdr xs))]))])
+                 (lambda ()
+                   program)))))
+
          (define compile-ast
            (lambda (x)
              (let ([type (ast-type x)])
@@ -99,10 +111,10 @@
                                     [offset-y (car code-y)]
                                     [code-y   (cdr code-y)])
                                   (cons (+ offset-x offset-y 4)
-                                        (fold-codes CHOICE (+ offset-x 4)
-                                                    code-x
-                                                    COMMIT (+ offset-y 2)
-                                                    code-y))))])
+                                        (fold-code CHOICE (+ offset-x 4)
+                                                   code-x
+                                                   COMMIT (+ offset-y 2)
+                                                   code-y))))])
                (cdr (let recur ([nodes (ast-node-x x)])
                       (if (null? (cdr nodes))
                           (let ([code (compile-ast (car nodes))])
@@ -118,9 +130,9 @@
            (lambda (x)
              (let ([code (compile-ast (ast-node-x x))])
                (let ([offset (check-length code)])
-                 (fold-codes CHOICE (+ offset 4)
-                             code
-                             PARTIAL-COMMIT (- offset)))))))
+                 (fold-code CHOICE (+ offset 4)
+                            code
+                            PARTIAL-COMMIT (- offset)))))))
 
          ;; === And Predicate ===
          ;;
@@ -140,14 +152,14 @@
                     [code   (compile-ast (ast-node-x x))]
                     [offset (check-length code)])
                (cond [(eq? type IS)
-                      (fold-codes CHOICE (+ offset 4)
-                                  code
-                                  BACK-COMMIT 3
-                                  FAIL)]
+                      (fold-code CHOICE (+ offset 4)
+                                 code
+                                 BACK-COMMIT 3
+                                 FAIL)]
                      [else
-                      (fold-codes CHOICE (+ offset 3)
-                                  code
-                                  FAIL-TWICE)]))))
+                      (fold-code CHOICE (+ offset 3)
+                                 code
+                                 FAIL-TWICE)]))))
 
          ;; === Sets: "one-of" and "none-of" ===
          
@@ -155,7 +167,7 @@
            (lambda (x)
              (let ([type (ast-type x)]
                    [set  (ast-node-x x)])
-               (fold-codes type set))))
+               (fold-code type set))))
 
          ;; === Captures ===
          
@@ -163,15 +175,15 @@
            (lambda (x)
              (let ([fn   (ast-node-x x)]
                    [code (compile-ast (ast-node-y x))])
-               (fold-codes CAPTURE-START fn
-                           code
-                           CAPTURE-STOP))))
+               (fold-code CAPTURE-START fn
+                          code
+                          CAPTURE-STOP))))
 
          ;; === Grammars ===
 
          (define compile-call
            (lambda (x)
-             (fold-codes OPEN-CALL (ast-node-x x))))
+             (fold-code OPEN-CALL (ast-node-x x))))
 
          ;; Π(g', i, (g, Ak)) ≡ Call o(g, Ak)
          ;;                     Jump |Π'(g, x)| + 1
@@ -199,14 +211,14 @@
                           [codes '()]
                           [total 4])
                  (cond [(>= index size)
-                        (let ([code (fold-codes CALL 4
-                                                JUMP (- total 2)
-                                                (apply fold-codes (reverse codes)))])
+                        (let ([code (fold-code CALL 4
+                                               JUMP (- total 2)
+                                               (apply fold-code (reverse codes)))])
                           (adjust-offsets code offsets))]
                        [else
                         (let* ([rule (vector-ref rules index)]
                                [name (ast-node-x rule)]
-                               [code (fold-codes (compile-ast (ast-node-y rule)) RETURN)])
+                               [code (fold-code (compile-ast (ast-node-y rule)) RETURN)])
                           (hashtable-set! offsets name total)
                           (loop (+ index 1)
                                 (cons code codes)
