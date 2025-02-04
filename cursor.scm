@@ -47,5 +47,7 @@
                  call
                  grammar
                  capture
-                 text)
-         (import (cursor core)))
+                 text
+                 compile)
+         (import (cursor core)
+                 (cursor compiler)))
