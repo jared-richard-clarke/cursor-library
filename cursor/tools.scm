@@ -7,7 +7,6 @@
                  zip-with
                  zip
                  vector-fold
-                 vector-for-all
                  string-buffer
                  string->vector)
          (import (rnrs))
@@ -168,22 +167,6 @@
                  (if (< index size)
                      (loop (+ index 1) (fn state (vector-ref xs index)))
                      state)))))
-
-         ;; (vector-for-all fn xs) -> boolean
-         ;;   where fn = function
-         ;;         xs = list
-         ;;
-         ;; Checks if all elements satisfy the given predicate.
-         ;;
-         ;; (vector-for-all even? '(2 4 10)) -> #t
-         (define vector-for-all
-           (lambda (fn xs)
-             (let ([size (vector-length xs)])
-               (let loop ([index 0])
-                 (cond [(>= index size) #t]
-                       [(fn (vector-ref xs index))
-                        (loop (+ index 1))]
-                       [else #f])))))
 
          ;; (string-buffer) -> (values buffer fn)
          ;;                      where buffer = textual output port
