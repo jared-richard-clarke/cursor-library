@@ -132,7 +132,7 @@
                (let ([offset (check-length code)])
                  (fold-code CHOICE (+ offset 4)
                             code
-                            PARTIAL-COMMIT (- offset)))))))
+                            PARTIAL-COMMIT (- offset))))))
 
          ;; === And Predicate ===
          ;;
