@@ -164,10 +164,10 @@
            (lambda (fn xs)
              (let ([size (vector-length xs)])
                (let loop ([index 1]
-                          [accum (vector-ref xs 0)])
-                 (if (>= index size)
-                     accum
-                     (loop (+ index 1) (fn accum (vector-ref xs index))))))))
+                          [state (vector-ref xs 0)])
+                 (if (< index size)
+                     (loop (+ index 1) (fn state (vector-ref xs index)))
+                     state)))))
 
          ;; (vector-for-all fn xs) -> boolean
          ;;   where fn = function
