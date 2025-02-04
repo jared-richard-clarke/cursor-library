@@ -180,7 +180,7 @@
            (lambda (fn xs)
              (let ([size (vector-length xs)])
                (let loop ([index 0])
-                 (cond [(>= index size) #t]
+                 (cond [(= index size) #t]
                        [(fn (vector-ref xs index))
                         (loop (+ index 1))]
                        [else #f])))))
