@@ -28,7 +28,7 @@
                                                (+ sp 1)
                                                stack
                                                captures)
-                                        (state-fail ip sp stack captures))]
+                                        (fail-state ip sp stack captures))]
                                    [(eq? code ANY)
                                     (if (< sp size)
                                         (state (+ ip 1)
