@@ -137,6 +137,8 @@
          ;;         code   = symbol | char | number | function | charset
          (define compile-choice
            (lambda (x)
+             ;; To avoid redundant calculation, pass the accumulative offset
+             ;; alongside compiled code back up the call chain.
              (let ([combine (lambda (code-x code-y)
                               (let ([offset-x (check-length code-x)]
                                     [offset-y (car code-y)]
@@ -146,6 +148,7 @@
                                                    code-x
                                                    COMMIT (+ offset-y 2)
                                                    code-y))))])
+               ;; "cdr" discards the final offset, returning only the compiled code.
                (cdr (let recur ([nodes (ast-node-x x)])
                       (if (null? (cdr nodes))
                           (let ([code (compile-ast (car nodes))])
