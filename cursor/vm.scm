@@ -171,7 +171,7 @@
                            (cond
                             ;; If the stack is empty, then the match has failed.
                             [(null? stack)
-                             FAIL]
+                             '()]
                             [else
                              (let ([entry (car stack)])
                                (if (number? entry)
