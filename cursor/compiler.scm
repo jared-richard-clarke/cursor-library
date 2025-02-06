@@ -7,20 +7,34 @@
                  (cursor tools)
                  (cursor collections charset))
 
+         ;; === Error Constants ===
+         
          (define ERROR-TYPE-AST    "not an abstract syntax tree")
          (define ERROR-UNKNOWN-AST "unknown AST type")
          
          ;; === Helper Functions ===
          ;;
-         ;; Functions assume pairs are lists. This assumption is safe 
-         ;; as long as ASTs compile to either terminals or lists.
-         
+         ;; These helper functions assume pairs are lists. This assumption
+         ;; is safe as long as ASTs compile to either terminals or lists.
+         ;; We make this assumption because checking for a list is an
+         ;; O(n) operation, where n is the length of the list.
+
+         ;; (check-length x) -> number
+         ;;   where x = list | any
+         ;;
+         ;; Returns the length of either a list or a single element.
+         ;; Assumes pairs are lists.
          (define check-length
            (lambda (x)
              (if (pair? x)
                  (length x)
                  1)))
 
+         ;; (fold-code x ...) -> (list x ...)
+         ;;   where x = list | any
+         ;;
+         ;; Combines one or more lists and elements into a single list.
+         ;; Assumes pairs are lists.
          (define fold-code
            (lambda xs
              (let recur ([xs xs])
@@ -53,6 +67,17 @@
                  (lambda ()
                    program)))))
 
+         ;; (compile-ast ast) -> x | (list x ...) | raise peg-error
+         ;;   where ast    = (ast type node-x node-y)
+         ;;         type   = symbol
+         ;;         node-x = ast | (list ast ...) | (vector ast ...)
+         ;;         node-y = ast | (list ast ...) | (vector ast ...)
+         ;;         x      = code | (list code ...)
+         ;;         code   = symbol | char | number | function | charset
+         ;;
+         ;; Delegates the recursive, depth-first transformation of an AST
+         ;; into a list of virtual machine instructions. Raises an error
+         ;; for ASTS that represent undefined operations.
          (define compile-ast
            (lambda (x)
              (let ([type (ast-type x)])
@@ -69,21 +94,28 @@
                  [(GRAMMAR)        (compile-grammar x)]
                  [else
                   (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
-         
+
+         ;; (compile-symbol (ast type)) -> code
+         ;;   where type = symbol
+         ;;         code = symbol
          (define compile-symbol
            (lambda (x)
              (ast-type x)))
 
          ;; === Character Match ===
          ;;
-         ;; Π(g, i, 'c') ≡ Char c
+         ;; (compile-character (ast CHARACTER node-x)) -> code
+         ;;   where node-x = char
+         ;;         code   = char
          (define compile-character
            (lambda (x)
              (ast-node-x x)))
 
          ;; === Concatenation ===
          ;;
-         ;; Π(g, i, p₁p₂) ≡ Π(g, i, p₁) Π(g, i + |Π(g, x, p₁)|, p₂)
+         ;; (compile-sequence (ast SEQUENCE node-x)) -> (list code ...)
+         ;;   where node-x = (list (ast type node-x node-y) ...)
+         ;;         code   = symbol | char | number | function | charset
          (define compile-sequence
            (lambda (x)
              (let recur ([nodes (ast-node-x x)])
@@ -100,10 +132,9 @@
 
          ;; === Ordered Choice ===
          ;;
-         ;; Π(g, i, p₁/p₂) ≡ Choice |Π(g, x, p₁)| + 2
-         ;;                  Π(g, i + 1, p₁)
-         ;;                  Commit |Π(g, x, p₂)| + 1
-         ;;                  Π(g, i + |Π(g, x, p₁)| + 1, p₂)
+         ;; (compile-choice (ast CHOICE node-x)) -> (list CHOICE number code COMMIT number code ...)
+         ;;   where node-x = (list (ast type node-x node-y) ...)
+         ;;         code   = symbol | char | number | function | charset
          (define compile-choice
            (lambda (x)
              (let ([combine (lambda (code-x code-y)
@@ -123,9 +154,9 @@
 
          ;; === Repetition ===
          ;;
-         ;; Π(g, i, p*) ≡ Choice |Π(g, x, p)| + 2
-         ;;               Π(g, i + 1, p)
-         ;;               PartialCommit − |Π(g, x, p)|
+         ;; (compile-repeat (ast REPEAT node-x)) -> (list CHOICE number code PARTIAL-COMMIT (- number))
+         ;;   where node-x = (ast type node-x node-y)
+         ;;         code   = symbol | char | number | function | charset
          (define compile-repeat
            (lambda (x)
              (let ([code (compile-ast (ast-node-x x))])
@@ -134,18 +165,12 @@
                             code
                             PARTIAL-COMMIT (- offset))))))
 
-         ;; === And Predicate ===
+         ;; === Predicates: "is" and "is-not" ===
          ;;
-         ;; Π(g, i, &p) ≡ Choice |Π(g, x, p)| + 2
-         ;;               Π(g, i + 1, p)
-         ;;               BackCommit 2
-         ;;               Fail
-         ;;
-         ;; === Not Predicate ===
-         ;;
-         ;; Π(g, i, !p) ≡ Choice |Π(g, x, p)| + 2
-         ;;               Π(g, i + 1, p)
-         ;;               FailTwice
+         ;; (compile-predicate (ast IS node-x))     -> (list CHOICE number code BACK-COMMIT number FAIL)
+         ;; (compile-predicate (ast IS-NOT node-x)) -> (list CHOICE number code FAIL-TWICE)
+         ;;   where node-x = (ast type node-x node-y)
+         ;;         code   = symbol | char | number | function | charset
          (define compile-predicate
            (lambda (x)
              (let* ([type   (ast-type x)]
@@ -162,7 +187,11 @@
                                  FAIL-TWICE)]))))
 
          ;; === Sets: "one-of" and "none-of" ===
-         
+         ;;
+         ;; (compile-set (ast ONE-OF node-x))  -> (list ONE-OF x)
+         ;; (compile-set (ast NONE-OF node-x)) -> (list NONE-OF x)
+         ;;   where node-x = charset
+         ;;         x      = charset
          (define compile-set
            (lambda (x)
              (let ([type (ast-type x)]
@@ -170,7 +199,12 @@
                (fold-code type set))))
 
          ;; === Captures ===
-         
+         ;;
+         ;; (compile-capture (ast CAPTURE x y)) -> (list CAPTURE-START code-x code-y CAPTURE-STOP)
+         ;;   where x      = function | '()
+         ;;         y      = (ast type node-x node-y)
+         ;;         code-x = function | '()
+         ;;         code-y = symbol | char | number | function | charset
          (define compile-capture
            (lambda (x)
              (let ([fn   (ast-node-x x)]
@@ -180,28 +214,17 @@
                           CAPTURE-STOP))))
 
          ;; === Grammars ===
-
+         
+         ;; (compile-call (ast CALL node-x node-y)) -> (list OPEN-CALL symbol)
+         ;;   where node-x = symbol
+         ;;         node-y = number
          (define compile-call
            (lambda (x)
              (fold-code OPEN-CALL (ast-node-x x))))
 
-         ;; Π(g', i, (g, Ak)) ≡ Call o(g, Ak)
-         ;;                     Jump |Π'(g, x)| + 1
-         ;;                     Π'(g, 2) <--------- Keeps the invariant that all positions are relative
-         ;;                                         to the first rule of the closed grammar.
-         ;;
-         ;; where Π'(g, i) = Π(g, i, g(A1))
-         ;;                  Return
-         ;;                  ...
-         ;;                          k-1
-         ;;                  Π(g, i + Σ |Π(g, x, Aj)| + 1, g(Ak))
-         ;;                          j=1
-         ;;                  Return
-         ;;                  ...
-         ;;                          n-1
-         ;;                  Π(g, i + Σ |Π(g, x, Aj)| + 1, g(An))
-         ;;                          j=1
-         ;;                  Return
+         ;; (compile-grammar (ast GRAMMAR node-x)) -> (list code ...)
+         ;;   where node-x = (vector (ast RULE symbol (list ast ...)))
+         ;;         code   = symbol | char | number | function | charset
          (define compile-grammar
            (lambda (x)
              (let ([rules   (ast-node-x x)]
@@ -214,7 +237,9 @@
                         (let ([code (fold-code CALL 4
                                                JUMP (- total 2)
                                                (apply fold-code (reverse codes)))])
-                          (adjust-offsets code offsets))]
+                          (if (> (hashtable-size offsets) 0)
+                              (adjust-offsets code offsets)
+                              code))]
                        [else
                         (let* ([rule (vector-ref rules index)]
                                [name (ast-node-x rule)]
@@ -224,6 +249,15 @@
                                 (cons code codes)
                                 (+ total (check-length code))))])))))
 
+         ;; (adjust-offsets xs offsets)
+         ;;   where xs      = (list code ...)
+         ;;         offsets = (hashtable (symbol -> number) ...)
+         ;;
+         ;; Calculates the relative offsets of calls to their associated rules
+         ;; by substracting the index of the current call from the absolute offset
+         ;; of its associated rule.
+         ;;
+         ;; A call at the end of a rule is transformed into a tail call.
          (define adjust-offsets
            (lambda (xs offsets)
              (let ([peekable? (lambda (x) (and (pair? x) (pair? (cdr x))))]
@@ -393,4 +427,4 @@
                                                  [R2 C]))
                            '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN)))))
 
-)
+         )
