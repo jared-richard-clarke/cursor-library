@@ -191,10 +191,8 @@
 
          ;; === Sets: "one-of" and "none-of" ===
          ;;
-         ;; (compile-set (ast ONE-OF node-x))  -> (list ONE-OF x)
-         ;; (compile-set (ast NONE-OF node-x)) -> (list NONE-OF x)
-         ;;   where node-x = charset
-         ;;         x      = charset
+         ;; (compile-set (ast ONE-OF charset))  -> (list ONE-OF charset)
+         ;; (compile-set (ast NONE-OF charset)) -> (list NONE-OF charset)
          (define compile-set
            (lambda (x)
              (let ([type (ast-type x)]
@@ -218,9 +216,7 @@
 
          ;; === Grammars ===
          
-         ;; (compile-call (ast CALL node-x node-y)) -> (list OPEN-CALL symbol)
-         ;;   where node-x = symbol
-         ;;         node-y = number
+         ;; (compile-call (ast CALL symbol number)) -> (list OPEN-CALL symbol)
          (define compile-call
            (lambda (x)
              (fold-code OPEN-CALL (ast-node-x x))))
