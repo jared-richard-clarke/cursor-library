@@ -69,9 +69,9 @@
 
          ;; (compile-ast ast) -> x | (list x ...) | raise peg-error
          ;;   where ast    = (ast type node-x node-y)
-         ;;         type   = symbol
          ;;         node-x = ast | (list ast ...) | (vector ast ...)
          ;;         node-y = ast | (list ast ...) | (vector ast ...)
+         ;;         type   = symbol
          ;;         x      = code | (list code ...)
          ;;         code   = symbol | char | number | function | charset
          ;;
