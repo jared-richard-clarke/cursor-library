@@ -75,9 +75,9 @@
          ;;         x      = code | (list code ...)
          ;;         code   = symbol | char | number | function | charset
          ;;
-         ;; Delegates the recursive, depth-first transformation of an AST
-         ;; into a list of virtual machine instructions. Raises an error
-         ;; for ASTS that represent undefined operations.
+         ;; According to type, delegates the recursive, depth-first transformation
+         ;; of an AST into a list of virtual machine instructions. Raises an error
+         ;; for ASTS whose type is undefined.
          (define compile-ast
            (lambda (x)
              (let ([type (ast-type x)])
