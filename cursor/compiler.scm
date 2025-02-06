@@ -16,13 +16,13 @@
          ;;
          ;; These helper functions assume pairs are lists. This assumption
          ;; is safe as long as ASTs compile to either terminals or lists.
-         ;; We make this assumption because checking for a list is an
-         ;; O(n) operation, where n is the length of the list.
+         ;; We make this assumption for efficiency. Checking for lists is
+         ;; an O(n) operation, where n is the length of the list.
 
          ;; (check-length x) -> number
          ;;   where x = list | any
          ;;
-         ;; Returns the length of either a list or a single element.
+         ;; Returns the length of a list or assumes length 1 for a non-list.
          ;; Assumes pairs are lists.
          (define check-length
            (lambda (x)
@@ -33,7 +33,7 @@
          ;; (fold-code x ...) -> (list x ...)
          ;;   where x = list | any
          ;;
-         ;; Combines one or more lists and elements into a single list.
+         ;; Combines one or more lists and elements into a list.
          ;; Assumes pairs are lists.
          (define fold-code
            (lambda xs
