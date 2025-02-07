@@ -188,7 +188,7 @@
                                           (entry-sp entry)
                                           (cdr stack)
                                           (entry-captures entry))))]))])
-                 ;; === start state ===
+                 ;; === run-vm: start state ===
                  (state 0 0 '() '())))))
 
          (define collect-captures
@@ -218,12 +218,9 @@
                                   (loop (- index 1)
                                         (cons (vector-ref text index) args))]
                                  [else
-                                  (cond [(null? function)
-                                         (if (null? accumulator)
-                                             args
-                                             (append args accumulator))]
-                                        [else
-                                         (apply function accumulator args)])]))])
+                                  (if (null? function)
+                                      (cons args accumulator)
+                                      (apply function accumulator args))]))])
                ;; === collect-captures: start state ===
                (state captures '() '()))))
 
