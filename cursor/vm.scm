@@ -191,7 +191,7 @@
                  ;; === run-vm: start state ===
                  (state 0 0 '() '())))))
 
-         (define fold-captures
+         (define collect-captures
            (lambda (captures text)
              (letrec ([state
                        (lambda (stack-1 stack-2 accumulator)
@@ -205,7 +205,7 @@
                                                [stop     (capture-offset (car stack-2))])
                                            (state (cdr stack-1)
                                                   (cdr stack-2)
-                                                  (collect function start stop accumulator)))]
+                                                  (combine function start stop accumulator)))]
                                         [else
                                          (state (cdr stack-1)
                                                 (cons (car stack-1) stack-2)
@@ -221,7 +221,7 @@
                                   (if (null? function)
                                       (cons args accumulator)
                                       (apply function accumulator args))]))])
-               ;; === fold-captures: start state ===
+               ;; === collect-captures: start state ===
                (state captures '() '()))))
 
          )
