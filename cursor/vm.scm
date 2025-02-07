@@ -221,11 +221,11 @@
                                   (cond [(null? function)
                                          (if (null? accumulator)
                                              args
-                                             (append args accumulator))]
+                                             (cons args accumulator))]
                                         [else
                                          (if (null? accumulator)
-                                             (list (apply function args))
-                                             (list (apply function (append args accumulator))))])])))])
+                                             (apply function args)
+                                             (apply function accumulator args))])])))])
                ;; === start state ===
                (state captures '() '()))))
 
