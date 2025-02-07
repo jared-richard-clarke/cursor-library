@@ -11,6 +11,10 @@
            (fields ip (mutable sp) (mutable captures))
            (sealed #t))
 
+         (define-record-type capture
+           (fields type function offset)
+           (sealed #t))
+
          (define run-vm
            (lambda (text program)
              (let ([size (length text)])
@@ -150,14 +154,14 @@
                                  (state (+ ip 2)
                                         sp
                                         stack
-                                        (cons (list CAPTURE-START operation sp) captures)))]
+                                        (cons (make-capture CAPTURE-START operation sp) captures)))]
                               ;; [CAPTURE-STOP]
                               ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, CAPTURE-STOP:captures)
                               [(eq? code CAPTURE-STOP)
                                (state (+ ip 1)
                                       sp
                                       stack
-                                      (cons CAPTURE-STOP captures))]
+                                      (cons (make-capture CAPTURE-STOP '() sp) captures))]
                               ;; [MATCH]
                               ;; (ip, sp, stack, captures) -> (sp, captures)
                               [(eq? code MATCH)
@@ -165,7 +169,7 @@
                               ;; undefined operation -> raise peg-error
                               [else
                                (raise (make-peg-error "virtual machine" code ERROR-VM))])))]
-                        ;; Handles logic for FAIL.
+                        ;; Handles logic for when the virtual machine enters a failing state.
                         [fail-state
                          (lambda (ip sp stack captures)
                            (cond
@@ -184,7 +188,45 @@
                                           (entry-sp entry)
                                           (cdr stack)
                                           (entry-captures entry))))]))])
-                 ;; === start virtual machine ===
+                 ;; === start state ===
                  (state 0 0 '() '())))))
+
+         (define collect-captures
+           (lambda (captures text)
+             (letrec ([state
+                       (lambda (stack-1 stack-2 accumulator)
+                         (cond [(null? stack-1)
+                                accumulator]
+                               [else
+                                (let ([capture (car stack-1)])
+                                  (cond [(eq? (capture-type capture) CAPTURE-START)
+                                         (let ([function (capture-function capture)]
+                                               [start    (capture-offset capture)]
+                                               [stop     (capture-offset (car stack-2))])
+                                           (state (cdr stack-1)
+                                                  (cdr stack-2)
+                                                  (collect function start stop accumulator)))]
+                                        [else
+                                         (state (cdr stack-1)
+                                                (cons (car stack-1) stack-2)
+                                                accumulator)]))]))]
+                      [collect
+                       (lambda (function start stop accumulator)
+                         (let loop ([index (- stop 1)]
+                                    [args  '()])
+                           (cond [(> index start)
+                                  (loop (- index 1)
+                                        (cons (vector-ref text index) args))]
+                                 [else
+                                  (cond [(null? function)
+                                         (if (null? accumulator)
+                                             args
+                                             (append args accumulator))]
+                                        [else
+                                         (if (null? accumulator)
+                                             (list (apply function args))
+                                             (list (apply function (append args accumulator))))])])))])
+               ;; === start state ===
+               (state captures '() '()))))
 
          )
