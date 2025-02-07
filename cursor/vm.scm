@@ -156,12 +156,12 @@
                                         stack
                                         (cons (make-capture CAPTURE-START operation sp) captures)))]
                               ;; [CAPTURE-STOP]
-                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, CAPTURE-STOP:captures)
+                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, (CAPTURE-STOP, (- sp 1)):captures)
                               [(eq? code CAPTURE-STOP)
                                (state (+ ip 1)
                                       sp
                                       stack
-                                      (cons (make-capture CAPTURE-STOP '() sp) captures))]
+                                      (cons (make-capture CAPTURE-STOP '() (- sp 1)) captures))]
                               ;; [MATCH]
                               ;; (ip, sp, stack, captures) -> (sp, captures)
                               [(eq? code MATCH)
@@ -212,7 +212,7 @@
                                                 accumulator)]))]))]
                       [collect
                        (lambda (function start stop accumulator)
-                         (let loop ([index (- stop 1)]
+                         (let loop ([index stop)]
                                     [args  '()])
                            (cond [(> index start)
                                   (loop (- index 1)
@@ -221,11 +221,9 @@
                                   (cond [(null? function)
                                          (if (null? accumulator)
                                              args
-                                             (cons args accumulator))]
+                                             (append args accumulator))]
                                         [else
-                                         (if (null? accumulator)
-                                             (apply function args)
-                                             (apply function accumulator args))])])))])
+                                         (apply function accumulator args)])])))])
                ;; === start state ===
                (state captures '() '()))))
 
