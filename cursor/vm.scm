@@ -223,8 +223,8 @@
                                              args
                                              (append args accumulator))]
                                         [else
-                                         (apply function accumulator args)])])))])
-               ;; === start state ===
+                                         (apply function accumulator args)])]))])
+               ;; === collect-captures: start state ===
                (state captures '() '()))))
 
          )
