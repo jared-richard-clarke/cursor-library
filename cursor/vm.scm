@@ -163,9 +163,11 @@
                                       stack
                                       (cons (make-capture CAPTURE-STOP '() (- sp 1)) captures))]
                               ;; [MATCH]
-                              ;; (ip, sp, stack, captures) -> (sp, captures)
+                              ;; (ip, sp, stack, captures) -> boolean | any
                               [(eq? code MATCH)
-                               (list sp captures)]
+                               (if (null? captures)
+                                   #t
+                                   (collect-captures captures text))]
                               ;; undefined operation -> raise peg-error
                               [else
                                (raise (make-peg-error "virtual machine" code ERROR-VM))])))]
