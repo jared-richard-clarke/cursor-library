@@ -212,15 +212,15 @@
                                                 accumulator)]))]))]
                       [combine
                        (lambda (function start stop accumulator)
-                         (let loop ([index stop)]
-                                    [args  '()])
+                         (let loop ([index      stop)]
+                                    [characters '()])
                            (cond [(> index start)
                                   (loop (- index 1)
-                                        (cons (vector-ref text index) args))]
+                                        (cons (vector-ref text index) characters))]
                                  [else
                                   (if (null? function)
-                                      (cons args accumulator)
-                                      (apply function accumulator args))]))])
+                                      (cons characters accumulator)
+                                      (function characters accumulator))]))])
                ;; === collect-captures: start state ===
                (state captures '() '()))))
 
