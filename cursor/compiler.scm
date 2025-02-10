@@ -424,6 +424,13 @@
                            code-equal?
                            (compile-ast (grammar [R1 (sequence A B (call R2))]
                                                  [R2 C]))
-                           '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN)))))
+                           '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN))
+
+              (test-assert "finite state machine"
+                           code-equal?
+                           (compile-ast (grammar [X (sequence (char #\x) (call Y))]
+                                                 [Y (sequence (char #\y) (call Z))]
+                                                 [Z (char #\z)]))
+                           '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN)))))
 
          )
