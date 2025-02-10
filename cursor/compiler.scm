@@ -67,13 +67,8 @@
                  (lambda ()
                    program)))))
 
-         ;; (compile-ast ast) -> x | (list x ...) | raise peg-error
-         ;;   where ast    = (ast type node-x node-y)
-         ;;         node-x = ast | (list ast ...) | (vector ast ...)
-         ;;         node-y = ast | (list ast ...) | (vector ast ...)
-         ;;         type   = symbol
-         ;;         x      = code | (list code ...)
-         ;;         code   = symbol | char | number | function | charset
+         ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
+         ;;   where code = symbol | char | number | function | charset
          ;;
          ;; According to type, delegates the recursive, depth-first transformation
          ;; of an AST into a list of virtual machine instructions. Raises an error
@@ -95,18 +90,14 @@
                  [else
                   (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
 
-         ;; (compile-symbol (ast type)) -> code
-         ;;   where type = symbol
-         ;;         code = symbol
+         ;; (compile-symbol (ast type)) -> symbol
          (define compile-symbol
            (lambda (x)
              (ast-type x)))
 
          ;; === Character Match ===
          ;;
-         ;; (compile-character (ast CHARACTER node-x)) -> code
-         ;;   where node-x = char
-         ;;         code   = char
+         ;; (compile-character (ast CHARACTER node-x)) -> char
          (define compile-character
            (lambda (x)
              (ast-node-x x)))
@@ -114,8 +105,6 @@
          ;; === Concatenation ===
          ;;
          ;; (compile-sequence (ast SEQUENCE node-x)) -> (list code ...)
-         ;;   where node-x = (list (ast type node-x node-y) ...)
-         ;;         code   = symbol | char | number | function | charset
          (define compile-sequence
            (lambda (x)
              (let recur ([nodes (ast-node-x x)])
@@ -133,8 +122,6 @@
          ;; === Ordered Choice ===
          ;;
          ;; (compile-choice (ast CHOICE node-x)) -> (list CHOICE number code COMMIT number code ...)
-         ;;   where node-x = (list (ast type node-x node-y) ...)
-         ;;         code   = symbol | char | number | function | charset
          (define compile-choice
            (lambda (x)
              ;; To avoid redundant calculation, pass the accumulative offset
@@ -158,8 +145,6 @@
          ;; === Repetition ===
          ;;
          ;; (compile-repeat (ast REPEAT node-x)) -> (list CHOICE number code PARTIAL-COMMIT (- number))
-         ;;   where node-x = (ast type node-x node-y)
-         ;;         code   = symbol | char | number | function | charset
          (define compile-repeat
            (lambda (x)
              (let ([code (compile-ast (ast-node-x x))])
@@ -172,8 +157,6 @@
          ;;
          ;; (compile-predicate (ast IS node-x))     -> (list CHOICE number code BACK-COMMIT number FAIL)
          ;; (compile-predicate (ast IS-NOT node-x)) -> (list CHOICE number code FAIL-TWICE)
-         ;;   where node-x = (ast type node-x node-y)
-         ;;         code   = symbol | char | number | function | charset
          (define compile-predicate
            (lambda (x)
              (let* ([type   (ast-type x)]
@@ -191,8 +174,8 @@
 
          ;; === Sets: "one-of" and "none-of" ===
          ;;
-         ;; (compile-set (ast ONE-OF charset))  -> (list ONE-OF charset)
-         ;; (compile-set (ast NONE-OF charset)) -> (list NONE-OF charset)
+         ;; (compile-set (ast ONE-OF node-x))  -> (list ONE-OF charset)
+         ;; (compile-set (ast NONE-OF node-x)) -> (list NONE-OF charset)
          (define compile-set
            (lambda (x)
              (let ([type (ast-type x)]
@@ -201,11 +184,7 @@
 
          ;; === Captures ===
          ;;
-         ;; (compile-capture (ast CAPTURE x y)) -> (list CAPTURE-START code-x code-y CAPTURE-STOP)
-         ;;   where x      = function | '()
-         ;;         y      = (ast type node-x node-y)
-         ;;         code-x = function | '()
-         ;;         code-y = symbol | char | number | function | charset
+         ;; (compile-capture (ast CAPTURE node-x node-y)) -> (list CAPTURE-START code code CAPTURE-STOP)
          (define compile-capture
            (lambda (x)
              (let ([fn   (ast-node-x x)]
@@ -216,14 +195,12 @@
 
          ;; === Grammars ===
          
-         ;; (compile-call (ast CALL symbol number)) -> (list OPEN-CALL symbol)
+         ;; (compile-call (ast CALL node-x node-y)) -> (list OPEN-CALL symbol)
          (define compile-call
            (lambda (x)
              (fold-code OPEN-CALL (ast-node-x x))))
 
          ;; (compile-grammar (ast GRAMMAR node-x)) -> (list code ...)
-         ;;   where node-x = (vector (ast RULE symbol (list ast ...)))
-         ;;         code   = symbol | char | number | function | charset
          (define compile-grammar
            (lambda (x)
              (let ([rules   (ast-node-x x)]
@@ -248,9 +225,7 @@
                                 (cons code codes)
                                 (+ total (check-length code))))])))))
 
-         ;; (adjust-offsets xs offsets)
-         ;;   where xs      = (list code ...)
-         ;;         offsets = (hashtable (symbol -> number) ...)
+         ;; (adjust-offsets xs offsets) -> (list code ...)
          ;;
          ;; Calculates the relative offsets of calls to their associated rules
          ;; by substracting the index of the current call from the absolute offset
