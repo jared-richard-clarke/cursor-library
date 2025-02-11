@@ -5,11 +5,13 @@
                  (cursor core)
                  (cursor data)
                  (cursor tools)
+                 (cursor vm)
                  (cursor collections charset))
 
          ;; === Error Constants ===
          
          (define ERROR-TYPE-AST    "not an abstract syntax tree")
+         (define ERROR-TYPE-STRING "argument must be of type string")
          (define ERROR-UNKNOWN-AST "unknown AST type")
          
          ;; === Helper Functions ===
@@ -49,23 +51,39 @@
 
          ;; === Compiler ===
 
+         ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | captures
+         ;;   where captures = (list (list char ...) ...) | any
+         ;;
+         ;; Transforms an AST into a parsing function, which runs a match
+         ;; over a string and returns 1 of 4 results:
+         ;;
+         ;;     1. Boolean true for match.
+         ;;     2. Boolean false for non-match.
+         ;;     3. List of character matches captured by captures.
+         ;;     4. Arbitrary values captured by captures and
+         ;;        transformed by associated functions.
          (define compile
            (lambda (x)
              (unless (ast? x)
                (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
-             (let* ([code   (compile-ast x)]
-                    [size   (length code)]
-                    [buffer (make-vector (+ size 1))])
+             (let* ([code      (compile-ast x)]
+                    [code-list (if (pair? code) code (list code))]
+                    [size      (length code-list)]
+                    [buffer    (make-vector (+ size 1))])
                (let ([program
-                      (let loop ([index 0] [xs code])
+                      (let loop ([index 0] [xs code-list])
                         (cond [(= index size)
                                (vector-set! buffer index MATCH)
                                buffer]
                               [else
                                (vector-set! buffer index (car xs))
                                (loop (+ index 1) (cdr xs))]))])
-                 (lambda ()
-                   program)))))
+                 ;; Returns parsing function, which runs a PEG virtual machine over a string.
+                 ;; Contains virtual machine instructions within its closure.
+                 (lambda (text)
+                   (unless (string? text)
+                     (raise (make-peg-error "parsing function" x ERROR-TYPE-STRING)))
+                   (run-vm (string->vector text) program))))))
 
          ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
          ;;   where code = symbol | char | number | function | charset
