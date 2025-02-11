@@ -17,7 +17,7 @@
 
          (define run-vm
            (lambda (text program)
-             (let ([size (length text)])
+             (let ([size (vector-length text)])
                (letrec ([state
                          (lambda (ip sp stack captures)
                            (let ([code (vector-ref program ip)])
@@ -46,7 +46,7 @@
                                           (+ sp 1)
                                           stack
                                           captures)
-                                   (fail-state ip sp captures))]
+                                   (fail-state ip sp stack captures))]
                               ;; [JUMP offset]
                               ;; (ip, sp, stack, captures) -> (ip+offset, sp, stack, captures)
                               [(eq? code JUMP)
@@ -78,8 +78,8 @@
                               [(eq? code PARTIAL-COMMIT)
                                (let ([offset (vector-ref program (+ ip 1))]
                                      [entry  (car stack)])
-                                 (set-entry-sp! entry sp)
-                                 (set-entry-captures! entry captures)
+                                 (entry-sp-set! entry sp)
+                                 (entry-captures-set! entry captures)
                                  (state (+ ip offset)
                                         sp
                                         stack
@@ -177,7 +177,7 @@
                            (cond
                             ;; If the stack is empty, then the match has failed.
                             [(null? stack)
-                             '()]
+                             #f]
                             [else
                              (let ([entry (car stack)])
                                (if (number? entry)
@@ -214,15 +214,15 @@
                                                 accumulator)]))]))]
                       [combine
                        (lambda (function start stop accumulator)
-                         (let loop ([index      stop)]
+                         (let loop ([index      stop]
                                     [characters '()])
-                           (cond [(> index start)
+                           (cond [(>= index start)
                                   (loop (- index 1)
                                         (cons (vector-ref text index) characters))]
                                  [else
                                   (if (null? function)
                                       (cons characters accumulator)
-                                      (function characters accumulator))]))])
+                                      (function characters accumulator))])))])
                ;; === collect-captures: start state ===
                (state captures '() '()))))
 
