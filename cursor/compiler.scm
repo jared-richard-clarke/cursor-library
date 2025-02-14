@@ -90,7 +90,7 @@
          ;;
          ;; According to type, delegates the recursive, depth-first transformation
          ;; of an AST into a list of virtual machine instructions. Raises an error
-         ;; for ASTS whose type is undefined.
+         ;; for ASTs whose type is undefined.
          (define compile-ast
            (lambda (x)
              (let ([type (ast-type x)])
