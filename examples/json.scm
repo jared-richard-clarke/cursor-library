@@ -3,11 +3,14 @@
          (import (rnrs)
                  (cursor))
 
-         (define NULL 'NULL)
-
          (define separate-by
            (lambda (x sep)
              (sequence x (repeat sep x))))
+
+         (define replace
+           (lambda (x y)
+             (capture (lambda (xs state) y)
+                      x)))
          
          (define whitespace (repeat (one-of " \n\r\t")))
 
@@ -20,12 +23,9 @@
          (define escape (choice (one-of "\"\/\b\f\n\r\t")
                                 (sequence (char #\u) hex hex hex hex)))
 
-         (define json-true  (capture (lambda (xs state) #t)
-                                     (text "true")))
-         (define json-false (capture (lambda (xs state) #f)
-                                     (text "false")))
-         (define json-null  (capture (lambda (xs state) NULL)
-                                     (text "null")))
+         (define json-true  (replace (text "true")  #t))
+         (define json-false (replace (text "false") #f))
+         (define json-null  (replace (text "null")  'NULL))
 
          (define json-character (sequence (is-not? (choice (char #\")
                                                            (sequence (char #\\)
