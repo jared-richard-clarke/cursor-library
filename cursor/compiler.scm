@@ -50,7 +50,7 @@
                       (cons (car xs) (recur (cdr xs)))]))))
 
          ;; === Compiler ===
-         
+
          ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | captures
          ;;   where captures = (list (list char ...) ...) | any
          ;;
@@ -409,20 +409,20 @@
 
               (test-assert "grammar, baseline"
                            code-equal?
-                           (compile-ast (grammar [R1 (sequence A (call R2) C)]
+                           (compile-ast (grammar [R1 (sequence A (rule R2) C)]
                                                  [R2 B]))
                            '(CALL 4 JUMP 9 #\a CALL 4 #\c RETURN #\b RETURN))
 
               (test-assert "grammar, tail call"
                            code-equal?
-                           (compile-ast (grammar [R1 (sequence A B (call R2))]
+                           (compile-ast (grammar [R1 (sequence A B (rule R2))]
                                                  [R2 C]))
                            '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN))
 
               (test-assert "finite state machine"
                            code-equal?
-                           (compile-ast (grammar [X (sequence (char #\x) (call Y))]
-                                                 [Y (sequence (char #\y) (call Z))]
+                           (compile-ast (grammar [X (sequence (char #\x) (rule Y))]
+                                                 [Y (sequence (char #\y) (rule Z))]
                                                  [Z (char #\z)]))
                            '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN)))))
 
