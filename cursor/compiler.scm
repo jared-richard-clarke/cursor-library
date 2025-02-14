@@ -50,18 +50,18 @@
                       (cons (car xs) (recur (cdr xs)))]))))
 
          ;; === Compiler ===
-
+         
          ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | captures
          ;;   where captures = (list (list char ...) ...) | any
          ;;
          ;; Transforms an AST into a parsing function, which runs a match
          ;; over a string and returns 1 of 4 results:
          ;;
-         ;;     1. Boolean true for match.
-         ;;     2. Boolean false for non-match.
-         ;;     3. List of character matches captured by captures.
-         ;;     4. Arbitrary values captured by captures and
-         ;;        transformed by associated functions.
+         ;; 1. Boolean true for match.
+         ;; 2. Boolean false for non-match.
+         ;; 3. List of lists of captured character matches.
+         ;; 4. Arbitrary values that have been captured as lists of
+         ;;    characters then transformed by associated functions.
          (define compile
            (lambda (x)
              (unless (ast? x)
@@ -82,7 +82,7 @@
                  ;; Contains virtual machine instructions within its closure.
                  (lambda (text)
                    (unless (string? text)
-                     (raise (make-peg-error "parsing function" x ERROR-TYPE-STRING)))
+                     (raise (make-peg-error "parsing function" text ERROR-TYPE-STRING)))
                    (run-vm (string->vector text) program))))))
 
          ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
