@@ -39,69 +39,61 @@
            (capture (lambda (xs state)
                       (string->number (list->string xs) 10))
                     
-                    (grammar [Real       (sequence (call Integer)
-                                                   (call Fractional)
-                                                   (call Exponent))]
-                             [Integer    (sequence (call Sign)
-                                                   (call Whole))]
+                    (grammar [Real       (sequence (rule Integer) (rule Fractional) (rule Exponent))]
+                             
+                             [Integer    (sequence (rule Sign) (rule Whole))]
+                             
                              [Whole      (choice (char #\0)
-                                                 (sequence (one-of "123456789")
-                                                           (repeat digit)))]
-                             [Fractional (maybe (sequence (char #\.)
+                                                 (sequence (one-of "123456789") (repeat digit)))]
+                             
+                             [Fractional (maybe (sequence (char #\.) digits))]
+                             
+                             [Exponent   (maybe (sequence (choice (char #\e) (char #\E))
+                                                          (rule Sign)
                                                           digits))]
-                             [Exponent   (maybe (sequence (choice (char #\e)
-                                                                  (char #\E))
-                                                          (call Sign)
-                                                          digits))]
-                             [Sign       (maybe (choice (char #\+)
-                                                        (char #\-)))])))
+                             
+                             [Sign       (maybe (choice (char #\+) (char #\-)))])))
 
          (define json-grammar
-           (grammar [Element (sequence whitespace
-                                       (call Value)
-                                       whitespace)]
+           (grammar [Element (sequence whitespace (rule Value) whitespace)]
                     
-                    [Value (choice (call Object)
-                                   (call Array)
-                                   (call String)
-                                   (call Number)
-                                   (call True)
-                                   (call False)
-                                   (call Null))]
+                    [Value   (choice (rule Object)
+                                     (rule Array)
+                                     (rule String)
+                                     (rule Number)
+                                     (rule True)
+                                     (rule False)
+                                     (rule Null))]
                     
-                    [Object (choice (sequence (char #\{)
-                                              (choice (call Members)
-                                                      whitespace)
-                                              (char #\})))]
+                    [Object   (sequence (char #\{)
+                                        (choice (rule Members) whitespace)
+                                        (char #\}))]
                     
-                    [Members (sequence (call Member)
-                                       (repeat (sequence (char #\,)
-                                                         (call Member))))]
+                    [Members  (sequence (rule Member)
+                                        (repeat (sequence (char #\,) (rule Member))))]
                     
-                    [Member (sequence whitespace
-                                      (call String)
-                                      whitespace
-                                      (char #\:)
-                                      (call Element))]
+                    [Member   (sequence whitespace
+                                        (rule String)
+                                        whitespace
+                                        (char #\:)
+                                        (rule Element))]
                     
-                    [Array (sequence (char #\[)
-                                     (choice (call Elements)
-                                             whitespace)
-                                     (char #\]))]
+                    [Array    (sequence (char #\[)
+                                        (choice (rule Elements) whitespace)
+                                        (char #\]))]
 
-                    [Elements (sequence (call Element)
-                                        (repeat (sequence (char #\,)
-                                                          (call Element))))]
+                    [Elements (sequence (rule Element)
+                                        (repeat (sequence (char #\,) (rule Element))))]
                     
-                    [String json-string]
+                    [String   json-string]
                     
-                    [Number json-number]
+                    [Number   json-number]
                     
-                    [True json-true]
+                    [True     json-true]
                     
-                    [False json-false]
+                    [False    json-false]
                     
-                    [Null json-null]))
+                    [Null     json-null]))
 
          (define parse-json (compile json-grammar))
 
