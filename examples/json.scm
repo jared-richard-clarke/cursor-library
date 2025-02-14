@@ -4,6 +4,10 @@
                  (cursor))
 
          (define NULL 'NULL)
+
+         (define separate-by
+           (lambda (x sep)
+             (sequence x (repeat sep x))))
          
          (define whitespace (repeat (one-of " \n\r\t")))
 
@@ -30,10 +34,10 @@
 
          (define json-characters (repeat+1 json-character))
 
-         (define json-string (capture (lambda (xs state) (list->string xs))
-                                     (sequence (char #\")
-                                               json-characters
-                                               (char #\"))))
+         (define json-string (sequence (char #\")
+                                       (capture (lambda (xs state) (list->string xs))
+                                                json-characters)
+                                       (char #\")))
 
          (define json-number
            (capture (lambda (xs state)
@@ -69,8 +73,7 @@
                                         (choice (rule Members) whitespace)
                                         (char #\}))]
                     
-                    [Members  (sequence (rule Member)
-                                        (repeat (sequence (char #\,) (rule Member))))]
+                    [Members  (separate-by (rule Member) (char #\,))]
                     
                     [Member   (sequence whitespace
                                         (rule String)
@@ -82,8 +85,7 @@
                                         (choice (rule Elements) whitespace)
                                         (char #\]))]
 
-                    [Elements (sequence (rule Element)
-                                        (repeat (sequence (char #\,) (rule Element))))]
+                    [Elements (separate-by (rule Element) (char #\,)]
                     
                     [String   json-string]
                     
