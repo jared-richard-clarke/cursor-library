@@ -12,7 +12,7 @@
                  is-not?
                  one-of
                  none-of
-                 call
+                 rule
                  grammar
                  capture
                  text
@@ -330,11 +330,11 @@
 
          ;; === Grammar ===
 
-         ;; (call x)
+         ;; (rule x)
          ;;   where x = symbol
          ;;
-         ;; (call x)  -> (ast OPEN-CALL x)
-         (define-syntax call
+         ;; (rule x)  -> (ast OPEN-CALL x)
+         (define-syntax rule
            (syntax-rules ()
              [(_ x)
               (let ([id (quote x)])
@@ -571,7 +571,7 @@
               ;; === Grammars ===
               (test-assert "grammar, baseline"
                            ast-equal?
-                           (grammar [R1 (sequence (text "ab") (call R2))]
+                           (grammar [R1 (sequence (text "ab") (rule R2))]
                                     [R2 (text "c")])
                            (encode-ast GRAMMAR
                                        (vector (encode-ast RULE
@@ -588,21 +588,21 @@
 
               (test-assert "undefined rule"
                            error-equal?
-                           (catch (grammar [A (sequence (char #\a) (call C))]
+                           (catch (grammar [A (sequence (char #\a) (rule C))]
                                            [B (char #\b)]))
                            (make-peg-error "(grammar _)" (quote C) ERROR-UNDEFINED-RULE))
 
               ;; Left Recursion: A → Bβ such that B ⇒ Aγ
               (test-assert "grammar, direct left recursion"
                            error-equal?
-                           (catch (grammar [R (call R)]))
+                           (catch (grammar [R (rule R)]))
                            (make-peg-error "(grammar _)" (quote R) ERROR-LEFT-RECURSION))
 
               (test-assert "grammar, indirect left recursion"
                            error-equal?
-                           (catch (grammar [A (sequence (call B) (char #\x))]
-                                           [B (sequence (call C) (char #\y))]
-                                           [C (sequence (call A) (char #\z))]))
+                           (catch (grammar [A (sequence (rule B) (char #\x))]
+                                           [B (sequence (rule C) (char #\y))]
+                                           [C (sequence (rule A) (char #\z))]))
                            (make-peg-error "(grammar _)" (quote A) ERROR-LEFT-RECURSION))
               )))
          
