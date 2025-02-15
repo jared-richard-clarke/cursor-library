@@ -5,12 +5,7 @@
 
          (define separate-by
            (lambda (x sep)
-             (sequence x (repeat sep x))))
-
-         (define replace
-           (lambda (x y)
-             (capture (lambda (xs state) y)
-                      x)))
+             (sequence x (repeat (sequence sep x)))))
          
          (define whitespace (repeat (one-of " \n\r\t")))
 
@@ -20,12 +15,12 @@
 
          (define hex (choice digit (one-of "ABCDEFabcdef")))
 
-         (define escape (choice (one-of "\"\/\b\f\n\r\t")
+         (define escape (choice (one-of "\"/\b\f\n\r\t")
                                 (sequence (char #\u) hex hex hex hex)))
 
-         (define json-true  (replace (text "true")  #t))
-         (define json-false (replace (text "false") #f))
-         (define json-null  (replace (text "null")  'NULL))
+         (define json-true  (text "true"))
+         (define json-false (text "false"))
+         (define json-null  (text "null"))
 
          (define json-character (sequence (is-not? (choice (char #\")
                                                            (sequence (char #\\)
@@ -35,28 +30,26 @@
          (define json-characters (repeat+1 json-character))
 
          (define json-string (sequence (char #\")
-                                       (capture (lambda (xs state) (list->string xs))
-                                                json-characters)
+                                       json-characters
                                        (char #\")))
 
-         (define json-number
-           (capture (lambda (xs state)
-                      (string->number (list->string xs) 10))
-                    
-                    (grammar [Real       (sequence (rule Integer) (rule Fractional) (rule Exponent))]
-                             
-                             [Integer    (sequence (rule Sign) (rule Whole))]
-                             
-                             [Whole      (choice (char #\0)
-                                                 (sequence (one-of "123456789") (repeat digit)))]
-                             
-                             [Fractional (maybe (sequence (char #\.) digits))]
-                             
-                             [Exponent   (maybe (sequence (choice (char #\e) (char #\E))
-                                                          (rule Sign)
-                                                          digits))]
-                             
-                             [Sign       (maybe (choice (char #\+) (char #\-)))])))
+         (define sign       (maybe (choice (char #\+) (char #\-))))
+         
+         (define exponent   (maybe (sequence (choice (char #\e) (char #\E))
+                                           sign
+                                           digits)))
+         
+         (define fractional (maybe (sequence (char #\.) digits)))
+         
+         (define whole      (choice (char #\0)
+                                    (sequence (one-of "123456789")
+                                              (repeat digit))))
+         
+         (define integer    (sequence sign whole))
+         
+         (define real       (sequence integer fractional exponent))
+
+         (define json-number real)
 
          (define json-grammar
            (grammar [Element (sequence whitespace (rule Value) whitespace)]
