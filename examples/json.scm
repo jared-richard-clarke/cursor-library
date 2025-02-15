@@ -33,23 +33,17 @@
                                        json-characters
                                        (char #\")))
 
-         (define sign       (maybe (choice (char #\+) (char #\-))))
-         
-         (define exponent   (maybe (sequence (choice (char #\e) (char #\E))
-                                           sign
-                                           digits)))
-         
-         (define fractional (maybe (sequence (char #\.) digits)))
-         
-         (define whole      (choice (char #\0)
-                                    (sequence (one-of "123456789")
-                                              (repeat digit))))
-         
-         (define integer    (sequence sign whole))
-         
-         (define real       (sequence integer fractional exponent))
+         (define sign        (maybe (choice (char #\+) (char #\-))))
+         (define exponent    (maybe (sequence (choice (char #\e) (char #\E))
+                                              sign
+                                              digits)))
+         (define fractional  (maybe (sequence (char #\.) digits)))
+         (define whole       (choice (char #\0)
+                                     (sequence (one-of "123456789")
+                                               (repeat digit))))
+         (define integer     (sequence sign whole))
 
-         (define json-number real)
+         (define json-number (sequence integer fractional exponent))
 
          (define json-grammar
            (grammar [Element (sequence whitespace (rule Value) whitespace)]
