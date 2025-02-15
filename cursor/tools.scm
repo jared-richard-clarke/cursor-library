@@ -49,7 +49,8 @@
          ;; (define test-thunk (test-assert "commutative" = (- 1 6) (- 6 1)))
          ;;
          ;; (test-thunk) -> test commutative failed:
-         ;;                 lhs: (- 1 6) -> -5, rhs: (- 6 1) -> 5
+         ;;                 lhs: (- 1 6) -> -5,
+         ;;                 rhs: (- 6 1) -> 5
          (define-syntax test-assert
            (syntax-rules ()
              [(_ label compare x y)
