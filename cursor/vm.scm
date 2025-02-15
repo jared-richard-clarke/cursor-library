@@ -222,7 +222,7 @@
                                  [else
                                   (if (null? function)
                                       (cons characters accumulator)
-                                      (function characters accumulator))])))])
+                                      (cons (function characters) accumulator))])))])
                ;; === collect-captures: start state ===
                (state captures '() '()))))
 
