@@ -1,7 +1,6 @@
 (library (cursor data)
          ;; enumerations
-         (export ERROR
-                 EMPTY
+         (export EMPTY
                  ANY
                  FAIL
                  FAIL-TWICE
@@ -15,12 +14,12 @@
                  RULE
                  CALL
                  OPEN-CALL
-                 TAIL-CALL
                  RETURN
                  JUMP
                  CAPTURE
                  CAPTURE-START
                  CAPTURE-STOP
+                 TRANSFORM
                  REPEAT
                  IS
                  IS-NOT
@@ -41,12 +40,12 @@
                  peg-error-what ;; field
                  peg-error-why) ;; field
          (import (rnrs)
-                 (cursor tools))
+                 (cursor tools)
+                 (cursor collections charset))
 
          ;; Symbols that identify nodes within abstract syntax trees
          ;; and instructions within instruction lists.
-         (enum ERROR
-               EMPTY
+         (enum EMPTY
                ANY
                FAIL
                FAIL-TWICE
@@ -60,12 +59,12 @@
                RULE
                CALL
                OPEN-CALL
-               TAIL-CALL
                RETURN
                JUMP
                CAPTURE
                CAPTURE-START
                CAPTURE-STOP
+               TRANSFORM
                REPEAT
                IS
                IS-NOT
@@ -73,14 +72,14 @@
                NONE-OF
                MATCH)
 
-         ;; record-type: (ast type node node)
+         ;; record-type: (ast type node-x node-y)
          ;;                where type = symbol
-         ;;                      node = ast | (list ast ...) | (vector ast ...)
-         ;;                      node = ast | (list ast ...) | (vector ast ...)
+         ;;                      node-x = ast | (list ast ...) | (vector ast ...)
+         ;;                      node-y = ast | (list ast ...) | (vector ast ...)
          ;;
          ;; The leaves and branches within an abstract syntax tree.
          ;; The type identifies the node. The child nodes are themselves
-         ;; "ast"s or lists or vectors containing zero or more "ast"s.
+         ;; ASTs or lists or vectors containing zero or more ASTs.
          (define-record-type (ast encode-ast ast?)
            (fields type
                    node-x
@@ -93,8 +92,11 @@
                [(type node-x)        (new type node-x '())]
                [(type node-x node-y) (new type node-x node-y)]))))
 
+         ;; empty, fail, any, character, sequence, choice, repeat,
+         ;; is?, is-not?, one-of, none-of, call, grammar, rule, capture
+
          ;; (ast-equal? ast ast) -> boolean
-         ;; Deep, structural comparison of asts.  
+         ;; Deep, structural comparison of ASTs.
          (define ast-equal?
            (lambda (a b)
              (and (ast? a) (ast? b)
@@ -126,11 +128,11 @@
                            [(RULE)
                             (and (eq? (ast-node-x a) (ast-node-x b))
                                  (ast-equal? (ast-node-y a) (ast-node-y b)))]
-                           ;; Capture comparison.
+                           ;; Capture and Transform comparison.
                            ;; Function equality is undecidable.
                            ;; We check only for their presence or absence
-                           ;; within both captures.
-                           [(CAPTURE)
+                           ;; within both captures or transforms.
+                           [(CAPTURE TRANSFORM)
                             (let ([a-f? (procedure? (ast-node-x a))]
                                   [a-n? (null? (ast-node-x a))]
                                   [a-px (ast-node-y a)]
