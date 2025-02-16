@@ -61,7 +61,7 @@
          ;; 2. Boolean false for non-match.
          ;; 3. List of lists of captured character matches.
          ;; 4. Arbitrary values that have been captured as lists of
-         ;;    characters then transformed by associated functions.
+         ;;    characters and then transformed by associated functions.
          (define compile
            (lambda (x)
              (unless (ast? x)
@@ -103,6 +103,7 @@
                  [(IS IS-NOT)      (compile-predicate x)]
                  [(ONE-OF NONE-OF) (compile-set x)]
                  [(CAPTURE)        (compile-capture x)]
+                 [(TRANSFORM)      (compile-transform x)]
                  [(CALL)           (compile-call x)]
                  [(GRAMMAR)        (compile-grammar x)]
                  [else
@@ -210,6 +211,12 @@
                (fold-code CAPTURE-START fn
                           code
                           CAPTURE-STOP))))
+
+         (define compile-transform
+           (lambda (x)
+             (let ([fn   (ast-node-x x)]
+                   [code (compile-ast (ast-node-y x))])
+               (fold-code TRANSFORM fn code))))
 
          ;; === Grammars ===
          
@@ -322,39 +329,39 @@
                            (compile-ast (text ""))
                            EMPTY)
 
-              (test-assert "sequence abc"
+              (test-assert "and-then abc"
                            code-equal?
-                           (compile-ast (sequence A B C))
+                           (compile-ast (and-then A B C))
                            '(#\a #\b #\c))
 
-              (test-assert "sequence nested"
+              (test-assert "and-then nested"
                            code-equal?
-                           (compile-ast (sequence (sequence A B) (sequence C B (sequence A))))
+                           (compile-ast (and-then (and-then A B) (and-then C B (and-then A))))
                            '(#\a #\b #\c #\b #\a))
 
-              (test-assert "sequence identity"
+              (test-assert "and-then identity"
                            code-equal?
-                           (compile-ast (sequence))
+                           (compile-ast (and-then))
                            EMPTY)
 
-              (test-assert "choice, a / b"
+              (test-assert "or-else, a / b"
                            code-equal?
-                           (compile-ast (choice A B))
+                           (compile-ast (or-else A B))
                            '(CHOICE 5 #\a COMMIT 3 #\b))
 
-              (test-assert "choice, a / b / c"
+              (test-assert "or-else, a / b / c"
                            code-equal?
-                           (compile-ast (choice A B C))
+                           (compile-ast (or-else A B C))
                            '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
-              (test-assert "choice, a / (b / c)"
+              (test-assert "or-else, a / (b / c)"
                            code-equal?
-                           (compile-ast (choice (choice A B) C))
+                           (compile-ast (or-else (or-else A B) C))
                            '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
-              (test-assert "choice identity"
+              (test-assert "or-else identity"
                            code-equal?
-                           (compile-ast (choice))
+                           (compile-ast (or-else))
                            FAIL)
 
               (test-assert "repeat a*"
@@ -394,7 +401,7 @@
 
               (test-assert "capture, baseline"
                            code-equal?
-                           (compile-ast (capture (sequence A B C)))
+                           (compile-ast (capture (and-then A B C)))
                            '(CAPTURE-START () #\a #\b #\c CAPTURE-STOP))
 
               (test-assert "capture, true positive"
@@ -409,20 +416,20 @@
 
               (test-assert "grammar, baseline"
                            code-equal?
-                           (compile-ast (grammar [R1 (sequence A (rule R2) C)]
+                           (compile-ast (grammar [R1 (and-then A (rule R2) C)]
                                                  [R2 B]))
                            '(CALL 4 JUMP 9 #\a CALL 4 #\c RETURN #\b RETURN))
 
               (test-assert "grammar, tail call"
                            code-equal?
-                           (compile-ast (grammar [R1 (sequence A B (rule R2))]
+                           (compile-ast (grammar [R1 (and-then A B (rule R2))]
                                                  [R2 C]))
                            '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN))
 
               (test-assert "finite state machine"
                            code-equal?
-                           (compile-ast (grammar [X (sequence (char #\x) (rule Y))]
-                                                 [Y (sequence (char #\y) (rule Z))]
+                           (compile-ast (grammar [X (and-then (char #\x) (rule Y))]
+                                                 [Y (and-then (char #\y) (rule Z))]
                                                  [Z (char #\z)]))
                            '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN)))))
 
