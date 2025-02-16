@@ -162,6 +162,14 @@
                                       sp
                                       stack
                                       (cons (make-capture CAPTURE-STOP '() (- sp 1)) captures))]
+                              ;; [TRANSFORM operation]
+                              ;; (ip, sp, stack, captures) -> (ip+2, sp, stack, (TRANSFORM, operation):captures)
+                              [(eq? code TRANSFORM)
+                               (let ([operation (vector-ref program (+ ip 1))])
+                                 (state (+ ip 2)
+                                        sp
+                                        stack
+                                        (cons (make-capture TRANSFORM operation 0))))]
                               ;; [MATCH]
                               ;; (ip, sp, stack, captures) -> boolean | any
                               [(eq? code MATCH)
@@ -208,6 +216,11 @@
                                            (state (cdr stack-1)
                                                   (cdr stack-2)
                                                   (collect function start stop accumulator)))]
+                                        [(eq? (capture-type capture) TRANSFORM)
+                                         (let ([function (capture-function capture)])
+                                           (state (cdr stack-1)
+                                                  stack-2
+                                                  (function accumulator)))]
                                         [else
                                          (state (cdr stack-1)
                                                 (cons (car stack-1) stack)
