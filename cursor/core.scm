@@ -3,8 +3,8 @@
                  fail
                  any
                  char
-                 sequence
-                 choice
+                 and-then
+                 or-else
                  maybe
                  repeat
                  repeat+1
@@ -15,6 +15,7 @@
                  rule
                  grammar
                  capture
+                 transform
                  text
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
@@ -27,6 +28,7 @@
          (define ERROR-TYPE-CHARACTER "not a character")
          (define ERROR-TYPE-SYMBOL    "not a symbol")
          (define ERROR-TYPE-STRING    "not a string")
+         (define ERROR-TYPE-FUNCTION  "not a function")
          (define ERROR-TYPE-CODE      "undefined operation")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
          (define ERROR-NULLABLE       "expression within may cause infinite loop")
@@ -94,7 +96,7 @@
                       (recur (vector-ref node-x 0) x)]
                      [(CALL)
                       (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
-                     [(RULE CAPTURE)
+                     [(RULE CAPTURE TRANSFORM)
                       (recur node-y grammar)]
                      [else #f]))))))
 
@@ -175,7 +177,7 @@
                                                            (traverse-rules node-y nullable-flag)]
                                                           [(REPEAT IS IS-NOT)
                                                            (traverse-node node-x #t)]
-                                                          [(CAPTURE)
+                                                          [(CAPTURE TRANSFORM)
                                                            (traverse-node node-y nullable-flag)]
                                                           [else #f]))]))])
                                      (traverse-rules start #f)))]
@@ -223,14 +225,14 @@
 
          ;; === Concatenation ===
 
-         ;; (sequence px py ...) = px • py • ...
-         ;; (sequence px)        = px
-         ;; (sequence)           = ε
+         ;; (and-then px py ...) = px • py • ...
+         ;; (and-then px)        = px
+         ;; (and-then)           = ε
          ;;
-         ;; (sequence px py ...) -> (ast SEQUENCE (list px py ...))
-         ;; (sequence px)        -> px
-         ;; (sequence)           -> empty
-         (define sequence
+         ;; (and-then px py ...) -> (ast SEQUENCE (list px py ...))
+         ;; (and-then px)        -> px
+         ;; (and-then)           -> empty
+         (define and-then
            (case-lambda
              [()  empty]
              [(x) (check-ast x)]
@@ -238,14 +240,14 @@
 
          ;; === Ordered Choice: Limited Backtracking ===
 
-         ;; (choice px py ...) = px / py / ...
-         ;; (choice px)        = px
-         ;; (choice)           = fail
+         ;; (or-else px py ...) = px / py / ...
+         ;; (or-else px)        = px
+         ;; (or-else)           = fail
          ;;
-         ;; (choice px py ...) -> (ast CHOICE (list px py ...))
-         ;; (choice px)        -> px
-         ;; (choice)           -> fail
-         (define choice
+         ;; (or-else px py ...) -> (ast CHOICE (list px py ...))
+         ;; (or-else px)        -> px
+         ;; (or-else)           -> fail
+         (define or-else
            (case-lambda
             [()  fail]
             [(x) (check-ast x)]
@@ -256,7 +258,7 @@
          ;; (maybe px) -> (ast CHOICE (list px empty))
          (define maybe
            (lambda (px)
-             (choice px empty)))
+             (or-else px empty)))
 
          ;; === Repetition ===
 
@@ -276,7 +278,7 @@
          ;; (repeat+1 px) -> (ast SEQUENCE (list px (repeat px)))
          (define repeat+1
            (lambda (px)
-             (sequence px (repeat px))))
+             (and-then px (repeat px))))
 
          ;; === Syntactic Predicates: Unlimited Lookahead ===
 
@@ -373,7 +375,7 @@
                                                         ;; non-terminals
                                                         [(REPEAT IS IS-NOT)
                                                          (encode-ast type (recur (ast-node-x node)))]
-                                                        [(CAPTURE)
+                                                        [(CAPTURE TRANSFORM)
                                                          (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
                                                         ;; skip
                                                         [(GRAMMAR) node]
@@ -399,7 +401,18 @@
            (case-lambda
              [(px) (capture '() px)]
              [(fn px)
-              (encode-ast CAPTURE (if (procedure? fn) fn '()) px)]))
+              (encode-ast CAPTURE (if (procedure? fn) fn '()) (check-ast px))]))
+
+         ;; (transform fn px)
+         ;;   where fn = function
+         ;;         px = pattern
+         ;;
+         ;; (transform fn px) -> (ast TRANSFORM fn px)
+         (define transform
+           (lambda (fn px)
+             (if (procedure? fn)
+                 (encode-ast TRANSFORM fn (check-ast px))
+                 (raise (make-peg-error "(transform _)" fn ERROR-TYPE-FUNCTION)))))
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
@@ -456,42 +469,42 @@
                            (text "")
                            empty)
 
-              (test-assert "sequence abc"
+              (test-assert "and-then abc"
                            ast-equal?
-                           (sequence (char #\a)
+                           (and-then (char #\a)
                                      (char #\b)
                                      (char #\c))
                            (encode-ast SEQUENCE (list A B C)))
 
-              (test-assert "sequence nested"
+              (test-assert "and-then nested"
                            ast-equal?
-                           (sequence (sequence (char #\a)
+                           (and-then (and-then (char #\a)
                                                (char #\b))
                                      (char #\c)
                                      (text "ba"))
                            (encode-ast SEQUENCE (list A B C B A)))
 
-              (test-assert "sequence identity"
+              (test-assert "and-then identity"
                            ast-equal?
-                           (sequence)
+                           (and-then)
                            empty)
 
               ;; === Ordered Choice ===
-              (test-assert "choice, a / b"
+              (test-assert "or-else, a / b"
                            ast-equal?
-                           (choice (char #\a) (char #\b))
+                           (or-else (char #\a) (char #\b))
                            (encode-ast CHOICE (list A B)))
 
-              (test-assert "choice nested"
+              (test-assert "or-else nested"
                            ast-equal?
-                           (choice (char #\a)
-                                   (choice (char #\b)
-                                           (char #\c)))
+                           (or-else (char #\a)
+                                    (or-else (char #\b)
+                                             (char #\c)))
                            (encode-ast CHOICE (list A B C)))
 
-              (test-assert "choice identity"
+              (test-assert "or-else identity"
                            ast-equal?
-                           (choice)
+                           (or-else)
                            fail)
 
               ;; === Repetition ===
@@ -571,7 +584,7 @@
               ;; === Grammars ===
               (test-assert "grammar, baseline"
                            ast-equal?
-                           (grammar [R1 (sequence (text "ab") (rule R2))]
+                           (grammar [R1 (and-then (text "ab") (rule R2))]
                                     [R2 (text "c")])
                            (encode-ast GRAMMAR
                                        (vector (encode-ast RULE
@@ -588,7 +601,7 @@
 
               (test-assert "undefined rule"
                            error-equal?
-                           (catch (grammar [A (sequence (char #\a) (rule C))]
+                           (catch (grammar [A (and-then (char #\a) (rule C))]
                                            [B (char #\b)]))
                            (make-peg-error "(grammar _)" (quote C) ERROR-UNDEFINED-RULE))
 
@@ -600,9 +613,9 @@
 
               (test-assert "grammar, indirect left recursion"
                            error-equal?
-                           (catch (grammar [A (sequence (rule B) (char #\x))]
-                                           [B (sequence (rule C) (char #\y))]
-                                           [C (sequence (rule A) (char #\z))]))
+                           (catch (grammar [A (and-then (rule B) (char #\x))]
+                                           [B (and-then (rule C) (char #\y))]
+                                           [C (and-then (rule A) (char #\z))]))
                            (make-peg-error "(grammar _)" (quote A) ERROR-LEFT-RECURSION))
               )))
          
