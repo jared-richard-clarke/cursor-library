@@ -19,9 +19,9 @@
 ;; |--------------------------+-----------------|
 ;; | (is-not? p)              | !p              |
 ;; |--------------------------+-----------------|
-;; | (sequence px py)         | px py           |
+;; | (and-then px py)         | px py           |
 ;; |--------------------------+-----------------|
-;; | (choice px py)           | px / py         |
+;; | (or-else px py)          | px / py         |
 ;; |--------------------------+-----------------|
 ;; | (one-of "xyz")           | [xyz]           |
 ;; |--------------------------+-----------------|
@@ -35,8 +35,8 @@
                  fail
                  any
                  char
-                 sequence
-                 choice
+                 and-then
+                 or-else
                  maybe
                  repeat
                  repeat+1
@@ -44,9 +44,10 @@
                  is-not?
                  one-of
                  none-of
-                 call
+                 rule
                  grammar
                  capture
+                 transform
                  text
                  compile)
          (import (cursor core)
