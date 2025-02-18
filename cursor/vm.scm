@@ -169,7 +169,7 @@
                                  (state (+ ip 2)
                                         sp
                                         stack
-                                        (cons (make-capture TRANSFORM operation 0))))]
+                                        (cons (make-capture TRANSFORM operation 0) captures)))]
                               ;; [MATCH]
                               ;; (ip, sp, stack, captures) -> boolean | any
                               [(eq? code MATCH)
@@ -223,7 +223,7 @@
                                                   (function accumulator)))]
                                         [else
                                          (state (cdr stack-1)
-                                                (cons (car stack-1) stack)
+                                                (cons (car stack-1) stack-2)
                                                 accumulator)]))]))]
                       [collect
                        (lambda (function start stop accumulator)
