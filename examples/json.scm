@@ -11,12 +11,14 @@
 
          (define capture-text
            (lambda (px)
-             (capture (lambda (x) (list->string x))
+             (capture (lambda (x)
+                        (list->string x))
                       px)))
 
          (define capture-number
            (lambda (px)
-             (capture (lambda (x) (string->number (list->string x 10)))
+             (capture (lambda (x)
+                        (string->number (list->string x) 10))
                       px)))
 
          (define replace
@@ -27,6 +29,10 @@
          (define separate-by
            (lambda (px sep)
              (and-then px (repeat (and-then sep px)))))
+
+         (define fullstop
+           (lambda (px)
+             (and-then px (is-not? any))))
          
          (define whitespace (repeat (one-of " \n\r\t")))
 
@@ -51,60 +57,61 @@
                                                        (char #\E))
                                               sign
                                               digits)))
-         (define fractional  (maybe (and-then (char #\.) digits)))
+         (define fraction    (maybe (and-then (char #\.) digits)))
          (define whole       (or-else (char #\0)
                                       (and-then (one-of "123456789")
                                                 (repeat digit))))
          (define integer     (and-then sign whole))
 
-         (define json-number (capture-number (and-then integer fractional exponent))
+         (define json-number (capture-number (and-then integer fraction exponent))
 
          (define json-grammar
-           (grammar [Element (and-then whitespace (rule Value) whitespace)]
+           (fullstop
+            (grammar [Element (and-then whitespace (rule Value) whitespace)]
                     
-                    [Value   (or-else (rule Object)
-                                      (rule Array)
-                                      (rule String)
-                                      (rule Number)
-                                      (rule True)
-                                      (rule False)
-                                      (rule Null))]
-                    
-                    [Object   (transform (lambda (state)
-                                           (list (cons OBJECT state)))
-                                         (and-then (char #\{)
-                                                   (or-else (rule Members) whitespace)
-                                                   (char #\})))]
-                    
-                    [Members  (separate-by (rule Member) (char #\,))]
-                    
-                    [Member   (transform (lambda (state)
-                                           (let ([key   (car state)]
-                                                 [value (cadr state)])
-                                             (cons (list key value) (cddr state))))
-                                         (and-then whitespace
-                                                   (rule String)
-                                                   whitespace
-                                                   (char #\:)
-                                                   (rule Element)))]
-                    
-                    [Array    (transform (lambda (state)
-                                           (list (cons ARRAY state)))
-                                         (and-then (char #\[)
-                                                   (or-else (rule Elements) whitespace)
-                                                   (char #\])))]
+                     [Value   (or-else (rule Object)
+                                       (rule Array)
+                                       (rule String)
+                                       (rule Number)
+                                       (rule True)
+                                       (rule False)
+                                       (rule Null))]
 
-                    [Elements (separate-by (rule Element) (char #\,)]
-                    
-                    [String   json-string]
-                    
-                    [Number   json-number]
-                    
-                    [True     json-true]
-                    
-                    [False    json-false]
-                    
-                    [Null     json-null]))
+                     [Object   (transform (lambda (state)
+                                            (list (cons OBJECT state)))
+                                          (and-then (char #\{)
+                                                    (or-else (rule Members) whitespace)
+                                                    (char #\})))]
+
+                     [Members  (separate-by (rule Member) (char #\,))]
+
+                     [Member   (transform (lambda (state)
+                                            (let ([key   (car state)]
+                                                  [value (cadr state)])
+                                              (cons (list key value) (cddr state))))
+                                          (and-then whitespace
+                                                    (rule String)
+                                                    whitespace
+                                                    (char #\:)
+                                                    (rule Element)))]
+
+                     [Array    (transform (lambda (state)
+                                            (list (cons ARRAY state)))
+                                          (and-then (char #\[)
+                                                    (or-else (rule Elements) whitespace)
+                                                    (char #\])))]
+
+                     [Elements (separate-by (rule Element) (char #\,))]
+
+                     [String   json-string]
+
+                     [Number   json-number]
+
+                     [True     json-true]
+
+                     [False    json-false]
+
+                     [Null     json-null])))
 
          (define parse-json (compile json-grammar))
 
