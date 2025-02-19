@@ -70,26 +70,26 @@
                                       (rule False)
                                       (rule Null))]
                     
-                    [Object   (transform (lambda (stack)
-                                           (list (cons OBJECT stack)))
+                    [Object   (transform (lambda (state)
+                                           (list (cons OBJECT state)))
                                          (and-then (char #\{)
                                                    (or-else (rule Members) whitespace)
                                                    (char #\})))]
                     
                     [Members  (separate-by (rule Member) (char #\,))]
                     
-                    [Member   (transform (lambda (stack)
-                                           (let ([key   (car stack)]
-                                                 [value (cadr stack)])
-                                             (cons (list key value) (cddr stack))))
+                    [Member   (transform (lambda (state)
+                                           (let ([key   (car state)]
+                                                 [value (cadr state)])
+                                             (cons (list key value) (cddr state))))
                                          (and-then whitespace
                                                    (rule String)
                                                    whitespace
                                                    (char #\:)
                                                    (rule Element)))]
                     
-                    [Array    (transform (lambda (stack)
-                                           (list (cons ARRAY stack)))
+                    [Array    (transform (lambda (state)
+                                           (list (cons ARRAY state)))
                                          (and-then (char #\[)
                                                    (or-else (rule Elements) whitespace)
                                                    (char #\])))]
