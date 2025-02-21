@@ -36,8 +36,7 @@
          
          (define whitespace (repeat (one-of " \n\r\t")))
 
-         (define digit (one-of "0123456789"))
-
+         (define digit  (one-of "0123456789"))
          (define digits (repeat+1 digit))
 
          (define json-true  (replace (text "true") #t))
@@ -45,25 +44,33 @@
          (define json-null  (replace (text "null") 'NULL))
 
          (define json-character  (none-of "\"/\b\f\n\r\t"))
-
          (define json-characters (repeat json-character))
 
-         (define json-string (and-then (char #\")
-                                       (capture-text json-characters)
-                                       (char #\")))
+         (define json-string
+           (and-then (char #\")
+                     (capture-text json-characters)
+                     (char #\")))
 
-         (define sign        (maybe (or-else (char #\+) (char #\-))))
-         (define exponent    (maybe (and-then (or-else (char #\e)
-                                                       (char #\E))
-                                              sign
-                                              digits)))
-         (define fraction    (maybe (and-then (char #\.) digits)))
-         (define whole       (or-else (char #\0)
-                                      (and-then (one-of "123456789")
-                                                (repeat digit))))
-         (define integer     (and-then sign whole))
+         (define sign
+           (maybe (or-else (char #\+) (char #\-))))
+         
+         (define exponent
+           (maybe (and-then (or-else (char #\e)
+                                     (char #\E))
+                            sign
+                            digits)))
+         
+         (define fraction (maybe (and-then (char #\.) digits)))
+         
+         (define whole
+           (or-else (char #\0)
+                    (and-then (one-of "123456789")
+                              (repeat digit))))
+         
+         (define integer (and-then sign whole))
 
-         (define json-number (capture-number (and-then integer fraction exponent))
+         (define json-number
+           (capture-number (and-then integer fraction exponent))
 
          (define json-grammar
            (fullstop
