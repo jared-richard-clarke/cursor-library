@@ -1,4 +1,4 @@
-(library (examples peg-match)
+(library (examples peg)
          (export (peg?))
          (import (rnrs)
                  (cursor))
