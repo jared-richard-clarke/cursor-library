@@ -44,7 +44,7 @@
          (define json-false (replace (text "false") #f))
          (define json-null  (replace (text "null") 'NULL))
 
-         (define json-character (and-then (is? (none-of "\"/\b\f\n\r\t")) any))
+         (define json-character  (none-of "\"/\b\f\n\r\t"))
 
          (define json-characters (repeat json-character))
 
