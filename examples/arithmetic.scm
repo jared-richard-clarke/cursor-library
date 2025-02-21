@@ -8,13 +8,7 @@
              (capture (lambda (x) y)
                       px)))
 
-         (define space  (one-of " \n\r\t"))
-         (define spaces (repeat space))
-
-         (define between
-           (case-lambda
-            [(px py)    (between px py px)]
-            [(px py pz) (and-then px py pz)]))
+         (define whitespace (repeat (one-of " \n\r\t")))
 
          (define capture-number
            (lambda (px)
@@ -68,16 +62,16 @@
          (define add-sub (or-else add sub))
          (define mul-div (or-else mul div))
          
-         (define arithmetic
-           (and-then spaces
+         (define arithmetic-grammar
+           (and-then whitespace
                      (grammar [Expression (chain-left  (rule Term)    add-sub)]
                               [Term       (chain-left  (rule Factor)  mul-div)]
                               [Factor     (chain-right (rule Operand) pow)]
-                              [Operand    (or-else (between (char #\()
-                                                            (rule Expression)
-                                                            (char #\)))
-                                                   (between spaces real))])))
+                              [Operand    (or-else (and-then (char #\()
+                                                             (rule Expression)
+                                                             (char #\)))
+                                                   (and-then whitespace real whitespace))])))
 
-         (define parse-expression (compile arithmetic))
+         (define parse-expression (compile arithmetic-grammar))
 
 )
