@@ -78,7 +78,7 @@
                             ...)
                        (display (string-append "Begin Test: " label))
                        (newline)
-                       (for-each (lambda (fn) (fn)) (test-1 test-2 ...))
+                       (for-each (lambda (fn) (fn)) (list test-1 test-2 ...))
                        (display (string-append "End Test: " label))
                        (newline)))]))
 
