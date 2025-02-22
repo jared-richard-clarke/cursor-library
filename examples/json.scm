@@ -61,9 +61,7 @@
          (define digit  (one-of "0123456789"))
          (define digits (repeat+1 digit))
 
-         (define hex (or-else digit
-                              (one-of "ABCDEF")
-                              (one-of "abcdef")))
+         (define hex (or-else digit (one-of "ABCDEFabcdef")))
 
          (define json-true  (text "true"))
          (define json-false (text "false"))
