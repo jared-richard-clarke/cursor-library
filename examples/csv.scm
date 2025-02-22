@@ -48,10 +48,10 @@
 
          (define csv-grammar
            (fullstop
-            (grammar [File (transform (lambda (state)
-                                        (make-csv (car state) (cdr state)))
-                                      (and-then (rule Header)
-                                                (repeat+1 (rule Row))))]
+            (grammar [File   (transform (lambda (state)
+                                          (make-csv (car state) (cdr state)))
+                                        (and-then (rule Header)
+                                                  (repeat+1 (rule Row))))]
                      [Header (rule Row)]
                      [Row    (transform collect-fields
                                         (and-then (separate-by (rule Field) (char #\,))
