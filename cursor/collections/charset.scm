@@ -99,41 +99,42 @@
                         (flush))))))
 
          (define unit-tests
-           (let ([a #\a]
-                 [b #\b]
-                 [c #\c]
-                 [d #\d]
-                 [set-abcd (make-charset "abcd")]
-                 [list-eq-set? (lambda (list-x set-y)
-                                 (and (= (length list-x) (charset-size set-y))
-                                      (for-all (lambda (x) (charset-has? set-y x)) list-x)))])
-             (test-chunk
-              "Cursor Character Set"
-              (test-assert "ordered list, character set"
-                           list-eq-set?
-                           (list a b c d)
-                           set-abcd)
+           (test-chunk
+            "Cursor Character Set"
+            ([a #\a]
+             [b #\b]
+             [c #\c]
+             [d #\d]
+             [set-abcd (make-charset "abcd")]
+             [list-eq-set? (lambda (list-x set-y)
+                             (and (= (length list-x) (charset-size set-y))
+                                  (for-all (lambda (x) (charset-has? set-y x)) list-x)))])
+            
+            (test-assert "ordered list, character set"
+                         list-eq-set?
+                         (list a b c d)
+                         set-abcd)
 
-              (test-assert "unordered list, character set"
-                           list-eq-set?
-                           (list c a d b)
-                           set-abcd)
+            (test-assert "unordered list, character set"
+                         list-eq-set?
+                         (list c a d b)
+                         set-abcd)
 
-              (test-assert "different inputs, same set"
-                           charset-equal?
-                           set-abcd
-                           (make-charset "aabbccddccbbaa"))
+            (test-assert "different inputs, same set"
+                         charset-equal?
+                         set-abcd
+                         (make-charset "aabbccddccbbaa"))
 
-              (test-assert "set operation, union"
-                           charset-equal?
-                           set-abcd
-                           (charset-union (make-charset "abc")
-                                          (make-charset "adc")))
+            (test-assert "set operation, union"
+                         charset-equal?
+                         set-abcd
+                         (charset-union (make-charset "abc")
+                                        (make-charset "adc")))
 
-              (test-assert "set operation, difference"
-                           charset-equal?
-                           set-abcd
-                           (charset-difference (make-charset "abcdefg")
-                                               (make-charset "efghijk"))))))
+            (test-assert "set operation, difference"
+                         charset-equal?
+                         set-abcd
+                         (charset-difference (make-charset "abcdefg")
+                                             (make-charset "efghijk")))))
 
-         )
+)
