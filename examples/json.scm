@@ -20,7 +20,7 @@
          ;; grammar: https://www.json.org/json-en.html
 
          (define-record-type json
-           (fields elements))
+           (fields element))
 
          (define-record-type object
            (fields members))
