@@ -68,7 +68,7 @@
          ;;   where label = string
          ;;         tests = zero or more functions
          ;;
-         ;; Macro calls a sequence of zero or more test thunks, printing failures
+         ;; Function calls a sequence of zero or more test thunks, printing failures
          ;; to the current output port. Designed explcitly to run "test-assert".
          ;; "label" should be used to identify test chunk in current output port.
          (define test-chunk
