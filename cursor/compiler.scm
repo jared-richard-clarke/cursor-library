@@ -284,153 +284,154 @@
          ;; === Unit Tests ===
 
          (define unit-tests
-           (let ([A (char #\a)]
-                 [B (char #\b)]
-                 [C (char #\c)]
-                 [set-ABC (make-charset "abc")]
-                 [identity    (lambda (x) x)]
-                 [code-equal? (lambda (xs ys)
-                                (cond [(and (list? xs) (list? ys)
-                                            (= (length xs) (length ys)))
-                                       (for-all (lambda (x y)
-                                                  (cond [(and (null? x) (null? y))
-                                                         #t]
-                                                        [(and (symbol? x) (symbol? y))
-                                                         (eq? x y)]
-                                                        [(and (char? x) (char? y))
-                                                         (char=? x y)]
-                                                        [(and (number? x) (number? y))
-                                                         (= x y)]
-                                                        [(and (charset? x) (charset? y))
-                                                         (charset-equal? x y)]
-                                                        ;; Function comparison is undecidable. Return
-                                                        ;; true and move on to the next comparison.
-                                                        [(and (procedure? x) (procedure? y))
-                                                         #t]
-                                                        [else #f]))
-                                                xs
-                                                ys)]
-                                      [else
-                                       (equal? xs ys)]))])
-             (test-chunk
-              "Cursor Compiler"
-              (test-assert "character literal"
-                           code-equal?
-                           (compile-ast A)
-                           #\a)
+           (test-chunk
+            "Cursor Compiler"
+            ([A (char #\a)]
+             [B (char #\b)]
+             [C (char #\c)]
+             [set-ABC (make-charset "abc")]
+             [identity    (lambda (x) x)]
+             [code-equal? (lambda (xs ys)
+                            (cond [(and (list? xs) (list? ys)
+                                        (= (length xs) (length ys)))
+                                   (for-all (lambda (x y)
+                                              (cond [(and (null? x) (null? y))
+                                                     #t]
+                                                    [(and (symbol? x) (symbol? y))
+                                                     (eq? x y)]
+                                                    [(and (char? x) (char? y))
+                                                     (char=? x y)]
+                                                    [(and (number? x) (number? y))
+                                                     (= x y)]
+                                                    [(and (charset? x) (charset? y))
+                                                     (charset-equal? x y)]
+                                                    ;; Function comparison is undecidable. Return
+                                                    ;; true and move on to the next comparison.
+                                                    [(and (procedure? x) (procedure? y))
+                                                     #t]
+                                                    [else #f]))
+                                            xs
+                                            ys)]
+                                  [else
+                                   (equal? xs ys)]))])
+            
+            (test-assert "character literal"
+                         code-equal?
+                         (compile-ast A)
+                         #\a)
 
-              (test-assert "text sequence abc"
-                           code-equal?
-                           (compile-ast (text "abc"))
-                           '(#\a #\b #\c))
-              
-              (test-assert "text epsilon"
-                           code-equal?
-                           (compile-ast (text ""))
-                           EMPTY)
+            (test-assert "text sequence abc"
+                         code-equal?
+                         (compile-ast (text "abc"))
+                         '(#\a #\b #\c))
 
-              (test-assert "and-then abc"
-                           code-equal?
-                           (compile-ast (and-then A B C))
-                           '(#\a #\b #\c))
+            (test-assert "text epsilon"
+                         code-equal?
+                         (compile-ast (text ""))
+                         EMPTY)
 
-              (test-assert "and-then nested"
-                           code-equal?
-                           (compile-ast (and-then (and-then A B) (and-then C B (and-then A))))
-                           '(#\a #\b #\c #\b #\a))
+            (test-assert "and-then abc"
+                         code-equal?
+                         (compile-ast (and-then A B C))
+                         '(#\a #\b #\c))
 
-              (test-assert "and-then identity"
-                           code-equal?
-                           (compile-ast (and-then))
-                           EMPTY)
+            (test-assert "and-then nested"
+                         code-equal?
+                         (compile-ast (and-then (and-then A B) (and-then C B (and-then A))))
+                         '(#\a #\b #\c #\b #\a))
 
-              (test-assert "or-else, a / b"
-                           code-equal?
-                           (compile-ast (or-else A B))
-                           '(CHOICE 5 #\a COMMIT 3 #\b))
+            (test-assert "and-then identity"
+                         code-equal?
+                         (compile-ast (and-then))
+                         EMPTY)
 
-              (test-assert "or-else, a / b / c"
-                           code-equal?
-                           (compile-ast (or-else A B C))
-                           '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
+            (test-assert "or-else, a / b"
+                         code-equal?
+                         (compile-ast (or-else A B))
+                         '(CHOICE 5 #\a COMMIT 3 #\b))
 
-              (test-assert "or-else, a / (b / c)"
-                           code-equal?
-                           (compile-ast (or-else (or-else A B) C))
-                           '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
+            (test-assert "or-else, a / b / c"
+                         code-equal?
+                         (compile-ast (or-else A B C))
+                         '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
-              (test-assert "or-else identity"
-                           code-equal?
-                           (compile-ast (or-else))
-                           FAIL)
+            (test-assert "or-else, a / (b / c)"
+                         code-equal?
+                         (compile-ast (or-else (or-else A B) C))
+                         '(CHOICE 5 #\a COMMIT 8 CHOICE 5 #\b COMMIT 3 #\c))
 
-              (test-assert "repeat a*"
-                           code-equal?
-                           (compile-ast (repeat A))
-                           '(CHOICE 5 #\a PARTIAL-COMMIT -1))
+            (test-assert "or-else identity"
+                         code-equal?
+                         (compile-ast (or-else))
+                         FAIL)
 
-              (test-assert "repeat a+"
-                           code-equal?
-                           (compile-ast (repeat+1 A))
-                           '(#\a CHOICE 5 #\a PARTIAL-COMMIT -1))
+            (test-assert "repeat a*"
+                         code-equal?
+                         (compile-ast (repeat A))
+                         '(CHOICE 5 #\a PARTIAL-COMMIT -1))
 
-              (test-assert "predicate &a"
-                           code-equal?
-                           (compile-ast (is? A))
-                           '(CHOICE 5 #\a BACK-COMMIT 3 FAIL))
+            (test-assert "repeat a+"
+                         code-equal?
+                         (compile-ast (repeat+1 A))
+                         '(#\a CHOICE 5 #\a PARTIAL-COMMIT -1))
 
-              (test-assert "predicate !a"
-                           code-equal?
-                           (compile-ast (is-not? A))
-                           '(CHOICE 4 #\a FAIL-TWICE))
+            (test-assert "predicate &a"
+                         code-equal?
+                         (compile-ast (is? A))
+                         '(CHOICE 5 #\a BACK-COMMIT 3 FAIL))
 
-              (test-assert "character set [abc]"
-                           code-equal?
-                           (compile-ast (one-of "abc"))
-                           (list ONE-OF set-ABC))
+            (test-assert "predicate !a"
+                         code-equal?
+                         (compile-ast (is-not? A))
+                         '(CHOICE 4 #\a FAIL-TWICE))
 
-              (test-assert "character set [^abc]"
-                           code-equal?
-                           (compile-ast (none-of "abc"))
-                           (list NONE-OF set-ABC))
+            (test-assert "character set [abc]"
+                         code-equal?
+                         (compile-ast (one-of "abc"))
+                         (list ONE-OF set-ABC))
 
-              (test-assert "character set unique members"
-                           code-equal?
-                           (compile-ast (one-of "abcbbc"))
-                           (list ONE-OF set-ABC))
+            (test-assert "character set [^abc]"
+                         code-equal?
+                         (compile-ast (none-of "abc"))
+                         (list NONE-OF set-ABC))
 
-              (test-assert "capture, baseline"
-                           code-equal?
-                           (compile-ast (capture (and-then A B C)))
-                           '(CAPTURE-START () #\a #\b #\c CAPTURE-STOP))
+            (test-assert "character set unique members"
+                         code-equal?
+                         (compile-ast (one-of "abcbbc"))
+                         (list ONE-OF set-ABC))
 
-              (test-assert "capture, true positive"
-                           code-equal?
-                           (compile-ast (capture identity A))
-                           (list CAPTURE-START identity #\a CAPTURE-STOP))
+            (test-assert "capture, baseline"
+                         code-equal?
+                         (compile-ast (capture (and-then A B C)))
+                         '(CAPTURE-START () #\a #\b #\c CAPTURE-STOP))
 
-              (test-assert "capture, false positive, + ≠ identity"
-                           code-equal?
-                           (compile-ast (capture + A))
-                           (list CAPTURE-START identity #\a CAPTURE-STOP))
+            (test-assert "capture, true positive"
+                         code-equal?
+                         (compile-ast (capture identity A))
+                         (list CAPTURE-START identity #\a CAPTURE-STOP))
 
-              (test-assert "grammar, baseline"
-                           code-equal?
-                           (compile-ast (grammar [R1 (and-then A (rule R2) C)]
-                                                 [R2 B]))
-                           '(CALL 4 JUMP 9 #\a CALL 4 #\c RETURN #\b RETURN))
+            (test-assert "capture, false positive, + ≠ identity"
+                         code-equal?
+                         (compile-ast (capture + A))
+                         (list CAPTURE-START identity #\a CAPTURE-STOP))
 
-              (test-assert "grammar, tail call"
-                           code-equal?
-                           (compile-ast (grammar [R1 (and-then A B (rule R2))]
-                                                 [R2 C]))
-                           '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN))
+            (test-assert "grammar, baseline"
+                         code-equal?
+                         (compile-ast (grammar [R1 (and-then A (rule R2) C)]
+                                               [R2 B]))
+                         '(CALL 4 JUMP 9 #\a CALL 4 #\c RETURN #\b RETURN))
 
-              (test-assert "finite state machine"
-                           code-equal?
-                           (compile-ast (grammar [X (and-then (char #\x) (rule Y))]
-                                                 [Y (and-then (char #\y) (rule Z))]
-                                                 [Z (char #\z)]))
-                           '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN)))))
+            (test-assert "grammar, tail call"
+                         code-equal?
+                         (compile-ast (grammar [R1 (and-then A B (rule R2))]
+                                               [R2 C]))
+                         '(CALL 4 JUMP 9 #\a #\b JUMP 3 RETURN #\c RETURN))
 
-         )
+            (test-assert "finite state machine"
+                         code-equal?
+                         (compile-ast (grammar [X (and-then (char #\x) (rule Y))]
+                                               [Y (and-then (char #\y) (rule Z))]
+                                               [Z (char #\z)]))
+                         '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN))))
+
+)
