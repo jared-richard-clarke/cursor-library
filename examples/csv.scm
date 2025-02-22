@@ -17,7 +17,7 @@
                         (list->string x))
                       px)))
 
-         (define characters (capture-text (none-of "\",\n\r"))
+         (define characters (capture-text (repeat+1 (none-of "\",\n\r")))
          (define text       (and-then (char #\") characters (char #\")))
 
          (define csv
