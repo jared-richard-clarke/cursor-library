@@ -67,8 +67,8 @@
          ;; (test-chunk label ([id value] ...) test-1 test-2 ...)
          ;;
          ;; Macro produces a zero-argument function that, when called, runs a series of test-assertions.
-         ;; Includes zero or more variable-expression pairs within the test environment, each subsequent
-         ;; expression within the scope of the previous expressions.
+         ;; Includes zero or more variable-expression pairs within the test environment, each previous
+         ;; expressions within the scope of the subsequent expression.
          ;;
          ;; "label" should be a string that identifies the tests being printed to the current output port.
          (define-syntax test-chunk
