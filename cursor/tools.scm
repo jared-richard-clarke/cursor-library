@@ -54,33 +54,36 @@
          (define-syntax test-assert
            (syntax-rules ()
              [(_ label compare x y)
-              (thunk (let ([computed-x x]
-                           [computed-y y])
-                       (unless (compare computed-x computed-y)
-                         (begin (display (string-append "test " label " failed:"))
-                                (newline)
-                                (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
-                                (newline)
-                                (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
-                                (newline)))))]))
+              (thunk
+               (let ([computed-x x]
+                     [computed-y y])
+                 (unless (compare computed-x computed-y)
+                   (begin (display (string-append "test " label " failed:"))
+                          (newline)
+                          (display "lhs: ") (write (quote x)) (display " -> ") (write computed-x) (display ", ")
+                          (newline)
+                          (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
+                          (newline)))))]))
 
          ;; (test-chunk label ([id value] ...) test-1 test-2 ...)
          ;;
          ;; Macro produces a zero-argument function that, when called, runs a series of test-assertions.
-         ;; Includes zero or more variable-expression pairs within the test environment, all previous
-         ;; expressions within the scope of subsequent expressions.
+         ;; Includes zero or more variable-expression pairs within the test environment. These bindings
+         ;; follow the semantics of the "letrec" syntactic form in that all expressions are within the
+         ;; scope of all variables. Mutually recursive procedures can be defined.
          ;;
-         ;; "label" should be a string that identifies the tests being printed to the current output port.
+         ;; "label" should be a string that identifies the tests being run.
          (define-syntax test-chunk
            (syntax-rules ()
-             [(_ label ([id value] ...) test-1 test-2 ...)
-              (thunk (let* ([id value]
-                            ...)
-                       (display (string-append "Begin Test: " label))
-                       (newline)
-                       (for-each (lambda (fn) (fn)) (list test-1 test-2 ...))
-                       (display (string-append "End Test: " label))
-                       (newline)))]))
+             [(_ label ([variable expression] ...) test-1 test-2 ...)
+              (thunk
+               (letrec ([variable expression]
+                        ...)
+                 (display (string-append "Begin Test: " label))
+                 (newline)
+                 (for-each (lambda (fn) (fn)) (list test-1 test-2 ...))
+                 (display (string-append "End Test: " label))
+                 (newline)))]))
 
          ;; (enum x y ...) -> (begin (define x (quote x))
          ;;                          (define y (quote y)) ...)
@@ -211,22 +214,5 @@
          (define string->vector
            (lambda (xs)
              (list->vector (string->list xs))))
-
-         ;; (cache-string file-path) -> (function) -> string
-         ;;   where file-path = string
-         ;;
-         ;; Returns a function that, when called, reads a string from
-         ;; the provided file path and caches it before returning the
-         ;; string to the caller. Subsequent calls pull the string
-         ;; from the function's cache.
-         (define cache-string
-           (lambda (path)
-             (let ([cache ""]
-                   [set?  #f])
-               (thunk (cond [set? cache]
-                            [else
-                             (set! set? #t)
-                             (set! cache (call-with-input-file path get-string-all))
-                             cache])))))
 
 )
