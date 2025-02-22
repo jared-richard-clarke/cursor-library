@@ -1,5 +1,15 @@
 (library (examples json)
-         (export parse-json)
+         (export parse-json
+                 ;; === record-type: object ===
+                 object?         ;; predicate
+                 object-members  ;; field
+                 ;; === record-type: member ===
+                 member?         ;; predicate
+                 member-key      ;; field
+                 member-value    ;; field
+                 ;; === record-type: array ===
+                 array?          ;; predicate
+                 array-elements) ;; field
          (import (rnrs)
                  (cursor))
 
@@ -49,9 +59,9 @@
                               (one-of "ABCDEF")
                               (one-of "abcdef")))
 
-         (define json-true  (replace (text "true") #t))
-         (define json-false (replace (text "false") #f))
-         (define json-null  (replace (text "null") 'NULL))
+         (define json-true  (text "true"))
+         (define json-false (text "false"))
+         (define json-null  (text "null"))
 
          (define json-character  (let* ([control "\"/\b\f\n\r\t\\"]
                                         [escape (or-else (one-of control)
@@ -125,11 +135,11 @@
 
                      [Number   (capture-number json-number)]
 
-                     [True     json-true]
+                     [True     (replace json-true #t)]
 
-                     [False    json-false]
+                     [False    (replace json-false #f)]
 
-                     [Null     json-null])))
+                     [Null     (replace json-null 'NULL)])))
 
          (define parse-json (compile json-grammar))
 
