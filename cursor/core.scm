@@ -431,192 +431,191 @@
          ;; === Unit Tests ===
 
          (define unit-tests
-           (let ([A (encode-ast CHARACTER #\a)]
-                 [B (encode-ast CHARACTER #\b)]
-                 [C (encode-ast CHARACTER #\c)]
-                 [identity     (lambda (x) x)]
-                 [error-equal? (lambda (x y)
-                                 (and (peg-error? x) (peg-error? y)
-                                      (equal? (list (peg-error-who x) (peg-error-what x) (peg-error-why x))
-                                              (list (peg-error-who y) (peg-error-what y) (peg-error-why y)))))])
-             
-             (test-chunk
-              "Cursor Core"
-              ;; === Literals ===
-              (test-assert "character literal"
-                           ast-equal?
-                           (char #\a)
-                           A)
+           (test-chunk
+            "Cursor Core"
+            ([A (encode-ast CHARACTER #\a)]
+             [B (encode-ast CHARACTER #\b)]
+             [C (encode-ast CHARACTER #\c)]
+             [identity     (lambda (x) x)]
+             [error-equal? (lambda (x y)
+                             (and (peg-error? x) (peg-error? y)
+                                  (equal? (list (peg-error-who x) (peg-error-what x) (peg-error-why x))
+                                          (list (peg-error-who y) (peg-error-what y) (peg-error-why y)))))])
+            ;; === Literals ===
+            (test-assert "character literal"
+                         ast-equal?
+                         (char #\a)
+                         A)
 
-              (test-assert "character error"
-                           error-equal?
-                           (catch (char "a"))
-                           (make-peg-error "(char _)" "a" ERROR-TYPE-CHARACTER))
-              
-              ;; === Concatenation ===
-              (test-assert "text sequence abc"
-                           ast-equal?
-                           (text "abc")
-                           (encode-ast SEQUENCE (list A B C)))
+            (test-assert "character error"
+                         error-equal?
+                         (catch (char "a"))
+                         (make-peg-error "(char _)" "a" ERROR-TYPE-CHARACTER))
 
-              (test-assert "text sequence error"
-                           error-equal?
-                           (catch (text #\a))
-                           (make-peg-error "(text _)" #\a ERROR-TYPE-STRING))
+            ;; === Concatenation ===
+            (test-assert "text sequence abc"
+                         ast-equal?
+                         (text "abc")
+                         (encode-ast SEQUENCE (list A B C)))
 
-              (test-assert "text epsilon"
-                           ast-equal?
-                           (text "")
-                           empty)
+            (test-assert "text sequence error"
+                         error-equal?
+                         (catch (text #\a))
+                         (make-peg-error "(text _)" #\a ERROR-TYPE-STRING))
 
-              (test-assert "and-then abc"
-                           ast-equal?
-                           (and-then (char #\a)
-                                     (char #\b)
-                                     (char #\c))
-                           (encode-ast SEQUENCE (list A B C)))
+            (test-assert "text epsilon"
+                         ast-equal?
+                         (text "")
+                         empty)
 
-              (test-assert "and-then nested"
-                           ast-equal?
-                           (and-then (and-then (char #\a)
-                                               (char #\b))
-                                     (char #\c)
-                                     (text "ba"))
-                           (encode-ast SEQUENCE (list A B C B A)))
+            (test-assert "and-then abc"
+                         ast-equal?
+                         (and-then (char #\a)
+                                   (char #\b)
+                                   (char #\c))
+                         (encode-ast SEQUENCE (list A B C)))
 
-              (test-assert "and-then identity"
-                           ast-equal?
-                           (and-then)
-                           empty)
+            (test-assert "and-then nested"
+                         ast-equal?
+                         (and-then (and-then (char #\a)
+                                             (char #\b))
+                                   (char #\c)
+                                   (text "ba"))
+                         (encode-ast SEQUENCE (list A B C B A)))
 
-              ;; === Ordered Choice ===
-              (test-assert "or-else, a / b"
-                           ast-equal?
-                           (or-else (char #\a) (char #\b))
-                           (encode-ast CHOICE (list A B)))
+            (test-assert "and-then identity"
+                         ast-equal?
+                         (and-then)
+                         empty)
 
-              (test-assert "or-else nested"
-                           ast-equal?
-                           (or-else (char #\a)
-                                    (or-else (char #\b)
-                                             (char #\c)))
-                           (encode-ast CHOICE (list A B C)))
+            ;; === Ordered Choice ===
+            (test-assert "or-else, a / b"
+                         ast-equal?
+                         (or-else (char #\a) (char #\b))
+                         (encode-ast CHOICE (list A B)))
 
-              (test-assert "or-else identity"
-                           ast-equal?
-                           (or-else)
-                           fail)
+            (test-assert "or-else nested"
+                         ast-equal?
+                         (or-else (char #\a)
+                                  (or-else (char #\b)
+                                           (char #\c)))
+                         (encode-ast CHOICE (list A B C)))
 
-              ;; === Repetition ===
-              (test-assert "repeat a*"
-                           ast-equal?
-                           (repeat (char #\a))
-                           (encode-ast REPEAT A))
+            (test-assert "or-else identity"
+                         ast-equal?
+                         (or-else)
+                         fail)
 
-              (test-assert "repeat a+"
-                           ast-equal?
-                           (repeat+1 (char #\a))
-                           (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
+            ;; === Repetition ===
+            (test-assert "repeat a*"
+                         ast-equal?
+                         (repeat (char #\a))
+                         (encode-ast REPEAT A))
 
-              (test-assert "repeat nullable"
-                           error-equal?
-                           (catch (repeat empty))
-                           (make-peg-error "(repeat _)"
-                                           "possibly empty, (is? _), (is-not? _), or (repeat _)"
-                                           ERROR-NULLABLE))
-              
-              ;; === Not Predicate ===
-              (test-assert "predicate !a"
-                           ast-equal?
-                           (is-not? (char #\a))
-                           (encode-ast IS-NOT A))
+            (test-assert "repeat a+"
+                         ast-equal?
+                         (repeat+1 (char #\a))
+                         (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
 
-              ;; === Predicate ===
-              (test-assert "predicate &a"
-                           ast-equal?
-                           (is? (char #\a))
-                           (encode-ast IS A))
+            (test-assert "repeat nullable"
+                         error-equal?
+                         (catch (repeat empty))
+                         (make-peg-error "(repeat _)"
+                                         "possibly empty, (is? _), (is-not? _), or (repeat _)"
+                                         ERROR-NULLABLE))
 
-              ;; === Sets ===
-              (test-assert "character set [abc]"
-                           ast-equal?
-                           (one-of "abc")
-                           (encode-ast ONE-OF (make-charset "abc")))
+            ;; === Not Predicate ===
+            (test-assert "predicate !a"
+                         ast-equal?
+                         (is-not? (char #\a))
+                         (encode-ast IS-NOT A))
 
-              (test-assert "character set [^abc]"
-                           ast-equal?
-                           (none-of "abc")
-                           (encode-ast NONE-OF (make-charset "abc")))
+            ;; === Predicate ===
+            (test-assert "predicate &a"
+                         ast-equal?
+                         (is? (char #\a))
+                         (encode-ast IS A))
 
-              (test-assert "character set error"
-                           error-equal?
-                           (catch (one-of (list #\a #\b #\c)))
-                           (make-peg-error "(one-of _)"
-                                           (list #\a #\b #\c)
-                                           ERROR-TYPE-STRING))
+            ;; === Sets ===
+            (test-assert "character set [abc]"
+                         ast-equal?
+                         (one-of "abc")
+                         (encode-ast ONE-OF (make-charset "abc")))
 
-              (test-assert "empty set"
-                           ast-equal?
-                           (one-of "")
-                           fail)
+            (test-assert "character set [^abc]"
+                         ast-equal?
+                         (none-of "abc")
+                         (encode-ast NONE-OF (make-charset "abc")))
 
-              (test-assert "universal set"
-                           ast-equal?
-                           (none-of "")
-                           any)
+            (test-assert "character set error"
+                         error-equal?
+                         (catch (one-of (list #\a #\b #\c)))
+                         (make-peg-error "(one-of _)"
+                                         (list #\a #\b #\c)
+                                         ERROR-TYPE-STRING))
 
-              ;; === Captures ===
-              (test-assert "capture, baseline"
-                           ast-equal?
-                           (capture (char #\a))
-                           (encode-ast CAPTURE '() A))
+            (test-assert "empty set"
+                         ast-equal?
+                         (one-of "")
+                         fail)
 
-              (test-assert "capture, true positive"
-                           ast-equal?
-                           (capture identity (char #\a))
-                           (encode-ast CAPTURE identity A))
+            (test-assert "universal set"
+                         ast-equal?
+                         (none-of "")
+                         any)
 
-              (test-assert "capture, false positive, + ≠ identity"
-                           ast-equal?
-                           (capture + (char #\a))
-                           (encode-ast CAPTURE identity A))
+            ;; === Captures ===
+            (test-assert "capture, baseline"
+                         ast-equal?
+                         (capture (char #\a))
+                         (encode-ast CAPTURE '() A))
 
-              ;; === Grammars ===
-              (test-assert "grammar, baseline"
-                           ast-equal?
-                           (grammar [R1 (and-then (text "ab") (rule R2))]
-                                    [R2 (text "c")])
-                           (encode-ast GRAMMAR
-                                       (vector (encode-ast RULE
-                                                           (quote R1)
-                                                           (encode-ast SEQUENCE
-                                                                       (list A
-                                                                             B
-                                                                             (encode-ast CALL
-                                                                                         (quote R2)
-                                                                                         1))))
-                                               (encode-ast RULE
-                                                           (quote R2)
-                                                           C))))
+            (test-assert "capture, true positive"
+                         ast-equal?
+                         (capture identity (char #\a))
+                         (encode-ast CAPTURE identity A))
 
-              (test-assert "undefined rule"
-                           error-equal?
-                           (catch (grammar [A (and-then (char #\a) (rule C))]
-                                           [B (char #\b)]))
-                           (make-peg-error "(grammar _)" (quote C) ERROR-UNDEFINED-RULE))
+            (test-assert "capture, false positive, + ≠ identity"
+                         ast-equal?
+                         (capture + (char #\a))
+                         (encode-ast CAPTURE identity A))
 
-              ;; Left Recursion: A → Bβ such that B ⇒ Aγ
-              (test-assert "grammar, direct left recursion"
-                           error-equal?
-                           (catch (grammar [R (rule R)]))
-                           (make-peg-error "(grammar _)" (quote R) ERROR-LEFT-RECURSION))
+            ;; === Grammars ===
+            (test-assert "grammar, baseline"
+                         ast-equal?
+                         (grammar [R1 (and-then (text "ab") (rule R2))]
+                                  [R2 (text "c")])
+                         (encode-ast GRAMMAR
+                                     (vector (encode-ast RULE
+                                                         (quote R1)
+                                                         (encode-ast SEQUENCE
+                                                                     (list A
+                                                                           B
+                                                                           (encode-ast CALL
+                                                                                       (quote R2)
+                                                                                       1))))
+                                             (encode-ast RULE
+                                                         (quote R2)
+                                                         C))))
 
-              (test-assert "grammar, indirect left recursion"
-                           error-equal?
-                           (catch (grammar [A (and-then (rule B) (char #\x))]
-                                           [B (and-then (rule C) (char #\y))]
-                                           [C (and-then (rule A) (char #\z))]))
-                           (make-peg-error "(grammar _)" (quote A) ERROR-LEFT-RECURSION))
-              )))
+            (test-assert "undefined rule"
+                         error-equal?
+                         (catch (grammar [A (and-then (char #\a) (rule C))]
+                                         [B (char #\b)]))
+                         (make-peg-error "(grammar _)" (quote C) ERROR-UNDEFINED-RULE))
+
+            ;; Left Recursion: A → Bβ such that B ⇒ Aγ
+            (test-assert "grammar, direct left recursion"
+                         error-equal?
+                         (catch (grammar [R (rule R)]))
+                         (make-peg-error "(grammar _)" (quote R) ERROR-LEFT-RECURSION))
+
+            (test-assert "grammar, indirect left recursion"
+                         error-equal?
+                         (catch (grammar [A (and-then (rule B) (char #\x))]
+                                         [B (and-then (rule C) (char #\y))]
+                                         [C (and-then (rule A) (char #\z))]))
+                         (make-peg-error "(grammar _)" (quote A) ERROR-LEFT-RECURSION))
+            ))
          
-         )
+)
