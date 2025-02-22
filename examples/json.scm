@@ -6,8 +6,14 @@
          ;; === JSON parser ===
          ;; grammar: https://www.json.org/json-en.html
 
-         (define OBJECT 'OBJECT)
-         (define ARRAY  'ARRAY)
+         (define-record-type object
+           (fields members))
+
+         (define-record-type member
+           (fields key value))
+
+         (define-record-type array
+           (fields elements))
 
          (define capture-text
            (lambda (px)
@@ -39,17 +45,21 @@
          (define digit  (one-of "0123456789"))
          (define digits (repeat+1 digit))
 
+         (define hex (or-else digit
+                              (one-of "ABCDEF")
+                              (one-of "abcdef")))
+
          (define json-true  (replace (text "true") #t))
          (define json-false (replace (text "false") #f))
          (define json-null  (replace (text "null") 'NULL))
 
-         (define json-character  (none-of "\"/\b\f\n\r\t"))
+         (define json-character  (let* ([control "\"/\b\f\n\r\t\\"]
+                                        [escape (or-else (one-of control)
+                                                         (and-then (char #\u) hex hex hex hex))])
+                                   (or-else (and-then (char #\\) escape)
+                                            (none-of control))))
+         
          (define json-characters (repeat json-character))
-
-         (define json-string
-           (and-then (char #\")
-                     (capture-text json-characters)
-                     (char #\")))
 
          (define sign
            (maybe (or-else (char #\+) (char #\-))))
@@ -69,8 +79,7 @@
          
          (define integer (and-then sign whole))
 
-         (define json-number
-           (capture-number (and-then integer fraction exponent))
+         (define json-number (and-then integer fraction exponent))
 
          (define json-grammar
            (fullstop
@@ -85,7 +94,7 @@
                                        (rule Null))]
 
                      [Object   (transform (lambda (state)
-                                            (list (cons OBJECT state)))
+                                            (list (make-object state)))
                                           (and-then (char #\{)
                                                     (or-else (rule Members) whitespace)
                                                     (char #\})))]
@@ -95,7 +104,7 @@
                      [Member   (transform (lambda (state)
                                             (let ([key   (car state)]
                                                   [value (cadr state)])
-                                              (cons (list key value) (cddr state))))
+                                              (cons (make-member key value) (cddr state))))
                                           (and-then whitespace
                                                     (rule String)
                                                     whitespace
@@ -103,16 +112,18 @@
                                                     (rule Element)))]
 
                      [Array    (transform (lambda (state)
-                                            (list (cons ARRAY state)))
+                                            (list (make-array state)))
                                           (and-then (char #\[)
                                                     (or-else (rule Elements) whitespace)
                                                     (char #\])))]
 
                      [Elements (separate-by (rule Element) (char #\,))]
 
-                     [String   json-string]
+                     [String   (and-then (char #\")
+                                         (capture-text json-characters)
+                                         (char #\"))]
 
-                     [Number   json-number]
+                     [Number   (capture-number json-number)]
 
                      [True     json-true]
 
