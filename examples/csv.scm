@@ -3,7 +3,7 @@
                   ;; === record-type: csv ===
                   csv?          ;; predicate
                   csv-header    ;; field
-                  csv-rows
+                  csv-rows      ;; field
                   ;; === record-type: row ===
                   row?          ;; predicate
                   row-columns)) ;; field
