@@ -64,23 +64,23 @@
                                 (display "rhs: ") (write (quote y)) (display " -> ") (write computed-y)
                                 (newline)))))]))
 
-         ;; (test-chunk label tests ...)
-         ;;   where label = string
-         ;;         tests = zero or more functions
+         ;; (test-chunk label ([id value] ...) test-1 test-2 ...)
          ;;
-         ;; Function calls a sequence of zero or more test thunks, printing failures
-         ;; to the current output port. Designed explcitly to run "test-assert".
-         ;; "label" should be used to identify test chunk in current output port.
-         (define test-chunk
-           (lambda (label . tests)
-             (let ([start (string-append "Begin Test: " label)]
-                   [stop  (string-append "End Test: "   label)]
-                   [run   (lambda (f) (f))])
-               (thunk (display start)
-                      (newline)
-                      (for-each run tests)
-                      (display stop)
-                      (newline)))))
+         ;; Macro produces a zero-argument function that, when called, runs a series of test-assertions.
+         ;; Includes zero or more variable-expression pairs within the test environment, each subsequent
+         ;; expression within the scope of the previous expressions.
+         ;;
+         ;; "label" should be a string that identifies the tests being printed to the current output port.
+         (define-syntax test-chunk
+           (syntax-rules ()
+             [(_ label ([id value] ...) test-1 test-2 ...)
+              (thunk (let* ([id value]
+                            ...)
+                       (display (string-append "Begin Test: " label))
+                       (newline)
+                       (for-each (lambda (fn) (fn)) (test-1 test-2 ...))
+                       (display (string-append "End Test: " label))
+                       (newline)))]))
 
          ;; (enum x y ...) -> (begin (define x (quote x))
          ;;                          (define y (quote y)) ...)
@@ -169,8 +169,8 @@
                  (if (< index size)
                      (loop (+ index 1) (fn state (vector-ref xs index)))
                      state)))))
-         
-         ;; (vector-for-all fn xs) -> boolean
+
+          ;; (vector-for-all fn xs) -> boolean
          ;;   where fn = function
          ;;         xs = list
          ;;
@@ -185,7 +185,7 @@
                        [(fn (vector-ref xs index))
                         (loop (+ index 1))]
                        [else #f])))))
-         
+
          ;; (string-buffer) -> (values buffer fn)
          ;;                      where buffer = textual output port
          ;;                            fn     = function
@@ -212,4 +212,21 @@
            (lambda (xs)
              (list->vector (string->list xs))))
 
-         )
+         ;; (cache-string file-path) -> (function) -> string
+         ;;   where file-path = string
+         ;;
+         ;; Returns a function that, when called, reads a string from
+         ;; the provided file path and caches it before returning the
+         ;; string to the caller. Subsequent calls pull the string
+         ;; from the function's cache.
+         (define cache-string
+           (lambda (path)
+             (let ([cache ""]
+                   [set?  #f])
+               (thunk (cond [set? cache]
+                            [else
+                             (set! set? #t)
+                             (set! cache (call-with-input-file path get-string-all))
+                             cache])))))
+
+)
