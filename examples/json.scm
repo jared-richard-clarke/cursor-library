@@ -1,5 +1,8 @@
 (library (examples json)
          (export parse-json
+                 ;; === record-type: json ===
+                 json?           ;; predicate
+                 json-elements   ;; field
                  ;; === record-type: object ===
                  object?         ;; predicate
                  object-members  ;; field
@@ -15,6 +18,9 @@
 
          ;; === JSON parser ===
          ;; grammar: https://www.json.org/json-en.html
+
+         (define-record-type json
+           (fields elements))
 
          (define-record-type object
            (fields members))
@@ -93,7 +99,10 @@
 
          (define json-grammar
            (fullstop
-            (grammar [Element (and-then whitespace (rule Value) whitespace)]
+            (grammar [Element (transform make-json
+                                         (and-then whitespace
+                                                   (rule Value)
+                                                   whitespace))]
                     
                      [Value   (or-else (rule Object)
                                        (rule Array)
