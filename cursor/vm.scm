@@ -8,12 +8,10 @@
          (define ERROR-VM "unrecognized instruction")
 
          (define-record-type entry
-           (fields ip (mutable sp) (mutable captures))
-           (sealed #t))
+           (fields ip (mutable sp) (mutable captures)))
 
          (define-record-type capture
-           (fields type function offset)
-           (sealed #t))
+           (fields type function offset))
 
          (define run-vm
            (lambda (text program)
@@ -35,6 +33,13 @@
                                           stack
                                           captures)
                                    (fail-state ip sp stack captures))]
+                              ;; [EMPTY]
+                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, captures)
+                              [(eq? code EMPTY)
+                               (state (+ ip 1)
+                                      sp
+                                      stack
+                                      captures)]
                               ;; [ANY, sp ≤ |text|]
                               ;; (ip, sp, stack, captures) -> (ip+1, sp+1, stack, captures)
                               ;;
