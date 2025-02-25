@@ -216,7 +216,7 @@
            (lambda (x)
              (let ([fn   (ast-node-x x)]
                    [code (compile-ast (ast-node-y x))])
-               (fold-code code TRANSFORM fn))))
+               (fold-code TRANSFORM fn code))))
 
          ;; === Grammars ===
          
