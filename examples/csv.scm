@@ -20,13 +20,14 @@
 
          (define collect-fields
            (lambda (state)
-             (let loop ([xs state]
-                        [ys '()])
-               (cond [(and (pair? xs) (string? (car xs)))
-                      (loop (cdr xs)
-                            (cons (car xs) ys))]
+             (let loop ([state state]
+                        [row   '()])
+               (cond [(or (null? state)
+                          (row? (car state)))
+                      (cons (make-row (reverse row)) state)]
                      [else
-                      (cons (make-row (reverse ys)) xs)]))))
+                      (loop (cdr state)
+                            (cons (car state) row))]))))
 
          (define fullstop
            (lambda (px)
@@ -63,3 +64,4 @@
          (define parse-csv (compile csv-grammar))
 
 )
+                                                      
