@@ -1,18 +1,18 @@
 (library (examples csv)
-         (export (parse-csv
-                  ;; === record-type: csv ===
-                  csv?          ;; predicate
-                  csv-header    ;; field
-                  csv-rows      ;; field
-                  ;; === record-type: row ===
-                  row?          ;; predicate
-                  row-columns)) ;; field
+         (export parse-csv
+                 ;; === record-type: csv ===
+                 csv?         ;; predicate
+                 csv-header   ;; field
+                 csv-rows     ;; field
+                 ;; === record-type: row ===
+                 row?         ;; predicate
+                 row-columns) ;; field
          (import (rnrs)
                  (cursor))
 
          (define-record-type csv
            (fields header rows))
-         
+
          ;; Side Note: "columns" should be called "fields", but name conflicts
          ;; with the "fields" form of "define-record-type".
          (define-record-type row
@@ -22,10 +22,9 @@
            (lambda (state)
              (let loop ([xs state]
                         [ys '()])
-               (cond [(null? xs)
-                      (make-row (reverse ys))]
-                     [(string? (car xs))
-                      (loop (cdr xs) (cons (car xs) ys))]
+               (cond [(and (pair? xs) (string? (car xs)))
+                      (loop (cdr xs)
+                            (cons (car xs) ys))]
                      [else
                       (cons (make-row (reverse ys)) xs)]))))
 
@@ -43,8 +42,7 @@
                         (list->string x))
                       px)))
 
-         (define characters (repeat+1 (none-of "\",\n\r"))
-         (define text       (and-then (char #\") characters (char #\")))
+         (define characters (repeat+1 (none-of "\",\n\r")))
 
          (define csv-grammar
            (fullstop
