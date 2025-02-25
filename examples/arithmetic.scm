@@ -20,6 +20,17 @@
            (lambda (px op)
              (and-then px (repeat (and-then op px)))))
 
+         (define binary
+           (lambda (px op py)
+             (and-then px
+                       (repeat
+                        (transform (lambda (state)
+                                     (let ([x  (car state)]
+                                           [fn (cadr state)]
+                                           [y  (caddr state)])
+                                       (cons (fn x y) (cdddr state))))
+                                   (and-then op py))))))
+
          (define digit    (one-of "0123456789"))
          (define digits   (and-then digit (repeat digit)))
          (define sign     (maybe (or-else (char #\-) (char #\+))))
@@ -43,10 +54,10 @@
          
          (define arithmetic-grammar
            (and-then whitespace
-                     (grammar [Expression (separate-by (rule Term) add-sub)]
-                              [Term       (separate-by (rule Factor) mul-div)]
-                              [Factor     (separate-by (rule Operand) power)]
-                              [Operand    (or-else (and-then (char #\()
+                     (grammar [Expression (binary (rule Term) add-sub (rule Term))]
+                              [Term       (binary (rule Factor) mul-div (rule Factor))]
+                              [Factor     (binary (rule Primary) power (rule Factor))]
+                              [Primary    (or-else (and-then (char #\()
                                                              (rule Expression)
                                                              (char #\)))
                                                    (and-then whitespace real whitespace))])))
