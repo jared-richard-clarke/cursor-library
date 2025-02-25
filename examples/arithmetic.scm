@@ -16,30 +16,9 @@
                         (string->number (list->string x)))
                       px)))
 
-         (define chain-left
+         (define separate-by
            (lambda (px op)
-             (transform (lambda (state)
-                          (letrec ([chain
-                                    (lambda (x xs)
-                                      (if (null? xs)
-                                          x
-                                          (let ([fn (car xs)]
-                                                [y  (cadr xs)])
-                                            (chain (fn x y) (cddr xs)))))])
-                            (chain (car state) (cdr state))))
-                        (and-then px (repeat (and-then op px))))))
-
-         (define chain-right
-           (lambda (px op)
-             (transform (lambda (state)
-                          (letrec ([chain
-                                    (lambda (x xs)
-                                      (if (null? xs)
-                                          x
-                                          (let ([fn (car xs)])
-                                            (fn x (chain (cadr xs) (cddr xs))))))])
-                            (chain (car state) (cdr state))))
-                        (and-then px (repeat (and-then op px))))))
+             (and-then px (repeat (and-then op px)))))
 
          (define digit    (one-of "0123456789"))
          (define digits   (and-then digit (repeat digit)))
@@ -49,24 +28,24 @@
          (define fraction (maybe (and-then (char #\.) digits)))
          (define exponent (maybe (and-then (or-else (char #\e)
                                                     (char #\E))
-                                            sign
-                                            digits)))
+                                           sign
+                                           digits)))
          (define real     (capture-number (and-then integer fraction exponent)))
 
-         (define add (replace (char #\+) +))
-         (define sub (replace (char #\-) -))
-         (define mul (replace (char #\*) *))
-         (define div (replace (char #\/) /))
-         (define pow (replace (char #\^) expt))
+         (define add      (replace (char #\+) +))
+         (define subtract (replace (char #\-) -))
+         (define multiply (replace (char #\*) *))
+         (define divide   (replace (char #\/) /))
+         (define power    (replace (char #\^) expt))
 
-         (define add-sub (or-else add sub))
-         (define mul-div (or-else mul div))
+         (define add-sub (or-else add subtract))
+         (define mul-div (or-else multiply divide))
          
          (define arithmetic-grammar
            (and-then whitespace
-                     (grammar [Expression (chain-left  (rule Term)    add-sub)]
-                              [Term       (chain-left  (rule Factor)  mul-div)]
-                              [Factor     (chain-right (rule Operand) pow)]
+                     (grammar [Expression (separate-by (rule Term) add-sub)]
+                              [Term       (separate-by (rule Factor) mul-div)]
+                              [Factor     (separate-by (rule Operand) power)]
                               [Operand    (or-else (and-then (char #\()
                                                              (rule Expression)
                                                              (char #\)))
