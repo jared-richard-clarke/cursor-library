@@ -49,14 +49,16 @@
          (define mul-div (or-else multiply divide))
          
          (define arithmetic-grammar
-           (and-then whitespace
-                     (grammar [Expression (binary (rule Term) add-sub (rule Term))]
-                              [Term       (binary (rule Factor) mul-div (rule Factor))]
-                              [Factor     (binary (rule Primary) power (rule Factor))]
-                              [Primary    (or-else (and-then (char #\()
-                                                             (rule Expression)
-                                                             (char #\)))
-                                                   (and-then whitespace real whitespace))])))
+           (transform (lambda (stack) (car stack))
+                      (grammar [Expression (binary (rule Term) add-sub (rule Term))]
+                               [Term       (binary (rule Factor) mul-div (rule Factor))]
+                               [Factor     (binary (rule Primary) power (rule Factor))]
+                               [Primary    (and-then whitespace
+                                                     (or-else (and-then (char #\()
+                                                                        (rule Expression)
+                                                                        (char #\)))
+                                                              real)
+                                                     whitespace)])))
 
          (define parse-expression (compile arithmetic-grammar))
 
