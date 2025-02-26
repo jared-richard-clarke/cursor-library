@@ -19,15 +19,27 @@
            (fields columns))
 
          (define collect-fields
-           (lambda (state)
-             (let loop ([state state]
+           (lambda (stack)
+             (let loop ([stack stack]
                         [row   '()])
-               (cond [(or (null? state)
-                          (row? (car state)))
-                      (cons (make-row (reverse row)) state)]
+               (cond [(or (null? stack)
+                          (row? (car stack)))
+                      (cons (make-row row) stack)]
                      [else
-                      (loop (cdr state)
-                            (cons (car state) row))]))))
+                      (loop (cdr stack)
+                            (cons (car stack) row))]))))
+
+         (define collect-rows
+           (lambda (stack)
+             (let loop ([stack stack]
+                        [rows  '()])
+               (cond [(null? stack)
+                      (let ([header (car rows)]
+                            [rows   (cdr rows)])
+                        (make-csv header rows))]
+                     [else
+                      (loop (cdr stack)
+                            (cons (car stack) rows))]))))
 
          (define fullstop
            (lambda (px)
@@ -43,25 +55,25 @@
                         (list->string x))
                       px)))
 
-         (define characters (repeat+1 (none-of "\",\n\r")))
-
          (define csv-grammar
            (fullstop
-            (grammar [File   (transform (lambda (state)
-                                          (make-csv (car state) (cdr state)))
+            (grammar [File   (transform collect-rows
                                         (and-then (rule Header)
                                                   (repeat+1 (rule Row))))]
+                     
                      [Header (rule Row)]
+                     
                      [Row    (transform collect-fields
                                         (and-then (separate-by (rule Field) (char #\,))
                                                   (maybe (char #\return))
                                                   (char #\newline)))]
-                     [Field  (or-else (capture-text characters)
+                     
+                     [Field  (or-else (capture-text (repeat+1 (none-of "\",\n\r")))
                                       (and-then (char #\")
-                                                (capture-text characters)
-                                                (char #\")))])))
+                                                (capture-text (repeat (none-of "\"")))
+                                                (char #\"))
+                                      empty)])))
 
          (define parse-csv (compile csv-grammar))
 
 )
-                                                      
