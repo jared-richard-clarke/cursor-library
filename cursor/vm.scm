@@ -208,40 +208,43 @@
 
          (define collect-captures
            (lambda (captures text)
-             (letrec ([state
-                       (lambda (stack-1 stack-2 accumulator)
-                         (cond [(null? stack-1)
-                                accumulator]
-                               [else
-                                (let ([capture (car stack-1)])
-                                  (cond [(eq? (capture-type capture) CAPTURE-START)
-                                         (let ([function (capture-function capture)]
-                                               [start    (capture-offset capture)]
-                                               [stop     (capture-offset (car stack-2))])
-                                           (state (cdr stack-1)
-                                                  (cdr stack-2)
-                                                  (collect function start stop accumulator)))]
-                                        [(eq? (capture-type capture) TRANSFORM)
-                                         (let ([function (capture-function capture)])
-                                           (state (cdr stack-1)
-                                                  stack-2
-                                                  (function accumulator)))]
-                                        [else
-                                         (state (cdr stack-1)
-                                                (cons (car stack-1) stack-2)
-                                                accumulator)]))]))]
-                      [collect
-                       (lambda (function start stop accumulator)
-                         (let loop ([index      stop]
-                                    [characters '()])
-                           (cond [(>= index start)
-                                  (loop (- index 1)
-                                        (cons (vector-ref text index) characters))]
+             (let ([captures (reverse captures)])
+               (letrec ([state
+                         (lambda (stack-1 stack-2 accumulator)
+                           (cond [(null? stack-1)
+                                  accumulator]
                                  [else
-                                  (if (null? function)
-                                      (cons characters accumulator)
-                                      (cons (function characters) accumulator))])))])
-               ;; === collect-captures: start state ===
-               (state captures '() '()))))
+                                  (let ([capture (car stack-1)])
+                                    (cond [(eq? (capture-type capture) CAPTURE-STOP)
+                                           (let ([head (car stack-2)]
+                                                 [tail capture])
+                                             (let ([function (capture-function head)]
+                                                   [start    (capture-offset head)]
+                                                   [stop     (capture-offset tail)])
+                                               (state (cdr stack-1)
+                                                      (cdr stack-2)
+                                                      (collect function start stop accumulator))))]
+                                          [(eq? (capture-type capture) TRANSFORM)
+                                           (let ([function (capture-function capture)])
+                                             (state (cdr stack-1)
+                                                    stack-2
+                                                    (function accumulator)))]
+                                          [else
+                                           (state (cdr stack-1)
+                                                  (cons (car stack-1) stack-2)
+                                                  accumulator)]))]))]
+                        [collect
+                         (lambda (function start stop accumulator)
+                           (let loop ([index      stop]
+                                      [characters '()])
+                             (cond [(>= index start)
+                                    (loop (- index 1)
+                                          (cons (vector-ref text index) characters))]
+                                   [else
+                                    (if (null? function)
+                                        (cons characters accumulator)
+                                        (cons (function characters) accumulator))])))])
+                 ;; === collect-captures: start state ===
+                 (state captures '() '())))))
 
-         )
+)
