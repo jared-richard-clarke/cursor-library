@@ -16,19 +16,15 @@
                         (string->number (list->string x)))
                       px)))
 
-         (define separate-by
-           (lambda (px op)
-             (and-then px (repeat (and-then op px)))))
-
          (define binary
            (lambda (px op py)
              (and-then px
                        (repeat
-                        (transform (lambda (state)
-                                     (let ([x  (car state)]
-                                           [fn (cadr state)]
-                                           [y  (caddr state)])
-                                       (cons (fn x y) (cdddr state))))
+                        (transform (lambda (stack)
+                                     (let ([y  (car stack)]
+                                           [fn (cadr stack)]
+                                           [x  (caddr stack)])
+                                       (cons (fn x y) (cdddr stack))))
                                    (and-then op py))))))
 
          (define digit    (one-of "0123456789"))
