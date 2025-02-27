@@ -1,5 +1,14 @@
 (library (examples json)
-         (export parse-json)
+         (export parse-json
+                 ;; === record-type: json ===
+                 json?           ;; predicate
+                 json-element    ;; field
+                 ;; === record-type: object ===
+                 object?         ;; predicate
+                 object-members  ;; field
+                 ;; === record-type: array ===
+                 array?          ;; predicate
+                 array-elements) ;; field
          (import (rnrs)
                  (cursor))
 
