@@ -27,17 +27,18 @@
                                        (cons (fn x y) (cdddr stack))))
                                    (and-then op py))))))
 
-         (define digit    (one-of "0123456789"))
-         (define digits   (and-then digit (repeat digit)))
-         (define sign     (maybe (or-else (char #\-) (char #\+))))
-         (define whole    (or-else (char #\0) (one-of "123456789")))
-         (define integer  (and-then sign whole))
-         (define fraction (maybe (and-then (char #\.) digits)))
-         (define exponent (maybe (and-then (or-else (char #\e)
-                                                    (char #\E))
-                                           sign
-                                           digits)))
-         (define real     (capture-number (and-then integer fraction exponent)))
+         (define digit  (one-of "0123456789"))
+         (define digits (repeat+1 digit))
+         
+         (define sign        (maybe (or-else (char #\-) (char #\+))))
+         (define whole       (or-else (char #\0) digits))
+         (define integer     (and-then sign whole))
+         (define fraction    (maybe (and-then (char #\.) digits)))
+         (define exponent    (maybe (and-then (or-else (char #\e)
+                                                       (char #\E))
+                                              sign
+                                              digits)))
+         (define real-number (and-then integer fraction exponent))
 
          (define add      (replace (char #\+) +))
          (define subtract (replace (char #\-) -))
@@ -57,8 +58,9 @@
                                                      (or-else (and-then (char #\()
                                                                         (rule Expression)
                                                                         (char #\)))
-                                                              real)
-                                                     whitespace)])))
+                                                              (rule Number))
+                                                     whitespace)]
+                               [Number (capture-number real-number)])))
 
          (define parse-expression (compile arithmetic-grammar))
 
