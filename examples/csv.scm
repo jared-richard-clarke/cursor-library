@@ -94,7 +94,9 @@
              
              [rows-equal?
               (lambda (xs ys)
-                (for-all row-equal? xs ys))]
+                (and (list? xs) (list? ys)
+                     (= (length xs) (length ys))
+                     (for-all row-equal? xs ys)))]
              
              [csv-equal?
               (lambda (x y)
