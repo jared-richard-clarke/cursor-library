@@ -1,12 +1,13 @@
 (library (examples csv)
          (export parse-csv
                  ;; === record-type: csv ===
-                 csv?         ;; predicate
-                 csv-header   ;; field
-                 csv-rows     ;; field
+                 csv?        ;; predicate
+                 csv-header  ;; field
+                 csv-rows    ;; field
                  ;; === record-type: row ===
-                 row?         ;; predicate
-                 row-columns) ;; field
+                 row?        ;; predicate
+                 row-columns ;; field
+                 (rename (tests csv:tests)))
          (import (rnrs)
                  (cursor))
 
@@ -75,5 +76,44 @@
                                       empty)])))
 
          (define parse-csv (compile csv-grammar))
+
+         (define tests
+           (test-chunk
+            
+            "CSV"
+            
+            ([sample-text
+              (call-with-input-file "./samples/sample.csv" (lambda (port) (get-string-all port)))]
+             
+             [row-equal?
+              (lambda (x y)
+                (and (row? x) (row? y)
+                     (equal? (row-columns x)
+                             (row-columns y))))]
+             
+             [rows-equal?
+              (lambda (xs ys)
+                (for-all row-equal? xs ys))]
+             
+             [csv-equal?
+              (lambda (x y)
+                (and (csv? x) (csv? y)
+                     (let ([header-x (csv-header x)]
+                           [header-y (csv-header y)]
+                           [rows-x   (csv-rows x)]
+                           [rows-y   (csv-rows y)])
+                       (and (row-equal? header-x header-y)
+                            (rows-equal? rows-x rows-y)))))])
+
+            (test-assert "sample.csv"
+                         csv-equal?
+                         (parse-csv sample-text)
+                         (make-csv (make-row (list "Book" "Authors" "Complete?" "Pages"))
+                                   (list (make-row (list "Watchmen" "Alan Moore and Dave Gibbons" "true" "414"))
+                                         (make-row (list "Maus" "Art Spiegelman" "true" "296"))
+                                         (make-row (list "Ghost World" "Daniel Clowes" "true" "80"))
+                                         (make-row (list "Berserk" "Kentaro Miura" "false")))))
+
+            ))
 
 )
