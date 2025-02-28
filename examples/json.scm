@@ -112,8 +112,7 @@
                                      (rule Null))]
 
                      [Object (and-then (char #\{)
-                                       (build-object
-                                        (or-else (rule Members) ws))
+                                       (build-object (or-else (rule Members) ws))
                                        (char #\}))]
 
                      [Members (separate-by (rule Member) (char #\,))]
@@ -122,8 +121,7 @@
                               (and-then ws (rule String) ws (char #\:) (rule Element)))]
 
                      [Array (and-then (char #\[)
-                                      (build-array
-                                       (or-else (rule Elements) ws))
+                                      (build-array (or-else (rule Elements) ws))
                                       (char #\]))]
 
                      [Elements (separate-by (rule Element) (char #\,))]
