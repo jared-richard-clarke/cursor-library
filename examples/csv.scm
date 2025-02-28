@@ -112,7 +112,7 @@
                                    (list (make-row (list "Watchmen" "Alan Moore and Dave Gibbons" "true" "414"))
                                          (make-row (list "Maus" "Art Spiegelman" "true" "296"))
                                          (make-row (list "Ghost World" "Daniel Clowes" "true" "80"))
-                                         (make-row (list "Berserk" "Kentaro Miura" "false")))))
+                                         (make-row (list "Berserk" "Kentaro Miura" "false" "unknown")))))
 
             ))
 
