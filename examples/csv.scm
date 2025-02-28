@@ -9,7 +9,8 @@
                  row-columns ;; field
                  (rename (tests csv:tests)))
          (import (rnrs)
-                 (cursor))
+                 (cursor)
+                 (cursor tools))
 
          (define-record-type csv
            (fields header rows))
