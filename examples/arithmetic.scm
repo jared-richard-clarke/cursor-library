@@ -1,7 +1,9 @@
 (library (examples arithmetic)
-         (export parse-expression)
+         (export parse-expression
+                 (rename (tests arithmetic:tests)))
          (import (rnrs)
-                 (cursor))
+                 (cursor)
+                 (cursor tools))
 
          (define replace
            (lambda (px y)
@@ -63,5 +65,29 @@
                                [Number (capture-number real-number)])))
 
          (define parse-expression (compile arithmetic-grammar))
+
+         (define tests
+           (test-chunk
+            "Arithmetic"
+            ()
+            (test-assert "base"
+                         =
+                         (parse-expression "1 + 2 * 3 ^ 4")
+                         163)
+
+            (test-assert "float"
+                         =
+                         (parse-expression "0.1 + 0.2")
+                         0.3)
+
+            (test-assert "exponent"
+                         =
+                         (parse-expression "1.2e3 - 1")
+                         1199)
+
+            (test-assert "right-associative"
+                         =
+                         (parse-expression "4 ^ 3 ^ 2")
+                         262144)))
 
 )
