@@ -76,7 +76,7 @@
                             (cons (cons key value) (cddr stack))))
                         px)))
 
-         (define collecter
+         (define collect-with
            (lambda (constructor)
              (lambda (px)
                (transform (lambda (stack)
@@ -89,8 +89,8 @@
                                          (cons (car stack) collection))])))
                           px))))
 
-         (define build-object (collector make-object))
-         (define build-array  (collector make-array))
+         (define build-object (collect-with make-object))
+         (define build-array  (collect-with make-array))
 
          (define build-json
            (lambda (px)
