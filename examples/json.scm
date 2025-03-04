@@ -8,7 +8,8 @@
                  object-members  ;; field
                  ;; === record-type: array ===
                  array?          ;; predicate
-                 array-elements) ;; field
+                 array-elements  ;; field
+                 (rename (tests json:tests)))
          (import (rnrs)
                  (cursor))
 
@@ -141,4 +142,80 @@
                      [Null  (replace (text "null") 'null)])))
 
          (define parse-json (compile json-grammar))
+
+         (define tests
+           (test-chunk
+            
+            "JSON"
+            
+            ([sample-text
+              (call-with-input-file "examples/samples/sample.json"
+                (lambda (port) (get-string-all port)))]
+             
+             [json-equal?
+              (lambda (x y)
+                (and (json? x) (json? y)
+                     (letrec ([traverse-json
+                               (lambda (x y)
+                                 (cond [(and (object? x) (object? y)
+                                             (traverse-lists (object-members x)
+                                                             (object-members y)))]
+                                       [(and (array? x) (array? y)
+                                             (traverse-lists (array-elements x)
+                                                             (array-elements y)))]
+                                       [(and (pair? x) (pair? y))
+                                        (let ([key-x (car x)]
+                                              [key-y (car y)])
+                                          (and (string? key-x) (string? key-y)
+                                               (string=? key-x key-y)
+                                               (traverse-json (cdr x) (cdr y))))]
+                                       [(and (string? x) (string? y))
+                                        (string=? x y)]
+                                       [(and (number? x) (number? y))
+                                        (= x y)]
+                                       [(and (boolean? x) (boolean? y))
+                                        (eq? x y)]
+                                       [(and (null-symbol? x) (null-symbol? y))
+                                        #t]
+                                       [else #f]))]
+                              [traverse-lists
+                               (lambda (x y)
+                                 (and (list? x) (list? y)
+                                      (= (length x) (length y))
+                                      (for-all traverse-json x y)))])
+                       (traverse-json (json-element x)
+                                      (json-element y)))))]
+
+             [null-symbol?
+              (lambda (x)
+                (and (symbol x) (eq? x 'null)))])
+
+            (test-assert "sample.json"
+                         json-equal?
+                         sample-text
+                         (make-json
+                          (make-object
+                           (list (cons "comic books"
+                                       (make-array
+                                        (list (make-object
+                                               (list (cons "title" "Watchmen")
+                                                     (cons "authors" (make-array (list "Alan Moore"
+                                                                                       "Dave Gibbons")))
+                                                     (cons "complete" #t)
+                                                     (cons "pages" 414)))
+                                              (make-object
+                                               (list (cons "title" "Maus")
+                                                     (cons "authors" (make-array (list "Art Spiegelman")))
+                                                     (cons "complete" #t)
+                                                     (cons "pages" 296)))
+                                              (make-object
+                                               (list (cons "title" "Ghost World")
+                                                     (cons "authors" (make-array (list "Daniel Clowes")))
+                                                     (cons "complete" #t)
+                                                     (cons "pages" 80)))
+                                              (make-object
+                                               (list (cons "title" "Berserk")
+                                                     (cons "authors" (make-array (list "Kentaro Miura")))
+                                                     (cons "complete" #f))))))))))
+            ))
 )
