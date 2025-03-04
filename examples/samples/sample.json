@@ -1,0 +1,16 @@
+{"comic books":
+    [{"title": "Watchmen",
+      "authors": ["Alan Moore", "Dave Gibbons"],
+      "complete": true,
+      "pages": 414},
+     {"title": "Maus",
+      "authors": ["Art Spiegelman"],
+      "complete": true,
+      "pages": 296},
+     {"title": "Ghost World",
+      "authors": ["Daniel Clowes"],
+      "complete": true,
+      "pages": 80},
+     {"title": "Berserk",
+      "authors": ["Kentaro Miura"],
+      "complete": false}]}
