@@ -77,8 +77,8 @@
 
             (test-assert "float"
                          =
-                         (parse-expression "0.1 + 0.2")
-                         0.3)
+                         (parse-expression "0.3 + 0.4")
+                         0.7)
 
             (test-assert "exponent"
                          =
@@ -88,6 +88,11 @@
             (test-assert "right-associative"
                          =
                          (parse-expression "4 ^ 3 ^ 2")
-                         262144)))
+                         262144)
+
+            (test-assert "parenthetical grouping"
+                         =
+                         (parse-expression "(1 + 2) * 3")
+                         9)))
 
 )
