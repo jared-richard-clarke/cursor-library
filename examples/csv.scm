@@ -84,7 +84,7 @@
             "CSV"
             
             ([sample-text
-              (call-with-input-file "./samples/sample.csv" (lambda (port) (get-string-all port)))]
+              (call-with-input-file "examples/samples/sample.csv" (lambda (port) (get-string-all port)))]
              
              [row-equal?
               (lambda (x y)
