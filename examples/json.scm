@@ -37,12 +37,12 @@
                                          [xs (cadr stack)])
                                      (cons (cons x xs) (cddr stack))))
                                  px))]
-                   [return-transform
+                   [reverse-transform
                     (lambda (px)
                       (transform (lambda (stack)
                                    (cons (reverse (car stack)) (cdr stack)))
                                  px))])
-               (return-transform
+               (reverse-transform
                 (and-then (base-transform px)
                           (repeat (and-then sep (recursive-transform px))))))))
 
