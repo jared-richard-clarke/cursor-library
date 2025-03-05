@@ -44,7 +44,7 @@
                                  px))])
                (reverse-transform
                 (and-then (base-transform px)
-                          (repeat (and-then sep (recursive-transform px))))))))
+                          (repeat (and-then sep (repeat-transform px))))))))
 
          (define ws (repeat (one-of " \r\n\t")))
 
@@ -112,44 +112,44 @@
 
          (define json-grammar
            (capture-json
-            (grammar [Element (and-then ws (rule Value) ws)]
+            (grammar [Element    (and-then ws (rule Value) ws)]
                     
-                     [Value (or-else (rule Object)
-                                     (rule Array)
-                                     (rule String)
-                                     (rule Number)
-                                     (rule True)
-                                     (rule False)
-                                     (rule Null))]
+                     [Value      (or-else (rule Object)
+                                          (rule Array)
+                                          (rule String)
+                                          (rule Number)
+                                          (rule True)
+                                          (rule False)
+                                          (rule Null))]
 
-                     [Object (and-then (char #\{)
-                                       (capture-object (or-else (rule Members) ws))
-                                       (char #\}))]
+                     [Object     (and-then (char #\{)
+                                           (capture-object (or-else (rule Members) ws))
+                                           (char #\}))]
 
-                     [Members (separate-by (rule Member) (char #\,))]
+                     [Members    (separate-by (rule Member) (char #\,))]
 
-                     [Member (capture-member
-                              (and-then ws (rule String) ws (char #\:) (rule Element)))]
+                     [Member     (capture-member
+                                  (and-then ws (rule String) ws (char #\:) (rule Element)))]
 
-                     [Array (and-then (char #\[)
-                                      (capture-array (or-else (rule Elements) ws))
-                                      (char #\]))]
+                     [Array      (and-then (char #\[)
+                                           (capture-array (or-else (rule Elements) ws))
+                                           (char #\]))]
 
-                     [Elements (separate-by (rule Element) (char #\,))]
+                     [Elements   (separate-by (rule Element) (char #\,))]
 
-                     [String (and-then (char #\")
-                                       (capture-text (rule Characters))
-                                       (char #\"))]
+                     [String     (and-then (char #\")
+                                           (capture-text (rule Characters))
+                                           (char #\"))]
 
                      [Characters (repeat (rule Character))]
 
-                     [Character (or-else (none-of control-characters) escaped)]
+                     [Character  (or-else (none-of control-characters) escaped)]
 
-                     [Number (capture-number real-number)]
+                     [Number     (capture-number real-number)]
 
-                     [True  (replace (text "true") #t)]
-                     [False (replace (text "false") #f)]
-                     [Null  (replace (text "null") 'null)])))
+                     [True       (replace (text "true") #t)]
+                     [False      (replace (text "false") #f)]
+                     [Null       (replace (text "null") 'null)])))
 
          (define parse-json (compile json-grammar))
 
