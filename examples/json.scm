@@ -11,7 +11,8 @@
                  array-elements  ;; field
                  (rename (tests json:tests)))
          (import (rnrs)
-                 (cursor))
+                 (cursor)
+                 (cursor tools))
 
          (define-record-type json
            (fields element))
@@ -22,15 +23,30 @@
          (define-record-type array
            (fields elements))
 
-         (define fullstop
-           (lambda (px)
-             (and-then px (is-not? any))))
-
-         (define separate-by
+         (define capture-list
            (lambda (px sep)
-             (and-then px (repeat (and-then sep px)))))
+             (let ([base-transform
+                    (lambda (px)
+                      (transform (lambda (stack)
+                                   (cons (list (car stack)) (cdr stack)))
+                                 px))]
+                   [repeat-transform
+                    (lambda (px)
+                      (transform (lambda (stack)
+                                   (let ([x  (car  stack)]
+                                         [xs (cadr stack)])
+                                     (cons (cons x xs) (cddr stack))))
+                                 px))]
+                   [return-transform
+                    (lambda (px)
+                      (transform (lambda (stack)
+                                   (cons (reverse (car stack)) (cdr stack)))
+                                 px))])
+               (return-transform
+                (and-then (base-transform px)
+                          (repeat (and-then sep (recursive-transform px))))))))
 
-         (define ws (repeat (none-of " \r\n\t")))
+         (define ws (repeat (one-of " \r\n\t")))
 
          (define replace
            (lambda (px y)
@@ -69,7 +85,7 @@
                                    (or-else (one-of control-characters)
                                             hex-character)))
 
-         (define build-member
+         (define capture-member
            (lambda (px)
              (transform (lambda (stack)
                           (let ([value (car  stack)]
@@ -77,23 +93,17 @@
                             (cons (cons key value) (cddr stack))))
                         px)))
 
-         (define collect-with
+         (define build-with
            (lambda (constructor)
              (lambda (px)
                (transform (lambda (stack)
-                            (let loop ([stack      stack]
-                                       [collection '()])
-                            (cond [(null? stack)
-                                   (cons (constructor collection) stack)]
-                                  [else
-                                   (loop (cdr stack)
-                                         (cons (car stack) collection))])))
+                            (cons (constructor (car stack)) (cdr stack)))
                           px))))
 
-         (define build-object (collect-with make-object))
-         (define build-array  (collect-with make-array))
+         (define capture-object (build-with make-object))
+         (define capture-array  (build-with make-array))
 
-         (define build-json
+         (define capture-json
            (lambda (px)
              (transform (lambda (stack)
                           (let ([element (car stack)])
@@ -101,8 +111,8 @@
                         px)))
 
          (define json-grammar
-           (build-json
-            (grammar [Element (fullstop (and-then ws (rule Value) ws))]
+           (capture-json
+            (grammar [Element (and-then ws (rule Value) ws)]
                     
                      [Value (or-else (rule Object)
                                      (rule Array)
@@ -113,19 +123,19 @@
                                      (rule Null))]
 
                      [Object (and-then (char #\{)
-                                       (build-object (or-else (rule Members) ws))
+                                       (capture-object (or-else (rule Members) ws))
                                        (char #\}))]
 
-                     [Members (separate-by (rule Member) (char #\,))]
+                     [Members (capture-list (rule Member) (char #\,))]
 
-                     [Member (build-member
+                     [Member (capture-member
                               (and-then ws (rule String) ws (char #\:) (rule Element)))]
 
                      [Array (and-then (char #\[)
-                                      (build-array (or-else (rule Elements) ws))
+                                      (capture-array (or-else (rule Elements) ws))
                                       (char #\]))]
 
-                     [Elements (separate-by (rule Element) (char #\,))]
+                     [Elements (capture-list (rule Element) (char #\,))]
 
                      [String (and-then (char #\")
                                        (capture-text (rule Characters))
@@ -188,11 +198,11 @@
 
              [null-symbol?
               (lambda (x)
-                (and (symbol x) (eq? x 'null)))])
+                (and (symbol? x) (eq? x 'null)))])
 
             (test-assert "sample.json"
                          json-equal?
-                         sample-text
+                         (parse-json sample-text)
                          (make-json
                           (make-object
                            (list (cons "comic books"
