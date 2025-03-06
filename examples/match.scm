@@ -1,17 +1,19 @@
 (library (examples match)
-         (export (prefix (real-number?
-                          english-letter?
-                          swedish-letter?
-                          greek-letter?
-                          rgb?
-                          IPv4?)
+         (export (prefix (rgb?
+                          IPv4?
+                          peg?)
                          match:))
          (import (rnrs)
-                 (cursor))
+                 (cursor)
+                 (cursor tools))
 
          (define fullstop
            (lambda (px)
              (and-then px (is-not? any))))
+
+         (define separate-by
+           (lambda (px sep)
+             (and-then px (repeat (and-then sep px)))))
 
          (define ws (repeat (one-of " \t\r\n")))
          
@@ -19,53 +21,27 @@
            (lambda (px)
              (and-then ws px ws)))
 
-         ;; === Real Number ===
+         ;; === RGB Tuple ===
 
-         (define digit    (one-of "0123456789"))
-         (define digits   (repeat+1 digit))
-         (define sign     (or-else (char #\-) (char #\+)))
-         (define whole    (or-else (char #\0) digits))
-         (define integer  (and-then (repeat sign) whole))
-         (define fraction (and-then (char #\.) digits))
-         (define exponent (and-then (or-else (char #\e)
-                                             (char #\E))
-                                    (maybe sign)
-                                    digits))
-         (define real     (and-then integer
-                                    (maybe fraction)
-                                    (maybe exponent)))
-
-         (define real-number? (compile (fullstop (trim real))))
-
-         ;; === Letter ===
-         
-         (define english-letter (one-of "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
-         (define swedish-letter (or-else english-letter (one-of "åäöÅÄÖ")))
-         (define greek-letter   (one-of "αβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ"))
-
-         (define english-letter? (compile (fullstop (trim english-letter))))
-         (define swedish-letter? (compile (fullstop (trim swedish-letter))))
-         (define greek-letter?   (compile (fullstop (trim greek-letter))))
-
-         ;; === RGB ===
-         
-         (define rgb-code (let* ([limit
-                                  (one-of "12")]
-                                 [code
-                                  (or-else (char #\0)
-                                           (and-then (maybe limit) (maybe digit) digit))])
+         ;; +-----------+
+         ;; | 2 | 5 | 5 |
+         ;; +-----------+
+         ;;   ^   ^---^
+         ;; head  tail
+         (define rgb-code (let* ([head (one-of "12")]
+                                 [tail (one-of "012345")]
+                                 [code (and-then (maybe head) (maybe tail) tail)])
                             (trim code)))
-         (define rgb-codes
-           (let ([comma (char #\,)]
-                 [slash (char #\/)])
+         
+         (define rgb-list
+           (let ([comma (char #\,)])
              (and-then rgb-code
                        comma
                        rgb-code
                        comma
-                       rgb-code
-                       (maybe (and-then slash rgb-code)))))
+                       rgb-code)))
          
-         (define rgb (and-then (text "rgb") (char #\() rgb-codes (char #\))))
+         (define rgb (and-then (text "rgb") (char #\() rgb-list (char #\))))
 
          (define rgb? (compile (fullstop (trim rgb))))
 
@@ -84,11 +60,106 @@
                       (and-then non-zero digit)
                       digit)))
 
-         (define dot (char #\.))
-
          (define IPv4
-           (and-then byte dot byte dot byte dot byte))
+           (let ([dot (char #\.)])
+             (and-then byte dot byte dot byte dot byte)))
 
          (define IPv4? (compile (fullstop (trim IPv4))))
+
+         ;; === PEG ASCII Syntax ===
+         ;;
+         ;; As defined by Bryan Ford.
+
+         ;; --- Lexical Syntax ---
+         
+         (define eol
+           (let ([n (char #\newline)]
+                 [r (char #\return)])
+             (or-else (and-then r n)
+                      n
+                      r)))
+         (define space
+           (or-else (char #\space)
+                    (char #\tab)
+                    eol))
+         
+         (define comment
+           (and-then (char #\#)
+                     (repeat (and-then (is-not? eol) any))
+                     eol))
+         
+         (define spacing
+           (repeat (or-else space comment)))
+
+         (define left-arrow    (and-then (text "<-") spacing))
+         (define slash         (and-then (char #\/) spacing))
+         (define predicate-and (and-then (char #\&) spacing))
+         (define predicate-not (and-then (char #\!) spacing))
+         (define question      (and-then (char #\?) spacing))
+         (define star          (and-then (char #\.) spacing))
+         (define plus          (and-then (char #\+) spacing))
+         (define open          (and-then (char #\() spacing))
+         (define close         (and-then (char #\)) spacing))
+         (define dot           (and-then (char #\.) spacing))
+
+         (define character
+           (let ([escape     (and-then (char #\\) (char #\\))]
+                 [zero-two   (one-of "012")]
+                 [zero-seven (one-of "01234567")])
+             (or-else (and-then escape
+                                (or-else (one-of "nrt'\"[]\\")
+                                         (and-then zero-two zero-seven zero-seven)
+                                         (and-then zero-seven (maybe zero-seven))))
+                      (and-then (is-not? escape) any))))
+
+         (define range
+           (or-else (and-then character (char #\-) character)
+                    character))
+
+         (define class
+           (and-then (char #\[)
+                     (repeat (and-then (is-not? (char #\]))
+                                       range))
+                     (char #\])
+                     spacing))
+
+         (define literal
+           (let ([template
+                  (lambda (px sep)
+                    (and-then sep
+                              (repeat (and-then (is-not? sep) px))
+                              sep
+                              spacing))])
+             (or-else (template character (char #\'))
+                      (template character (char #\")))))
+
+         (define identifier
+           (let* ([start  (one-of "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")]
+                  [follow (or-else start (one-of "0123456789"))])
+             (and-then start (repeat follow) spacing)))
+
+         ;; --- Hierarchical Syntax ---
+
+         (define peg-definition
+           (grammar [Definition (and-then identifier left-arrow (rule Expression))]
+                    [Expression (separate-by (rule Sequence) slash)]
+                    [Sequence   (repeat (rule Prefix))]
+                    [Prefix     (and-then (maybe (or-else predicate-and
+                                                          predicate-not))
+                                          (rule Suffix))]
+                    [Suffix     (and-then (rule Primary)
+                                          (maybe (or-else question
+                                                          star
+                                                          plus)))]
+                    [Primary    (or-else (and-then identifier (is-not? left-arrow))
+                                         (and-then open (rule Expression) close)
+                                         literal
+                                         class
+                                         dot)]))
+
+         (define peg-grammar
+           (fullstop (and-then spacing (repeat+1 peg-definition))))
+
+         (define peg? (compile peg-grammar))
 
 )
