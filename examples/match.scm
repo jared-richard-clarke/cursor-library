@@ -37,7 +37,7 @@
 
          (define real-number? (compile (fullstop (trim real))))
 
-         ;; === Alphabets ===
+         ;; === Letter ===
          
          (define english-letter (one-of "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
          (define swedish-letter (or-else english-letter (one-of "åäöÅÄÖ")))
