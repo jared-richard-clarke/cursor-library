@@ -70,20 +70,22 @@
          (define rgb? (compile (fullstop (trim rgb))))
 
          ;; === IPv4 ===
-         
-         (define zero-four (one-of "01234"))
-         (define zero-five (one-of "012345"))
-         (define non-zero  (one-of "123456789"))
+
          (define byte
-           (let ([one  (char #\1)]
-                 [two  (char #\2)]
-                 [five (char #\5)])
+           (let ([one       (char #\1)]
+                 [two       (char #\2)]
+                 [five      (char #\5)]
+                 [zero-four (one-of "01234")]
+                 [zero-five (one-of "012345")]
+                 [non-zero  (one-of "123456789")])
              (or-else (and-then two five zero-five)
                       (and-then two zero-four digit)
                       (and-then one digit digit)
                       (and-then non-zero digit)
                       digit)))
+
          (define dot (char #\.))
+
          (define IPv4
            (and-then byte dot byte dot byte dot byte))
 
