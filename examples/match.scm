@@ -29,7 +29,7 @@
                     digit))
 
          ;; === RGB Tuple ===
-         
+         ;;
          ;; rgb([0-255], [0-255], [0-255])
          
          (define rgb-list
