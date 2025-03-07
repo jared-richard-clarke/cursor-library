@@ -21,32 +21,6 @@
            (lambda (px)
              (and-then ws px ws)))
 
-         ;; === RGB Tuple ===
-
-         ;; +-----------+
-         ;; | 2 | 5 | 5 |
-         ;; +-----------+
-         ;;   ^   ^---^
-         ;; head  tail
-         (define rgb-code (let* ([head (one-of "12")]
-                                 [tail (one-of "012345")]
-                                 [code (and-then (maybe head) (maybe tail) tail)])
-                            (trim code)))
-         
-         (define rgb-list
-           (let ([comma (char #\,)])
-             (and-then rgb-code
-                       comma
-                       rgb-code
-                       comma
-                       rgb-code)))
-         
-         (define rgb (and-then (text "rgb") (char #\() rgb-list (char #\))))
-
-         (define rgb? (compile (fullstop (trim rgb))))
-
-         ;; === IPv4 ===
-
          (define byte
            (let ([one       (char #\1)]
                  [two       (char #\2)]
@@ -60,6 +34,33 @@
                       (and-then non-zero digit)
                       digit)))
 
+         ;; === RGB Tuple ===
+         
+         ;; rgb([0-255], [0-255], [0-255])
+         
+         (define rgb-list
+           (let ([comma    (char #\,)]
+                 [rgb-code (trim byte)])
+             (and-then rgb-code
+                       comma
+                       rgb-code
+                       comma
+                       rgb-code)))
+         
+         (define rgb (and-then (text "rgb") (char #\() rgb-list (char #\))))
+
+         (define rgb? (compile (fullstop (trim rgb))))
+
+         ;; === IPv4 ===
+         ;;
+         ;; 172.192.244.138
+         ;;
+         ;; +-----+-----+-----+-----+
+         ;; | 172 | 192 | 244 | 138 |
+         ;; +-----+-----+-----+-----+
+         ;; ^-----------------------^
+         ;;     32 bits / 4 bytes
+         
          (define IPv4
            (let ([dot (char #\.)])
              (and-then byte dot byte dot byte dot byte)))
@@ -68,7 +69,8 @@
 
          ;; === PEG ASCII Syntax ===
          ;;
-         ;; As defined by Bryan Ford.
+         ;; Source: "Parsing Expression Grammars: A Recognition-Based Syntactic Foundation"
+         ;; Author: Bryan Ford
 
          ;; --- Lexical Syntax ---
          
