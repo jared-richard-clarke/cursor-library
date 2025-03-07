@@ -22,17 +22,11 @@
              (and-then ws px ws)))
 
          (define byte
-           (let ([one       (char #\1)]
-                 [two       (char #\2)]
-                 [five      (char #\5)]
-                 [zero-four (one-of "01234")]
-                 [zero-five (one-of "012345")]
-                 [non-zero  (one-of "123456789")])
-             (or-else (and-then two five zero-five)
-                      (and-then two zero-four digit)
-                      (and-then one digit digit)
-                      (and-then non-zero digit)
-                      digit)))
+           (or-else (and-then (char #\2) (char #\5) (one-of "012345"))
+                    (and-then (char #\2) (one-of "01234") digit)
+                    (and-then (char #\1) digit digit)
+                    (and-then (one-of "123456789") digit)
+                    digit))
 
          ;; === RGB Tuple ===
          
