@@ -1,3 +1,4 @@
+;; === Grammar: https://www.json.org/json-en.html ===
 (library (examples json)
          (export parse-json
                  ;; === record-type: json ===
