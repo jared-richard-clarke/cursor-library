@@ -23,8 +23,8 @@
          (define-record-type array
            (fields elements))
 
-         (define separate-by
-           (lambda (px sep)
+         (define capture-list
+           (lambda (px)
              (let ([base-transform
                     (lambda (px)
                       (transform (lambda (stack)
@@ -44,7 +44,7 @@
                                  px))])
                (reverse-transform
                 (and-then (base-transform px)
-                          (repeat (and-then sep (repeat-transform px))))))))
+                          (repeat (and-then (char #\,) (repeat-transform px))))))))
 
          (define ws (repeat (one-of " \r\n\t")))
 
@@ -126,7 +126,7 @@
                                            (capture-object (or-else (rule Members) ws))
                                            (char #\}))]
 
-                     [Members    (separate-by (rule Member) (char #\,))]
+                     [Members    (capture-list (rule Member))]
 
                      [Member     (capture-member
                                   (and-then ws (rule String) ws (char #\:) (rule Element)))]
@@ -135,7 +135,7 @@
                                            (capture-array (or-else (rule Elements) ws))
                                            (char #\]))]
 
-                     [Elements   (separate-by (rule Element) (char #\,))]
+                     [Elements   (capture-list (rule Element))]
 
                      [String     (and-then (char #\")
                                            (capture-text (rule Characters))
