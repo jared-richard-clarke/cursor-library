@@ -1,8 +1,8 @@
 (library (examples match)
-         (export (prefix (rgb?
-                          IPv4?
-                          peg?)
-                         match:))
+         (export rgb?
+                 IPv4?
+                 peg?
+                 (rename (tests match:tests)))
          (import (rnrs)
                  (cursor)
                  (cursor tools))
@@ -20,6 +20,8 @@
          (define trim
            (lambda (px)
              (and-then ws px ws)))
+
+         (define digit (one-of "0123456789"))
 
          (define byte
            (or-else (and-then (char #\2) (char #\5) (one-of "012345"))
@@ -157,5 +159,80 @@
            (fullstop (and-then spacing (repeat+1 peg-definition))))
 
          (define peg? (compile peg-grammar))
+
+         (define tests
+           (test-chunk
+            
+            "Match"
+            
+            ([samples-eq?
+              (lambda (xs ys)
+                (for-all eq? xs ys))]
+
+             [all-true  '(#t #t #t #t)]
+             
+             [all-false '(#f #f #f #f)]
+             
+             [samples-rgb:true   '("rgb(0,0,0)"
+                                   "rgb( 0, 100, 255 )"
+                                   "rgb(255, 255, 255)"
+                                   "rgb(45,  25 ,125  )")]
+
+             [samples-rgb:false  '("rgb (0,0,0)"
+                                   "(0, 0, 0)"
+                                   "rgb(0, 0, 0"
+                                   "rgb(2555, 255, 255)")]
+             
+             [samples-IPv4:true  '("234.201.51.223"
+                                   "198.147.209.2"
+                                   "203.222.97.55"
+                                   "73.117.188.186")]
+
+             [samples-IPv4:false '("300.88.0.1"
+                                   "255.8a.3.4"
+                                   "100.25.11"
+                                   "23420151223")]
+
+             [samples-PEG:true    '("S <- 'abc' / . S"
+                                    "S <- [a-c]+"
+                                    "A <- 'a' B\n B <- 'b' C\n C <- 'c'"
+                                    "S <- 'a' !.")]
+
+             [samples-PEG:false   '("S -> 'abc' / . S"
+                                    "S <- [a-c]+\n 42"
+                                    "S <- 'abc"
+                                    "'abc'")])
+
+            (test-assert "rgb true"
+                         samples-eq?
+                         all-true
+                         (map rgb? samples-rgb:true))
+
+            (test-assert "rgb false"
+                         samples-eq?
+                         all-false
+                         (map rgb? samples-rgb:false))
+
+            (test-assert "IPv4 true"
+                         samples-eq?
+                         all-true
+                         (map IPv4? samples-IPv4:true))
+
+            (test-assert "IPv4 false"
+                         samples-eq?
+                         all-false
+                         (map IPv4? samples-IPv4:false))
+
+            (test-assert "PEG true"
+                         samples-eq?
+                         all-true
+                         (map peg? samples-PEG:true))
+
+            (test-assert "PEG false"
+                         samples-eq?
+                         all-false
+                         (map peg? samples-PEG:false))
+
+            ))
 
 )
