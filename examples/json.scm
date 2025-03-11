@@ -217,7 +217,7 @@
                          (parse-json sample-base)
                          (json
                           (object (field "key-1" (array #t #f 'null))
-                                  (field "key-2" (object (field "key-3" (array 1 2 3 "3" 1e10 1e-3))))
+                                  (field "key-2" (object (field "key-3" (array 1 2 "3" 1e10 1e-3))))
                                   (field "key-4" 'null))))
 
             (test-assert "books.json"
