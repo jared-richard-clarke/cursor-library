@@ -20,28 +20,32 @@
          (define-record-type row
            (fields columns))
 
-         (define collect-fields
-           (lambda (stack)
-             (let loop ([stack stack]
-                        [row   '()])
-               (cond [(or (null? stack)
-                          (row? (car stack)))
-                      (cons (make-row row) stack)]
-                     [else
-                      (loop (cdr stack)
-                            (cons (car stack) row))]))))
+         (define capture-fields
+           (lambda (px)
+             (transform (lambda (stack)
+                          (let loop ([stack stack]
+                                     [row   '()])
+                            (cond [(or (null? stack)
+                                       (row? (car stack)))
+                                   (cons (make-row row) stack)]
+                                  [else
+                                   (loop (cdr stack)
+                                         (cons (car stack) row))])))
+                        px)))
 
-         (define collect-rows
-           (lambda (stack)
-             (let loop ([stack stack]
-                        [rows  '()])
-               (cond [(null? stack)
-                      (let ([header (car rows)]
-                            [rows   (cdr rows)])
-                        (make-csv header rows))]
-                     [else
-                      (loop (cdr stack)
-                            (cons (car stack) rows))]))))
+         (define capture-rows
+           (lambda (px)
+             (transform (lambda (stack)
+                          (let loop ([stack stack]
+                                     [rows  '()])
+                            (cond [(null? stack)
+                                   (let ([header (car rows)]
+                                         [rows   (cdr rows)])
+                                     (make-csv header rows))]
+                                  [else
+                                   (loop (cdr stack)
+                                         (cons (car stack) rows))])))
+                        px)))
 
          (define fullstop
            (lambda (px)
@@ -59,16 +63,16 @@
 
          (define csv-grammar
            (fullstop
-            (grammar [File   (transform collect-rows
-                                        (and-then (rule Header)
-                                                  (repeat+1 (rule Row))))]
+            (grammar [File   (capture-rows
+                              (and-then (rule Header)
+                                        (repeat+1 (rule Row))))]
                      
                      [Header (rule Row)]
                      
-                     [Row    (transform collect-fields
-                                        (and-then (separate-by (rule Field) (char #\,))
-                                                  (maybe (char #\return))
-                                                  (char #\newline)))]
+                     [Row    (capture-fields
+                              (and-then (separate-by (rule Field) (char #\,))
+                                        (maybe (char #\return))
+                                        (char #\newline)))]
                      
                      [Field  (or-else (capture-text (repeat+1 (none-of "\",\n\r")))
                                       (and-then (char #\")
@@ -112,7 +116,7 @@
                            [rows-y   (csv-rows y)])
                        (and (row-equal? header-x header-y)
                             (rows-equal? rows-x rows-y)))))]
-                                                      
+
              ;; Convenience functions make construction of test data
              ;; both simpler and more readable.
              [csv    (lambda (header . rows) (make-csv header rows))]
