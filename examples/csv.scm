@@ -83,8 +83,13 @@
             
             "CSV"
             
-            ([sample-text
-              (call-with-input-file "examples/samples/sample.csv" (lambda (port) (get-string-all port)))]
+            ([sample-books
+              (call-with-input-file "examples/samples/csv/books.csv"
+                (lambda (port) (get-string-all port)))]
+
+             [sample-customers
+              (call-with-input-file "examples/samples/csv/customers.csv"
+                (lambda (port) (get-string-all port)))]
              
              [row-equal?
               (lambda (x y)
@@ -106,16 +111,31 @@
                            [rows-x   (csv-rows x)]
                            [rows-y   (csv-rows y)])
                        (and (row-equal? header-x header-y)
-                            (rows-equal? rows-x rows-y)))))])
+                            (rows-equal? rows-x rows-y)))))]
+                                                      
+             ;; Convenience functions make construction of test data
+             ;; both simpler and more readable.
+             [csv    (lambda (header . rows) (make-csv header rows))]
+             [header (lambda xs (make-row xs))]
+             [row    (lambda xs (make-row xs))])
 
-            (test-assert "sample.csv"
+            (test-assert "books.csv"
                          csv-equal?
-                         (parse-csv sample-text)
-                         (make-csv (make-row (list "Book" "Authors" "Complete?" "Pages"))
-                                   (list (make-row (list "Watchmen" "Alan Moore and Dave Gibbons" "true" "414"))
-                                         (make-row (list "Maus" "Art Spiegelman" "true" "296"))
-                                         (make-row (list "Ghost World" "Daniel Clowes" "true" "80"))
-                                         (make-row (list "Berserk" "Kentaro Miura" "false" "unknown")))))
+                         (parse-csv sample-books)
+                         (csv (header "Book" "Authors" "Complete?" "Pages")
+                              (row "Watchmen" "Alan Moore and Dave Gibbons" "true" "414")
+                              (row "Maus" "Art Spiegelman" "true" "296")
+                              (row "Ghost World" "Daniel Clowes" "true" "80")
+                              (row "Berserk" "Kentaro Miura" "false" "unknown")))
+
+            (test-assert "customers.csv"
+                         csv-equal?
+                         (parse-csv sample-customers)
+                         (csv (header "Customer Id" "First Name" "Last Name" "Email" "City" "State")
+                              (row "1" "Jason" "Smith" "smith@example.com" "Phoenix" "AR")
+                              (row "2" "Nathan" "Nguyen" "nguyen@example.com" "Seattle" "WA")
+                              (row "3" "Charles" "Schulz" "schulz@example.com" "Pittsburgh" "PA")
+                              (row "4" "Elaine" "Johnson" "johnson@example.com" "Los Angeles" "CA")))
 
             ))
 
