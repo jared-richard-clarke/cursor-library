@@ -158,9 +158,13 @@
            (test-chunk
             
             "JSON"
+
+            ([sample-base
+              (call-with-input-file "examples/samples/json/base.json"
+                (lambda (port) (get-string-all port)))]
             
-            ([sample-text
-              (call-with-input-file "examples/samples/sample.json"
+             [sample-books
+              (call-with-input-file "examples/samples/json/books.json"
                 (lambda (port) (get-string-all port)))]
              
              [json-equal?
@@ -199,34 +203,43 @@
 
              [null-symbol?
               (lambda (x)
-                (and (symbol? x) (eq? x 'null)))])
+                (and (symbol? x) (eq? x 'null)))]
 
-            (test-assert "sample.json"
+             ;; Convenience functions make construction of test data
+             ;; both simpler and more readable.
+             [json   make-json]
+             [object (lambda xs (make-object xs))]
+             [field  cons]
+             [array  (lambda xs (make-array xs))])
+
+            (test-assert "base.json"
                          json-equal?
-                         (parse-json sample-text)
-                         (make-json
-                          (make-object
-                           (list (cons "comic books"
-                                       (make-array
-                                        (list (make-object
-                                               (list (cons "title" "Watchmen")
-                                                     (cons "authors" (make-array (list "Alan Moore"
-                                                                                       "Dave Gibbons")))
-                                                     (cons "complete" #t)
-                                                     (cons "pages" 414)))
-                                              (make-object
-                                               (list (cons "title" "Maus")
-                                                     (cons "authors" (make-array (list "Art Spiegelman")))
-                                                     (cons "complete" #t)
-                                                     (cons "pages" 296)))
-                                              (make-object
-                                               (list (cons "title" "Ghost World")
-                                                     (cons "authors" (make-array (list "Daniel Clowes")))
-                                                     (cons "complete" #t)
-                                                     (cons "pages" 80)))
-                                              (make-object
-                                               (list (cons "title" "Berserk")
-                                                     (cons "authors" (make-array (list "Kentaro Miura")))
-                                                     (cons "complete" #f))))))))))
+                         (parse-json sample-base)
+                         (json
+                          (object (field "key-1" (array #t #f 'null))
+                                  (field "key-2" (object (field "key-3" (array 1 2 3 "3" 1e10 1e-3))))
+                                  (field "key-4" 'null))))
+
+            (test-assert "books.json"
+                         json-equal?
+                         (parse-json sample-books)
+                         (json
+                          (object (field "comic books"
+                                         (array (object (field "title" "Watchmen")
+                                                        (field "authors" (array "Alan Moore" "Dave Gibbons"))
+                                                        (field "complete" #t)
+                                                        (field "pages" 414))
+                                                (object (field "title" "Maus")
+                                                        (field "authors" (array "Art Spiegelman"))
+                                                        (field "complete" #t)
+                                                        (field "pages" 296))
+                                                (object (field "title" "Ghost World")
+                                                        (field "authors" (array "Daniel Clowes"))
+                                                        (field "complete" #t)
+                                                        (field "pages" 80))
+                                                (object (field "title" "Berserk")
+                                                        (field "authors" (array "Kentaro Miura"))
+                                                        (field "complete" #f)))))))
+            
             ))
 )
