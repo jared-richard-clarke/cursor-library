@@ -5,7 +5,9 @@
                  (cursor tools)
                  (cursor collections charset))
 
-         (define ERROR-VM "unrecognized instruction")
+         (define ERROR-VM        "unrecognized instruction")
+         (define ERROR-CAPTURE   "provided function must operate over (list char ...)")
+         (define ERROR-TRANSFORM "provided function pushes stack into invalid state")
 
          (define-record-type entry
            (fields ip (mutable sp) (mutable captures)))
@@ -228,7 +230,13 @@
                                            (let ([function (capture-function capture)])
                                              (state (cdr stack-1)
                                                     stack-2
-                                                    (function accumulator)))]
+                                                    (guard (x [(peg-error? x)
+                                                               (raise x)]
+                                                              [else
+                                                               (raise (condition
+                                                                       (make-peg-error "transform" function ERROR-TRANSFORM)
+                                                                       x))])
+                                                           (function accumulator))))]
                                           [else
                                            (state (cdr stack-1)
                                                   (cons (car stack-1) stack-2)
@@ -243,7 +251,14 @@
                                    [else
                                     (if (null? function)
                                         (cons characters accumulator)
-                                        (cons (function characters) accumulator))])))])
+                                        (cons (guard (x [(peg-error? x)
+                                                         (raise x)]
+                                                        [else
+                                                         (raise (condition
+                                                                 (make-peg-error "capture" function ERROR-CAPTURE)
+                                                                 x))])
+                                                     (function characters))
+                                              accumulator))])))])
                  ;; === collect-captures: start state ===
                  (state captures '() '())))))
 
