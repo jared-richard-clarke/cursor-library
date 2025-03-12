@@ -33,7 +33,7 @@
                  ast-node-x ;; field
                  ast-node-y ;; field
                  ast-equal?
-          ;; record-type: &peg-error -> &condition
+          ;; record-type: &peg -> &condition
                  make-peg-error ;; constructor
                  peg-error?     ;; predicate
                  peg-error-who  ;; field
@@ -145,13 +145,11 @@
                                      (ast-equal? a-px b-px))))]
                            [else #f]))))))
 
-         ;; record-type: &peg-error -> &condition
-         ;; Flags syntax errors during construction of PEG abstract syntax tree.
-         (define-record-type (&peg-error make-peg-error peg-error?)
-           (parent &condition)
-           (fields (immutable who  peg-error-who)
-                   (immutable what peg-error-what)
-                   (immutable why  peg-error-why))
-           (sealed #t))
+         ;; record-type: &peg -> &condition
+         ;; Makes explicit errors that occur in PEG expressions and parsing functions.
+         (define-condition-type &peg &condition make-peg-error peg-error?
+           (who peg-error-who)
+           (what peg-error-what)
+           (why peg-error-why))
 
-         )
+)
