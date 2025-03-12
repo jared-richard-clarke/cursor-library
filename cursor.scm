@@ -126,6 +126,7 @@
           ;; must be a symbol that identifies a rule defined within the grammar.
           rule
           ;; === (capture px) or (capture fn px) ===
+          ;; where fn = (list char ...) -> any
           ;;
           ;; Pushes a list of characters matched by the subexpression onto a stack.
           ;; This stack will later be returned to the caller. An optional function
