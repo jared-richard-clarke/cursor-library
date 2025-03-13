@@ -1,6 +1,7 @@
 # Cursor
 
-A pattern-matching and parsing library based on **Parsing Expression Grammars** and the **LPeg** parsing machine.
+A pattern-matching and parsing library based on **Parsing Expression Grammars** by Bryan Ford
+and the **LPeg** parsing machine by Roberto Ierusalimschy and Sérgio Medeiros.
 
 ## Sources
 
