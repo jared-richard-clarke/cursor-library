@@ -1,7 +1,8 @@
 ;; === Cursor ===
 ;;
 ;; A pattern-matching and parsing library based on Parsing Expression Grammars
-;; and the LPeg parsing machine.
+;; by Bryan Ford and the LPeg parsing machine by Roberto Ierusalimschy
+;; and Sérgio Medeiros.
 ;;
 ;;  --------------------------------------------
 ;; | Cursor                   | PEG             |
