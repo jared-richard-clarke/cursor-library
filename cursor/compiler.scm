@@ -65,7 +65,7 @@
          (define compile
            (lambda (x)
              (unless (ast? x)
-               (raise (make-peg-error "(compile _)" x ERROR-TYPE-AST)))
+               (peg-error "(compile _)" ERROR-TYPE-AST (list x)))
              (let* ([code      (compile-ast x)]
                     [code-list (if (pair? code) code (list code))]
                     [size      (length code-list)]
@@ -82,7 +82,7 @@
                  ;; Contains virtual machine instructions within its closure.
                  (lambda (text)
                    (unless (string? text)
-                     (raise (make-peg-error "parsing function" text ERROR-TYPE-STRING)))
+                     (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
                    (run-vm (string->vector text) program))))))
 
          ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
@@ -107,7 +107,7 @@
                  [(CALL)           (compile-call x)]
                  [(GRAMMAR)        (compile-grammar x)]
                  [else
-                  (raise (make-peg-error "undefined" type ERROR-UNKNOWN-AST))]))))
+                  (peg-error "(compile-ast _)" ERROR-UNKNOWN-AST (list type))]))))
 
          ;; (compile-symbol (ast type)) -> symbol
          (define compile-symbol
