@@ -185,7 +185,7 @@
                                    (collect-captures captures text))]
                               ;; undefined operation -> raise peg-error
                               [else
-                               (raise (make-peg-error "virtual machine" code ERROR-VM))])))]
+                               (peg-error "virtual machine" ERROR-VM (list code))])))]
                         ;; Handles logic for when the virtual machine enters a failing state.
                         [fail-state
                          (lambda (ip sp stack captures)
@@ -233,9 +233,7 @@
                                                     (guard (x [(peg-error? x)
                                                                (raise x)]
                                                               [else
-                                                               (raise (condition
-                                                                       (make-peg-error "transform" function ERROR-TRANSFORM)
-                                                                       x))])
+                                                               (peg-error "transform" ERROR-TRANSFORM (list function))])
                                                            (function accumulator))))]
                                           [else
                                            (state (cdr stack-1)
@@ -254,9 +252,7 @@
                                         (cons (guard (x [(peg-error? x)
                                                          (raise x)]
                                                         [else
-                                                         (raise (condition
-                                                                 (make-peg-error "capture" function ERROR-CAPTURE)
-                                                                 x))])
+                                                         (peg-error "capture" ERROR-CAPTURE (list function))])
                                                      (function characters))
                                               accumulator))])))])
                  ;; === collect-captures: start state ===
