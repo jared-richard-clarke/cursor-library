@@ -35,10 +35,10 @@
 ;;  --------------------------------------------
 
 (library (cursor)
-  ;; === empty ===
-  ;;
-  ;; A parsing expression that always succeeds without
-  ;; consuming any input.
+          ;; === empty ===
+          ;;
+          ;; A parsing expression that always succeeds without
+          ;; consuming any input.
   (export empty
           ;; === any ===
           ;;
