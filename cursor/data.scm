@@ -36,9 +36,8 @@
           ;; record-type: &peg -> &condition
                  make-peg-error ;; constructor
                  peg-error?     ;; predicate
-                 peg-error-who  ;; field
-                 peg-error-what ;; field
-                 peg-error-why) ;; field
+                 peg-error)
+
          (import (rnrs)
                  (cursor tools)
                  (cursor collections charset))
@@ -146,10 +145,14 @@
                            [else #f]))))))
 
          ;; record-type: &peg -> &condition
-         ;; Makes explicit errors that occur in PEG expressions and parsing functions.
-         (define-condition-type &peg &condition make-peg-error peg-error?
-           (who peg-error-who)
-           (what peg-error-what)
-           (why peg-error-why))
+         ;; Identifies errors that occur in PEG expressions and parsing functions.
+         (define-condition-type &peg &condition make-peg-error peg-error?)
+
+         (define peg-error
+           (lambda (who message irritants)
+             (raise (condition (make-peg-error)
+                               (make-who-condition who)
+                               (make-message-condition message)
+                               (make-irritants-condition irritants)))))
 
 )
