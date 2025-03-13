@@ -203,7 +203,7 @@
 
          ;; === Captures ===
          ;;
-         ;; (compile-capture (ast CAPTURE node-x node-y)) -> (list CAPTURE-START code code CAPTURE-STOP)
+         ;; (compile-capture (ast CAPTURE node-x node-y)) -> (list CAPTURE-START fn code CAPTURE-STOP)
          (define compile-capture
            (lambda (x)
              (let ([fn   (ast-node-x x)]
@@ -212,6 +212,9 @@
                           code
                           CAPTURE-STOP))))
 
+         ;; === Transformations ===
+         ;;
+         ;; (compile-transform (ast TRANSFORM node-x node-y)) -> (list code TRANSFORM fn)
          (define compile-transform
            (lambda (x)
              (let ([fn   (ast-node-x x)]
