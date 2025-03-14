@@ -233,7 +233,7 @@
                                                     (guard (x [(peg-error? x)
                                                                (raise x)]
                                                               [else
-                                                               (peg-error "transform" ERROR-TRANSFORM (list function))])
+                                                               (peg-error "transform" ERROR-TRANSFORM (list function accumulator))])
                                                            (function accumulator))))]
                                           [else
                                            (state (cdr stack-1)
@@ -252,7 +252,7 @@
                                         (cons (guard (x [(peg-error? x)
                                                          (raise x)]
                                                         [else
-                                                         (peg-error "capture" ERROR-CAPTURE (list function))])
+                                                         (peg-error "capture" ERROR-CAPTURE (list function characters))])
                                                      (function characters))
                                               accumulator))])))])
                  ;; === collect-captures: start state ===
