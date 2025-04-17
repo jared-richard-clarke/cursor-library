@@ -28,8 +28,7 @@ to s-expressions.
 |-----------+-----------------------------------|
 | ~ε~       | ~empty~                           |
 | ~.~       | ~any~                             |
-| ~"x"~     | ~(char #\x)~                      |
-| ~"xyz"~   | ~(text "xyz")~                    |
+| ~"x"~     | ~(char #\x)~ or ~(text "x")~      |
 | ~p?~      | ~(maybe p)~                       |
 | ~p*~      | ~(repeat p)~                      |
 | ~p+~      | ~(repeat+1 p)~                    |
