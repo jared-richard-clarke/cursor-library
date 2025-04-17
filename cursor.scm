@@ -116,7 +116,7 @@
           ;; Each rule can contain both references to itself and other rules
           ;; within the grammar, allowing the construction of recursive patterns.
           grammar
-          ;; === (rule x) ===
+          ;; === (rule id) ===
           ;;
           ;; Allows a parsing expression to refer to another parsing expression,
           ;; including itself, within its enclosing grammar. Its subexpression
