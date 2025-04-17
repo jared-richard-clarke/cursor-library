@@ -4,35 +4,23 @@
 ;; by Bryan Ford and the LPeg parsing machine by Roberto Ierusalimschy
 ;; and Sérgio Medeiros.
 ;;
-;;  --------------------------------------------
-;; | Cursor                   | PEG             |
-;; |--------------------------+-----------------|
-;; | empty                    | ε               |
-;; |--------------------------+-----------------|
-;; | any                      | .               |
-;; |--------------------------+-----------------|
-;; | (char #\x)               | "x"             |
-;; |--------------------------+-----------------|
-;; | (maybe p)                | p?              |
-;; |--------------------------+-----------------|
-;; | (repeat p)               | p*              |
-;; |--------------------------+-----------------|
-;; | (repeat+1 p)             | p+              |
-;; |--------------------------+-----------------|
-;; | (is? p)                  | &p              |
-;; |--------------------------+-----------------|
-;; | (is-not? p)              | !p              |
-;; |--------------------------+-----------------|
-;; | (and-then px py)         | px py           |
-;; |--------------------------+-----------------|
-;; | (or-else px py)          | px / py         |
-;; |--------------------------+-----------------|
-;; | (one-of "xyz")           | [xyz]           |
-;; |--------------------------+-----------------|
-;; | (none-of "xyz")          | [^xyz]          |
-;; |--------------------------+-----------------|
-;; | (grammar [id pattern])   | id <- pattern   |
-;;  --------------------------------------------
+;; +----------------------------+
+;; | PEG     | Cursor           |
+;; |---------+------------------|
+;; | ε       | empty            |
+;; | .       | any              |
+;; | "x"     | (char #\x)       |
+;; | p?      | (maybe p)        |
+;; | p*      | (repeat p)       |
+;; | p+      | (repeat+1 p)     |
+;; | &p      | (is? p)          |
+;; | !p      | (is-not? p)      |
+;; | px py   | (and-then px py) |
+;; | px / py | (or-else px py)  |
+;; | [xyz]   | (one-of "xyz")   |
+;; | [^xyz]  | (none-of "xyz")  |
+;; | id <- p | (grammar [id p]) |
+;; +----------------------------+
 (library (cursor)
           ;; === empty ===
           ;;
@@ -53,7 +41,7 @@
           ;;
           ;; Sequences zero or more parsing expressions. Each expression
           ;; must match part of the input. If any one expression fails,
-          ;; The entire sequence fails, consuming no input.
+          ;; the entire sequence fails, consuming no input.
           ;;
           ;; "and-then" with zero arguments produces the "empty" expression,
           ;; the identity element for sequences.
@@ -111,7 +99,7 @@
           ;; In this context, the universal set is all characters as provided
           ;; by R6RS — particularly Chez Scheme.
           none-of
-          ;; === (grammar [id pattern] ...) ===
+          ;; === (grammar [id px] ...) ===
           ;;
           ;; Allows the full expression of Parsing Expression Grammars.
           ;; Each grammar must contain one or more rules, where a rule
@@ -154,8 +142,11 @@
           ;; over a string and returns one of four results:
           ;;
           ;; 1. Boolean true for match.
+          ;;
           ;; 2. Boolean false for non-match.
+          ;;
           ;; 3. A list of captured character matches.
+          ;;
           ;; 4. Arbitrary values that have been captured as character matches and then
           ;;    transformed by associated functions.
           compile)
