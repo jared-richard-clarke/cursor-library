@@ -143,7 +143,7 @@
           transform
           ;; === (text "xyz") ==
           ;;
-          ;; Transforms a string into a matching sequence of characters.
+          ;; Transforms a string into a sequence of character matches.
           text
           ;; === (compile px) ===
           ;;
