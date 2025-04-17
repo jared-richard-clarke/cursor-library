@@ -39,8 +39,6 @@ to s-expressions.
 | ~[xyz]~   | ~(one-of "xyz")~                  |
 | ~[^xyz]~  | ~(none-of "xyz")~                 |
 | ~id <- p~ | ~(grammar [id p])~                |
-|           | ~(capture p)~ or ~(capture fn p)~ |
-|           | ~(transform fn p)~                |
 
 ** API
 
