@@ -115,7 +115,7 @@ one or more rules, where a rule consists of an identifier and its associated par
 Each rule can contain both references to itself and other rules within the grammar,
 allowing the construction of recursive patterns.
 
-*** ~(rule x)~
+*** ~(rule id)~
 
 Allows a parsing expression to refer to another parsing expression, including itself,
 within its enclosing grammar. Its subexpression must be a symbol that identifies
