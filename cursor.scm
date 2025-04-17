@@ -4,23 +4,32 @@
 ;; by Bryan Ford and the LPeg parsing machine by Roberto Ierusalimschy
 ;; and Sérgio Medeiros.
 ;;
-;; +----------------------------+
-;; | PEG     | Cursor           |
-;; |---------+------------------|
-;; | ε       | empty            |
-;; | .       | any              |
-;; | "x"     | (char #\x)       |
-;; | p?      | (maybe p)        |
-;; | p*      | (repeat p)       |
-;; | p+      | (repeat+1 p)     |
-;; | &p      | (is? p)          |
-;; | !p      | (is-not? p)      |
-;; | px py   | (and-then px py) |
-;; | px / py | (or-else px py)  |
-;; | [xyz]   | (one-of "xyz")   |
-;; | [^xyz]  | (none-of "xyz")  |
-;; | id <- p | (grammar [id p]) |
-;; +----------------------------+
+;; === Pattern Matchers ===
+;; +------------------------------------+
+;; | PEG     | Cursor                   |
+;; |---------+--------------------------|
+;; | ε       | empty                    |
+;; | .       | any                      |
+;; | "x"     | (char #\x) or (text "x") |
+;; | p?      | (maybe p)                |
+;; | p*      | (repeat p)               |
+;; | p+      | (repeat+1 p)             |
+;; | &p      | (is? p)                  |
+;; | !p      | (is-not? p)              |
+;; | px py   | (and-then px py)         |
+;; | px / py | (or-else px py)          |
+;; | [xyz]   | (one-of "xyz")           |
+;; | [^xyz]  | (none-of "xyz")          |
+;; | id <- p | (grammar [id p])         |
+;; +------------------------------------+
+;;
+;; === Captures and Transformations ===
+;; +-------------------------------+
+;; | Cursor                        |
+;; |-------------------------------|
+;; | (capture p) or (capture fn p) |
+;; | (transform fn p)              |
+;; +-------------------------------+
 (library (cursor)
           ;; === empty ===
           ;;
