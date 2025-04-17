@@ -140,7 +140,7 @@ compose best by maintaining a stack discipline. In other words,
 
 *** ~(text "xyz")~
 
-Transforms a string into a matching sequence of characters.
+Transforms a string into a sequence of character matches.
 
 *** ~(compile px)~
 
