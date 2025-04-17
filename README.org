@@ -5,15 +5,153 @@ and the *LPeg* parsing machine by Roberto Ierusalimschy and Sérgio Medeiros.
 
 ** Sources
 
-- B. Ford, "Parsing expression grammars," /ACM SIGPLAN Notices/, vol. 39, no. 1, pp. 111–122, Jan. 2004,
-  doi: https://doi.org/10.1145/982962.964011.
+- B. Ford, "Parsing expression grammars," /ACM SIGPLAN Notices/, vol. 39, no. 1,
+  pp. 111–122, Jan. 2004, doi: https://doi.org/10.1145/982962.964011.
 
-- R. Ierusalimschy, "A text pattern-matching tool based on Parsing Expression Grammars," /Software: Practice and Experience/,
-  vol. 39, no. 3, pp. 221–258, Mar. 2009, doi: https://doi.org/10.1002/spe.892.
+- R. Ierusalimschy, "A text pattern-matching tool based on Parsing Expression Grammars,"
+  /Software: Practice and Experience/, vol. 39, no. 3, pp. 221–258, Mar. 2009,
+  doi: https://doi.org/10.1002/spe.892.
 
 - S. Medeiros and R. Ierusalimschy, "A Parsing Machine for PEGs," in /Proceedings of the 2008 symposium on Dynamic languages/,
-  New York, NY, USA: Association for Computing Machinery, Jul. 2008, pp. 1–12, doi: https://doi.org/10.1145/1408681.1408683.
+  New York, NY, USA: Association for Computing Machinery, Jul. 2008, pp. 1–12,
+  doi: https://doi.org/10.1145/1408681.1408683.
+
+** PEG and Cursor
+
+Cursor is based on Parsing Expression Grammars by the computer scientist Bryan Ford.
+PEGs are an analytical, formal grammar. They describe parsers of formal languages.
+
+My library's API is — at least syntactically — parsing-expression operators converted
+to s-expressions.
+
+| PEG       | Cursor             |
+|-----------+--------------------|
+| ~ε~       | ~empty~            |
+| ~.~       | ~any~              |
+| ~"x"~     | ~(char #\x)~       |
+| ~p?~      | ~(maybe p)~        |
+| ~p*~      | ~(repeat p)~       |
+| ~p+~      | ~(repeat+1 p)~     |
+| ~&p~      | ~(is? p)~          |
+| ~!p~      | ~(is-not? p)~      |
+| ~px py~   | ~(and-then px py)~ |
+| ~px / py~ | ~(or-else px py)~  |
+| ~[xyz]~   | ~(one-of "xyz")~   |
+| ~[^xyz]~  | ~(none-of "xyz")~  |
+| ~id <- p~ | ~(grammar [id p])~ |
 
 ** API
 
-- ~empty~ :: A parsing expression that always succeeds without consuming any input.
+*** ~empty~
+
+A parsing expression that always succeeds without consuming any input.
+
+*** ~any~
+
+A parsing expression that matches and consumes any character. Fails only on empty inputs.
+
+*** ~(char #\x)~
+
+A parsing expression that matches and consumes the provided character.
+
+*** ~(and-then px py ...)~
+
+Sequences zero or more parsing expressions. Each expression must match part of the input.
+If any one expression fails, the entire sequence fails, consuming no input.
+
+~and-then~ with zero arguments produces the ~empty~ expression, the identity element for sequences.
+
+*** ~(or-else px py ...)~
+
+Ordered choice with limited backtracking. Succeeds on the first matching expression of zero or more
+parsing expressions. For each failing expression, backtracks to the original input position and tries
+the subsequent expression.
+
+~or-else~ with zero arguments produces the ~fail~ expression, the identity element for choices.
+A ~fail~ expression unconditionally fails on all inputs.
+
+*** ~(maybe px)~
+
+Matches zero or one repetitions of its subexpression. Consumes as much input as possible,
+never backtracking.
+
+*** ~(repeat px)~
+
+Matches zero or more repetitions of its subexpression. Consumes as much input as possible,
+never backtracking.
+
+*** ~(repeat+1 px)~
+
+Matches one or more repetitions of its subexpression. Consumes as much input as possible,
+never backtracking.
+
+*** ~(is? px)~
+
+The and-predicate provides unlimited lookahead. Success or failure of this expression
+matches its subexpression. In either case, consumes no input.
+
+*** ~(is-not? px)~
+
+The not-predicate provides unlimited lookahead. Success or failure is the inverse
+of its subexpression. In either case, consumes no input.
+
+*** ~(one-of "xyz")~
+
+Transforms a non-empty string into a character set. An empty string produces *∅*, the empty set.
+This set will fail on all inputs.
+
+*** ~(none-of "xyz")~
+
+Transforms a non-empty string into a character set that acts as *U*, the universal set,
+minus the provided characters. An empty string simply produces the universal set,
+which succeeds on all inputs.
+
+In this context, the universal set is all characters as provided by R6RS — particularly Chez Scheme.
+
+*** ~(grammar [id px] ...)~
+
+Allows the full expression of Parsing Expression Grammars. Each grammar must contain
+one or more rules, where a rule consists of an identifier and its associated parsing expression.
+Each rule can contain both references to itself and other rules within the grammar,
+allowing the construction of recursive patterns.
+
+*** ~(rule x)~
+
+Allows a parsing expression to refer to another parsing expression, including itself,
+within its enclosing grammar. Its subexpression must be a symbol that identifies
+a rule defined within the grammar.
+
+*** ~(capture px)~ or ~(capture function px)~
+
+Pushes a list of characters matched by the subexpression onto a stack. This stack will
+later be returned to the caller. An optional function is applied to the capture before
+it is pushed onto the stack.
+
+*** ~(transform function px)~
+
+Captures operate by pushing their values onto a stack implemented as a cons list.
+Capturing expression ~A~ and then ~B~ places the stack in state ~(list B A)~.
+Through the function, ~transform~ provides direct access to the stack state as
+computed by its subexpression ~px~.
+
+The provided function can transform said state arbitrarily, although transformations
+compose best by maintaining a stack discipline. In other words,
+~(function stack)~ -> ~stack~, where ~stack~ = ~(list x y ...)~.
+
+*** ~(text "xyz")~
+
+Transforms a string into a matching sequence of characters.
+
+*** ~(compile px)~
+
+Transforms a parsing expression into a parsing function, which runs a match over
+a string and returns one of four results:
+
+1. Boolean true for match.
+
+2. Boolean false for non-match.
+
+3. A list of captured character matches.
+
+4. Arbitrary values that have been captured as character matches
+   and then transformed by associated functions.
