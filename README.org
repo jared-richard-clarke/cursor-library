@@ -54,6 +54,10 @@ A parsing expression that matches and consumes any character. Fails only on empt
 
 A parsing expression that matches and consumes the provided character.
 
+*** ~(text "xyz")~
+
+Transforms a string into a sequence of character matches.
+
 *** ~(and-then px py ...)~
 
 Sequences zero or more parsing expressions. Each expression must match part of the input.
@@ -137,10 +141,6 @@ as computed by its subexpression ~px~.
 The provided function can transform said state arbitrarily, although transformations
 compose best by maintaining a stack discipline. In other words,
 ~(function stack)~ -> ~stack~, where ~stack~ = ~(list x y ...)~.
-
-*** ~(text "xyz")~
-
-Transforms a string into a sequence of character matches.
 
 *** ~(compile px)~
 
