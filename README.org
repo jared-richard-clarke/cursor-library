@@ -21,8 +21,7 @@ and the *LPeg* parsing machine by Roberto Ierusalimschy and Sérgio Medeiros.
 Cursor is based on Parsing Expression Grammars by the computer scientist Bryan Ford.
 PEGs are an analytical, formal grammar. They describe parsers of formal languages.
 
-My library's API is — at least syntactically — parsing-expression operators converted
-to s-expressions.
+My library's API is parsing expression operators converted to s-expressions.
 
 | PEG       | Cursor                            |
 |-----------+-----------------------------------|
