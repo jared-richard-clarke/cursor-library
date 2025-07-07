@@ -34,7 +34,8 @@
           ;; === empty ===
           ;;
           ;; A parsing expression that always succeeds without
-          ;; consuming any input.
+          ;; consuming any input. The ε or epsilon production
+          ;; in context-free grammars.
   (export empty
           ;; === any ===
           ;;
