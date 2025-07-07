@@ -43,21 +43,82 @@ My library's API is parsing expression operators converted to s-expressions.
 
 ** API
 
+*Side Note*: Following the PEG formalism, a Cursor parser can succeed without
+consuming all of its input string. The helper function ~fullstop~ ensures the
+simple pattern matchers below match their entire inputs.
+
+#+begin_src scheme
+  ;; === Helper Function ===
+
+  (define fullstop
+    (lambda (px)
+      (and-then px (is-not? any))))
+
+  ;; === Sample Pattern Matchers ===
+
+  (define ABC? (compile (text "ABC")))
+
+  (ABC? "ABC")    ;; -> #t
+  (ABC? "ABCDEF") ;; -> #t
+
+  (define ABC? (compile (fullstop (text "ABC"))))
+
+  (ABC? "ABC")    ;; -> #t
+  (ABC? "ABCDEF") ;; -> #f
+#+end_src
+
 *** ~empty~
 
-A parsing expression that always succeeds without consuming any input.
+A parsing expression that always succeeds without consuming any input. The *ε*
+or *epsilon* production in context-free grammars.
+
+#+begin_src scheme
+  (define nested
+    (fullstop
+      (grammar
+        [X (and-then (char #\()
+                     (or-else (rule X) empty)
+                     (char #\)))])))
+
+  (define nested? (compile nested))
+
+  (nested? "(((())))") ;; -> #t
+  (nested? "(()")      ;; -> #f
+#+end_src
 
 *** ~any~
 
 A parsing expression that matches and consumes any character. Fails only on empty inputs.
 
+#+begin_src scheme
+  (define any? (compile any))
+
+  (any? "x") ;; -> #t
+  (any? "")  ;; -> #f
+#+end_src
+
 *** ~(char #\x)~
 
 A parsing expression that matches and consumes the provided character.
 
+#+begin_src scheme
+  (define A? (compile (fullstop (char #\A))))
+
+  (A? "A") ;; -> #t
+  (A? "B") ;; -> #f
+#+end_src
+
 *** ~(text "xyz")~
 
 Transforms a string into a sequence of character matches.
+
+#+begin_src scheme
+  ;; (text "ABC") = (and-then (char #\A) (char #\B) (char #\C))
+  (define ABC? (compile (fullstop (text "ABC"))))
+
+  (ABC? "ABC") ;; -> #t
+  (ABC? "AbC") ;; -> #f
+#+end_src
 
 *** ~(and-then px py ...)~
 
@@ -65,6 +126,21 @@ Sequences zero or more parsing expressions. Each expression must match part of t
 If any one expression fails, the entire sequence fails, consuming no input.
 
 ~and-then~ with zero arguments produces the ~empty~ expression, the identity element for sequences.
+
+#+begin_src scheme
+  (define ABC?
+    (compile
+      (fullstop
+        (and-then (char #\A)
+                  (char #\B)
+                  (char #\C)))))
+
+  (ABC? "ABC") ;; -> #t
+  (ABC? "CBA") ;; -> #f
+
+  ;; === Identity Expression ===
+  (define empty (and-then))
+#+end_src
 
 *** ~(or-else px py ...)~
 
@@ -74,6 +150,22 @@ the subsequent expression.
 
 ~or-else~ with zero arguments produces the ~fail~ expression, the identity element for choices.
 A ~fail~ expression unconditionally fails on all inputs.
+
+#+begin_src scheme
+  (define A-B-or-C?
+    (compile
+      (fullstop
+        (or-else (char #\A)
+                 (char #\B)
+                 (char #\C)))))
+
+  (A-B-or-C? "C") ;; -> #t
+  (A-B-or-C? "A") ;; -> #t
+  (A-B-or-C? "D") ;; -> #f
+
+  ;; === Identity Expression ===
+  (define fail (or-else))
+#+end_src
 
 *** ~(maybe px)~
 
