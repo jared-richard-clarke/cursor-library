@@ -44,12 +44,11 @@ My library's API is parsing expression operators converted to s-expressions.
 ** API
 
 *Side Note*: Following the PEG formalism, a Cursor parser can succeed without
-consuming all of its input string. The helper function ~fullstop~ ensures the
-simple pattern matchers below match their entire inputs.
+consuming all of its input string. For the sake of clarity through simplicity,
+the examples below ignore this potential outcome.
 
 #+begin_src scheme
-  ;; === Helper Function ===
-
+  ;; Function ensures pattern matches entire string.
   (define fullstop
     (lambda (px)
       (and-then px (is-not? any))))
@@ -73,17 +72,11 @@ A parsing expression that always succeeds without consuming any input. The *ε*
 or *epsilon* production in context-free grammars.
 
 #+begin_src scheme
-  (define nested
-    (fullstop
-      (grammar
-        [X (and-then (char #\()
-                     (or-else (rule X) empty)
-                     (char #\)))])))
+  (define true (compile empty))
 
-  (define nested? (compile nested))
-
-  (nested? "(((())))") ;; -> #t
-  (nested? "(()")      ;; -> #f
+  (true "")      ;; -> #t
+  (true "A")     ;; -> #t
+  (true "false") ;; -> #t
 #+end_src
 
 *** ~any~
@@ -102,7 +95,7 @@ A parsing expression that matches and consumes any character. Fails only on empt
 A parsing expression that matches and consumes the provided character.
 
 #+begin_src scheme
-  (define A? (compile (fullstop (char #\A))))
+  (define A? (compile (char #\A)))
 
   (A? "A") ;; -> #t
   (A? "B") ;; -> #f
@@ -114,7 +107,7 @@ Transforms a string into a sequence of character matches.
 
 #+begin_src scheme
   ;; (text "ABC") = (and-then (char #\A) (char #\B) (char #\C))
-  (define ABC? (compile (fullstop (text "ABC"))))
+  (define ABC? (compile (text "ABC")))
 
   (ABC? "ABC") ;; -> #t
   (ABC? "AbC") ;; -> #f
@@ -130,10 +123,9 @@ If any one expression fails, the entire sequence fails, consuming no input.
 #+begin_src scheme
   (define ABC?
     (compile
-      (fullstop
-        (and-then (char #\A)
-                  (char #\B)
-                  (char #\C)))))
+      (and-then (char #\A)
+                (char #\B)
+                (char #\C))))
 
   (ABC? "ABC") ;; -> #t
   (ABC? "CBA") ;; -> #f
@@ -154,10 +146,9 @@ A ~fail~ expression unconditionally fails on all inputs.
 #+begin_src scheme
   (define A-B-or-C?
     (compile
-      (fullstop
-        (or-else (char #\A)
-                 (char #\B)
-                 (char #\C)))))
+      (or-else (char #\A)
+               (char #\B)
+               (char #\C))))
 
   (A-B-or-C? "C") ;; -> #t
   (A-B-or-C? "A") ;; -> #t
@@ -172,36 +163,110 @@ A ~fail~ expression unconditionally fails on all inputs.
 Matches zero or one repetitions of its subexpression. Consumes as much input as possible,
 never backtracking.
 
+#+begin_src scheme
+  (define A-maybe-B?
+    (compile
+      (and-then (char #\A)
+                (maybe (char #\B)))))
+
+  (A-maybe-B? "AB") ;; -> #t
+  (A-maybe-B? "A")  ;; -> #t
+#+end_src
+
 *** ~(repeat px)~
 
 Matches zero or more repetitions of its subexpression. Consumes as much input as possible,
 never backtracking.
+
+#+begin_src scheme
+  (define zero-or-more?
+    (compile
+      (repeat any)))
+
+  (zero-or-more? "")   ;; -> #t
+  (zero-or-more? "A")  ;; -> #t
+  (zero-or-more? "AB") ;; -> #t
+#+end_src
 
 *** ~(repeat+1 px)~
 
 Matches one or more repetitions of its subexpression. Consumes as much input as possible,
 never backtracking.
 
+#+begin_src scheme
+  (define one-or-more?
+    (compile
+      (repeat+1 any)))
+
+  (one-or-more? "")   ;; -> #f
+  (one-or-more? "A")  ;; -> #t
+  (one-or-more? "AB") ;; -> #t
+#+end_src
+
 *** ~(is? px)~
 
 The and-predicate provides unlimited lookahead. Success or failure of this expression
 matches its subexpression. In either case, consumes no input.
+
+#+begin_src scheme
+  (define A?
+    (compile
+      (and-then (is? (char #\A))
+                any)))
+
+  (A? "A") ;; -> #t
+  (A? "B") ;; -> #f
+  (A? "C") ;; -> #f
+#+end_src
 
 *** ~(is-not? px)~
 
 The not-predicate provides unlimited lookahead. Success or failure is the inverse
 of its subexpression. In either case, consumes no input.
 
+#+begin_src scheme
+  (define not-A?
+    (compile
+      (and-then (is-not? (char #\A))
+                any)))
+
+  (not-A? "A") ;; -> #f
+  (not-A? "B") ;; -> #t
+  (not-A? "C") ;; -> #t
+#+end_src
+
 *** ~(one-of "xyz")~
 
 Transforms a non-empty string into a character set. An empty string produces *∅*, the empty set.
 This set will fail on all inputs.
+
+#+begin_src scheme
+  (define digit? (compile (one-of "0123456789")))
+
+  (digit? "7") ;; -> #t
+  (digit? "1") ;; -> #t
+  (digit? "A") ;; -> #f
+
+  ;; The empty set unconditionally fails on all inputs.
+  (define false (compile (one-of "")))
+#+end_src
 
 *** ~(none-of "xyz")~
 
 Transforms a non-empty string into a character set that acts as *U*, the universal set,
 minus the provided characters. An empty string simply produces the universal set,
 which succeeds on all inputs.
+
+#+begin_src scheme
+  (define not-digit? (compile (none-of "0123456789")))
+
+  (not-digit? "7") ;; -> #f
+  (not-digit? "1") ;; -> #f
+  (not-digit? "A") ;; -> #t
+
+  ;; The universal set unconditionally succeeds on all inputs.
+  (define true (compile (none-of "")))
+#+end_src
 
 In this context, the universal set is all characters as provided by R6RS — particularly Chez Scheme.
 
