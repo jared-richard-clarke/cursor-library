@@ -133,9 +133,9 @@
           ;; === (transform fn px) ===
           ;; where fn = stack -> any
           ;;
-          ;; Captures operate by pushing their values onto a stack implemented as a cons list.
+          ;; Captures operate by pushing their values onto a stack that is implemented as a cons list.
           ;; Capturing expression "A" and then "B" places the stack in state "(list B A)".
-          ;; Through the function "fn", "transform" provides direct access to the stack state
+          ;; For the given function "fn", "transform" provides direct access to the stack state
           ;; as computed by its subexpression "px".
           ;;
           ;; Function "fn" can transform said state arbitrarily, although transformations
