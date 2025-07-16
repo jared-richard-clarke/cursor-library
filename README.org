@@ -43,23 +43,27 @@ My library's API is parsing expression operators converted to s-expressions.
 
 ** API
 
-*Side Note*: Following the PEG formalism, a Cursor parser can succeed without
-consuming all of its input string. For the sake of clarity through simplicity,
-the examples below ignore this potential outcome.
+Following the PEG formalism, a Cursor parser can succeed without consuming all of its input string.
+For the sake of brevity, the examples below usually ignore this potential outcome.
+
+A helper function such as ~(fullstop px)~ can ensure a pattern matches its entire input:
 
 #+begin_src scheme
-  ;; Function ensures pattern matches entire string.
+  ;; (fullstop px) -> (and-then px (is-not? any))
+  ;; Ensures pattern px matches entire input.
   (define fullstop
     (lambda (px)
       (and-then px (is-not? any))))
 
   ;; === Sample Pattern Matchers ===
 
+  ;; without "fullstop":
   (define ABC? (compile (text "ABC")))
 
   (ABC? "ABC")    ;; -> #t
   (ABC? "ABCDEF") ;; -> #t
 
+  ;; with "fullstop":
   (define ABC? (compile (fullstop (text "ABC"))))
 
   (ABC? "ABC")    ;; -> #t
@@ -106,7 +110,7 @@ A parsing expression that matches and consumes the provided character.
 Transforms a string into a sequence of character matches.
 
 #+begin_src scheme
-  ;; (text "ABC") = (and-then (char #\A) (char #\B) (char #\C))
+  ;; (text "ABC") -> (and-then (char #\A) (char #\B) (char #\C))
   (define ABC? (compile (text "ABC")))
 
   (ABC? "ABC") ;; -> #t
@@ -272,10 +276,45 @@ In this context, the universal set is all characters as provided by R6RS — par
 
 *** ~(grammar [id px] ...)~
 
-Allows the full expression of Parsing Expression Grammars. Each grammar must contain
-one or more rules, where a rule consists of an identifier and its associated parsing expression.
-Each rule can contain both references to itself and other rules within the grammar,
-allowing the construction of recursive patterns.
+The ~grammar~ form allows the full expression of Parsing Expression Grammars. Each grammar
+must contain one or more rules, where a rule consists of an identifier and its associated
+parsing expression. Each rule can contain both references to itself and other rules within
+the grammar, allowing the construction of recursive patterns. The ~grammar~ form will throw
+an error on potentially left-recursive patterns.
+
+#+begin_src scheme
+  ;; Non-Recursive Pattern
+  (define ABC
+    (grammar
+      [A (and-then (char #\A) (rule B))]
+      [B (and-then (char #\B) (rule C))]
+      [C (char #\C)]))
+
+  (define ABC? (compile ABC)) ;; - equivalent -> (define ABC? (compile (text "ABC")))
+
+  (ABC? "ABC") ;; -> #t
+  (ABC? "BAC") ;; -> #f
+
+  ;; Recursive Pattern
+  (define nested
+    (grammar
+      [X (and-then (char #\()
+                   (or-else (rule X) empty)
+                   (char #\)))]))
+
+  (define nested? (compile nested))
+
+  (nested? "(((())))") ;; -> #t
+  (nested? "(()")      ;; -> #f
+
+  ;; Direct Left Recursion (throws error)
+  (grammar [R (rule R)])
+
+  ;; Indirect Left Recursion (throws error)
+  (grammar [R1 (and-then (rule R2) (char #\X))]
+           [R2 (and-then (rule R3) (char #\Y))]
+           [R3 (and-then (rule R1) (char #\Z))])
+#+end_src
 
 *** ~(rule id)~
 
@@ -289,16 +328,48 @@ Pushes a list of characters matched by the subexpression onto a stack. This stac
 later be returned to the caller. An optional function is applied to the capture before
 it is pushed onto the stack.
 
+#+begin_src scheme
+  (define capture-string
+    (lambda (px)
+      (capture (lambda (x) (list->string x))
+               px)))
+
+  ;; Capture
+  (define ABC (compile (capture (text "ABC"))))
+  (ABC "ABCDEFG") ;; -> '(#\A #\B #\C)
+
+  ;; Capture with Function
+  (define ABC (compile (capture-string (text "ABC"))))
+  (ABC "ABCDEFG") ;; -> "ABC"
+#+end_src
+
 *** ~(transform function px)~
 
 Captures operate by pushing their values onto a stack implemented as a cons list.
 Capturing expression ~A~ and then ~B~ places the stack in state ~(list B A)~.
-Through the provided function, ~transform~ provides direct access to the stack state
+For the given function, ~transform~ provides direct access to the stack state
 as computed by its subexpression ~px~.
 
 The provided function can transform said state arbitrarily, although transformations
 compose best by maintaining a stack discipline. In other words,
 ~(function stack)~ -> ~stack~, where ~stack~ = ~(list x y ...)~.
+
+#+begin_src scheme
+  (define digits (repeat+1 (one-of "0123456789")))
+
+  (define stack->number
+    (lambda (stack)
+      (let ([offset (char->integer #\0)]
+            [radix  10])
+        (fold-left (lambda (accum digit)
+                     (+ (* radix accum) (- (char->integer digit) offset)))
+                   0
+                   stack))))
+
+  (define string->number (compile (transform stack->number digits)))
+
+  (string->number "123") ;; -> 123
+#+end_src
 
 *** ~(compile px)~
 
