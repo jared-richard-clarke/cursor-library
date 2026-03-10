@@ -83,7 +83,7 @@
                  (lambda (text)
                    (unless (string? text)
                      (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
-                   (run-vm (string->vector text) program))))))
+                   (run-vm text program))))))
 
          ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
          ;;   where code = symbol | char | number | function | charset
