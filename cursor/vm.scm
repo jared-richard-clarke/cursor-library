@@ -17,7 +17,7 @@
 
          (define run-vm
            (lambda (text program)
-             (let ([size (vector-length text)])
+             (let ([size (string-length text)])
                (letrec ([state
                          (lambda (ip sp stack captures)
                            (let ([code (vector-ref program ip)])
@@ -29,7 +29,7 @@
                               ;; (ip, sp, stack, captures) -> (fail, sp, stack, captures)
                               [(char? code)
                                (if (and (< sp size)
-                                        (char=? code (vector-ref text sp)))
+                                        (char=? code (string-ref text sp)))
                                    (state (+ ip 1)
                                           (+ sp 1)
                                           stack
@@ -243,9 +243,9 @@
                          (lambda (function start stop accumulator)
                            (let loop ([index      stop]
                                       [characters '()])
-                             (cond [(>= index start)
+                             (cond [(< start index)
                                     (loop (- index 1)
-                                          (cons (vector-ref text index) characters))]
+                                          (cons (string-ref text index) characters))]
                                    [else
                                     (if (null? function)
                                         (cons characters accumulator)
