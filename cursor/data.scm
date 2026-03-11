@@ -148,11 +148,26 @@
          ;; Identifies errors that occur in PEG expressions and parsing functions.
          (define-condition-type &peg &condition make-peg-error peg-error?)
 
+         ;; (peg-error who message irritants)        -> raise exception
+         ;; (peg-error who message irritants errors) -> raise exception
+         ;;   where who       = string
+         ;;         message   = string
+         ;;         irritants = (list any)
+         ;;         errors    = condition
+         ;; A convenience function for creating, combining, and raising &peg
+         ;; condition objects.
          (define peg-error
-           (lambda (who message irritants)
+           (case-lambda
+            [(who message irritants)
              (raise (condition (make-peg-error)
                                (make-who-condition who)
                                (make-message-condition message)
-                               (make-irritants-condition irritants)))))
+                               (make-irritants-condition irritants)))]
+            [(who message irritants errors)
+             (raise (condition (make-peg-error)
+                               (make-who-condition who)
+                               (make-message-condition message)
+                               (make-irritants-condition irritants)
+                               errors))]))
 
 )
