@@ -8,8 +8,7 @@
                  zip
                  vector-fold
                  vector-for-all
-                 string-buffer
-                 string->vector)
+                 string-buffer)
          (import (rnrs))
 
          ;; (thunk x y ...) -> (lambda () x y ...)
@@ -204,15 +203,5 @@
          ;;
          ;; ->  "abcdef"
          (define string-buffer open-string-output-port)
-
-         ;; (string->vector xs) -> (vector char ...)
-         ;;   where xs = string
-         ;;
-         ;; Transforms a string into a vector of unicode-encoded characters.
-         ;;
-         ;; (string->vector "abc") -> '#(#\a #\b #\c)
-         (define string->vector
-           (lambda (xs)
-             (list->vector (string->list xs))))
 
 )
