@@ -243,7 +243,7 @@
                          (lambda (function start stop accumulator)
                            (let loop ([index      stop]
                                       [characters '()])
-                             (cond [(< start index)
+                             (cond [(>= index start)
                                     (loop (- index 1)
                                           (cons (string-ref text index) characters))]
                                    [else
