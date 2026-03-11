@@ -134,7 +134,7 @@
                               [(eq? code ONE-OF)
                                (let ([set (vector-ref program (+ ip 1))])
                                  (if (and (< sp size)
-                                          (charset-has? set (vector-ref text sp)))
+                                          (charset-has? set (string-ref text sp)))
                                      (state (+ ip 2)
                                             (+ sp 1)
                                             stack
@@ -148,7 +148,7 @@
                               [(eq? code NONE-OF)
                                (let ([set (vector-ref program (+ ip 1))])
                                  (if (and (< sp size)
-                                          (not (charset-has? set (vector-ref text sp))))
+                                          (not (charset-has? set (string-ref text sp))))
                                      (state (+ ip 2)
                                             (+ sp 1)
                                             stack
