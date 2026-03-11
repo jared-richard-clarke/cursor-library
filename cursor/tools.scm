@@ -8,7 +8,8 @@
                  zip
                  vector-fold
                  vector-for-all
-                 string-buffer)
+                 string-buffer
+                 datum->string)
          (import (rnrs))
 
          ;; (thunk x y ...) -> (lambda () x y ...)
@@ -203,5 +204,13 @@
          ;;
          ;; ->  "abcdef"
          (define string-buffer open-string-output-port)
+
+         ;; (datum->string datum) -> string
+         ;;
+         ;; Returns a string containing the printed representation of the given Scheme datum.
+         (define datum->string
+           (lambda (x)
+             (call-with-string-output-port
+              (lambda (port) (put-datum port x)))))
 
 )
