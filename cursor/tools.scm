@@ -8,6 +8,7 @@
                  zip
                  vector-fold
                  vector-for-all
+                 make-equal-hashtable
                  string-buffer
                  datum->string)
          (import (rnrs))
@@ -188,6 +189,18 @@
                        [(fn (vector-ref xs index))
                         (loop (+ index 1))]
                        [else #f])))))
+
+         ;; (make-equal-hashtable)      -> hashtable
+         ;; (make-equal-hashtable size) -> hashtable
+         ;;   where hashtable: hash      = hash-equal
+         ;;         hashtable: predicate = equal?
+         ;;         size                 = non-negative, exact integer
+         (define make-equal-hashtable
+           (case-lambda
+            [()
+             (make-hashtable hash-equal equal?)]
+            [(size)
+             (make-hashtable hash-equal equal? size)]))
 
          ;; (string-buffer) -> (values buffer fn)
          ;;                      where buffer = textual output port
