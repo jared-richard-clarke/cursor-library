@@ -112,7 +112,7 @@ The author strongly recommends using *(text "x")* over *(char #\x)*.
 *(text "x")* abstracts over code point complexities made explicit by *(char #\x)*.
 
 *Scheme characters are not user-perceived characters*. Although distinct from Scheme's
-numerical types, each Scheme character datum maps to a Unicode code point — a unique
+numeric types, each Scheme character datum maps to a Unicode code point — a unique
 integer ranging from 0 through 1,114,111. *Code points map inconsistently to graphemes*
 — what a person might perceive to be a character.
 
