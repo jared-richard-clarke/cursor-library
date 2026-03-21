@@ -3,20 +3,6 @@
 A pattern-matching and parsing library based on *Parsing Expression Grammars* by Bryan Ford
 and the *LPeg* parsing machine by Roberto Ierusalimschy and Sérgio Medeiros.
 
-Some important definitions to keep in mind:
-
-- character :: The smallest component of a written language that has semantic value.
-  Distinct from code points and glyphs.
-
-- code point :: A unique numerical value assigned by Unicode to every symbol in
-  its standard. An integer ranging from *U+0000* through *U+10FFFF* (0-1,114,111).
-
-- glyph :: The visual representation of a character, separate from its semantic value.
-
-- grapheme cluster :: A sequence of codepoints that represent a grapheme — a minimally
-  distinctive unit of text in the context of a particular writing system. What a person
-  might perceive as a character.
-
 ** Sources
 
 - B. Ford, "Parsing expression grammars," /ACM SIGPLAN Notices/, vol. 39, no. 1,
