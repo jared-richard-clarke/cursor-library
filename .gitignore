@@ -5,3 +5,6 @@
 *.scm~
 *.scm#*
 .#*.scm
+
+# Ignore Desktop Services Store files for Mac OS.
+.DS_Store
