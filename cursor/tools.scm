@@ -198,9 +198,9 @@
          (define make-equal-hashtable
            (case-lambda
             [()
-             (make-hashtable hash-equal equal?)]
+             (make-hashtable equal-hash equal?)]
             [(size)
-             (make-hashtable hash-equal equal? size)]))
+             (make-hashtable equal-hash equal? size)]))
 
          ;; (string-buffer) -> (values buffer fn)
          ;;                      where buffer = textual output port
