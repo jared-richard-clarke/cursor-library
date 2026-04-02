@@ -124,9 +124,9 @@
           ;; must be a symbol that identifies a rule defined within the grammar.
           rule
           ;; === (capture px) or (capture fn px) ===
-          ;; where fn = (list char ...) -> any
+          ;; where fn = string -> any
           ;;
-          ;; Pushes a list of characters matched by the subexpression onto a stack.
+          ;; Pushes a string matched by the sub-expression onto a stack.
           ;; This stack will later be returned to the caller. An optional function
           ;; is applied to the capture before it is pushed onto the stack.
           capture
@@ -155,9 +155,9 @@
           ;;
           ;; 2. Boolean false for non-match.
           ;;
-          ;; 3. A list of captured character matches.
+          ;; 3. A list of substrings.
           ;;
-          ;; 4. Arbitrary values that have been captured as character matches and then
+          ;; 4. Arbitrary values that have been captured as substrings and then
           ;;    transformed by associated functions.
           compile)
   (import (cursor core)
