@@ -15,7 +15,7 @@
          (define capture-number
            (lambda (px)
              (capture (lambda (x)
-                        (string->number (list->string x)))
+                        (string->number x 10))
                       px)))
 
          (define binary

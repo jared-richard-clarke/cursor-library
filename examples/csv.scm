@@ -55,12 +55,6 @@
            (lambda (px sep)
              (and-then px (repeat (and-then sep px)))))
 
-         (define capture-text
-           (lambda (px)
-             (capture (lambda (x)
-                        (list->string x))
-                      px)))
-
          (define csv-grammar
            (fullstop
             (grammar [File   (capture-rows
@@ -74,9 +68,9 @@
                                         (maybe (char #\return))
                                         (char #\newline)))]
                      
-                     [Field  (or-else (capture-text (repeat+1 (none-of "\",\n\r")))
+                     [Field  (or-else (capture (repeat+1 (none-of "\",\n\r")))
                                       (and-then (char #\")
-                                                (capture-text (repeat (none-of "\"")))
+                                                (capture (repeat (none-of "\"")))
                                                 (char #\"))
                                       empty)])))
 

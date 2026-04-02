@@ -53,15 +53,10 @@
            (lambda (px y)
              (capture (lambda (x) y) px)))
 
-         (define capture-text
-           (lambda (px)
-             (capture (lambda (x) (list->string x))
-                      px)))
-
          (define capture-number
            (lambda (px)
              (capture (lambda (x)
-                        (string->number (list->string x)))
+                        (string->number x 10))
                       px)))
 
          (define control-characters "\"/\b\f\n\r\t\\")
@@ -139,7 +134,7 @@
                      [Elements   (capture-list (rule Element))]
 
                      [String     (and-then (char #\")
-                                           (capture-text (rule Characters))
+                                           (capture (rule Characters))
                                            (char #\"))]
 
                      [Characters (repeat (rule Character))]

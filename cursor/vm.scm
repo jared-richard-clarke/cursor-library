@@ -6,7 +6,7 @@
                  (cursor collections charset))
 
          (define ERROR-VM        "unrecognized instruction")
-         (define ERROR-CAPTURE   "provided function must operate over (list char ...)")
+         (define ERROR-CAPTURE   "provided function must operate over string")
          (define ERROR-TRANSFORM "provided function pushes stack into invalid state")
 
          (define-record-type entry
@@ -163,12 +163,12 @@
                                         stack
                                         (cons (make-capture CAPTURE-START operation sp) captures)))]
                               ;; [CAPTURE-STOP]
-                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, (CAPTURE-STOP, (- sp 1)):captures)
+                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, (CAPTURE-STOP, sp):captures)
                               [(eq? code CAPTURE-STOP)
                                (state (+ ip 1)
                                       sp
                                       stack
-                                      (cons (make-capture CAPTURE-STOP '() (- sp 1)) captures))]
+                                      (cons (make-capture CAPTURE-STOP '() sp) captures))]
                               ;; [TRANSFORM operation]
                               ;; (ip, sp, stack, captures) -> (ip+2, sp, stack, (TRANSFORM, operation):captures)
                               [(eq? code TRANSFORM)
@@ -244,23 +244,18 @@
                                                   accumulator)]))]))]
                         [collect
                          (lambda (function start stop accumulator)
-                           (let loop ([index      stop]
-                                      [characters '()])
-                             (cond [(>= index start)
-                                    (loop (- index 1)
-                                          (cons (string-ref text index) characters))]
-                                   [else
-                                    (if (null? function)
-                                        (cons characters accumulator)
-                                        (cons (guard (x [(peg-error? x)
-                                                         (raise x)]
-                                                        [else
-                                                         (peg-error (string-append "capture: " (datum->string function))
-                                                                    ERROR-CAPTURE
-                                                                    (list characters)
-                                                                    x)])
-                                                     (function characters))
-                                              accumulator))])))])
+                           (let [(captured-text (substring text start stop))]
+                             (if (null? function)
+                                 (cons captured-text accumulator)
+                                 (cons (guard (x [(peg-error? x)
+                                                  (raise x)]
+                                                 [else
+                                                  (peg-error (string-append "capture: " (datum->string function))
+                                                             ERROR-CAPTURE
+                                                             (list captured-text)
+                                                             x)])
+                                              (function captured-text))
+                                       accumulator))))])
                  ;; === collect-captures: start state ===
                  (state captures '() '())))))
 
