@@ -36,14 +36,14 @@
 
          ;; === Helper Functions ===
 
-         ;; (check-ast ast) -> ast | raise peg-error
+         ;; (check-ast ast) -> ast | raise error
          ;; Returns the given argument if it is an AST. Otherwise,
          ;; throws an error.
          (define check-ast
            (lambda (x)
              (if (ast? x)
                  x
-                 (peg-error "(check-ast _)" ERROR-TYPE-CODE (list x)))))
+                 (peg-error "check-ast" ERROR-TYPE-CODE (list x)))))
 
          ;; (flatten-ast symbol (list ast)) -> (list ast)
          ;; Flattens a nested list of ASTs of the given type by one level.
@@ -100,7 +100,7 @@
                       (recur node-y grammar)]
                      [else #f]))))))
 
-         ;; (check-grammar (vector ast)) -> (vector ast) | raise peg-error
+         ;; (check-grammar (vector ast)) -> (vector ast) | raise error
          ;; Checks if a list of grammar rules is potentially left-recursive
          ;; by running a simulation on that list. This is an approximation.
          ;;
@@ -195,7 +195,7 @@
                  ;; Loop over and check each rule in grammar. Raise error if error flag is set to true.
                  (let loop ([index 0])
                    (cond [error-flag
-                          (peg-error "(grammar _)" ERROR-LEFT-RECURSION (list (find-rule)))]
+                          (peg-error "grammar" ERROR-LEFT-RECURSION (list (find-rule)))]
                          [(< index size)
                           (check-rule index)
                           (loop (+ index 1))]
@@ -222,7 +222,7 @@
            (lambda (x)
              (if (char? x)
                  (encode-ast CHARACTER x)
-                 (peg-error "(char _)" ERROR-TYPE-CHARACTER (list x)))))
+                 (peg-error "char" ERROR-TYPE-CHARACTER (list x)))))
 
          ;; === Concatenation ===
 
@@ -270,7 +270,7 @@
              (let ([pattern (check-ast px)])
                (if (not (nullable? pattern))
                    (encode-ast REPEAT pattern)
-                   (peg-error "(repeat _)" ERROR-NULLABLE '())))))
+                   (peg-error "repeat" ERROR-NULLABLE '())))))
 
          ;; (repeat+1 px) = px+
          ;;               = px • px*
@@ -306,7 +306,7 @@
                         fail
                         (encode-ast ONE-OF (make-charset xs)))]
                    [else
-                    (peg-error "(one-of _)" ERROR-TYPE-STRING (list xs))])))
+                    (peg-error "one-of" ERROR-TYPE-STRING (list xs))])))
 
          ;; (none-of "abc") = [^abc]
          ;; (none-of "")    = U
@@ -325,7 +325,7 @@
                         any
                         (encode-ast NONE-OF (make-charset xs)))]
                    [else
-                    (peg-error "(none-of _)" ERROR-TYPE-STRING (list xs))])))
+                    (peg-error "none-of" ERROR-TYPE-STRING (list xs))])))
 
          ;; === Grammar ===
 
@@ -339,7 +339,7 @@
               (let ([id (quote x)])
                 (if (symbol? id)
                     (encode-ast OPEN-CALL id)
-                    (peg-error "(rule _)" ERROR-TYPE-SYMBOL (list id))))]))
+                    (peg-error "rule" ERROR-TYPE-SYMBOL (list id))))]))
 
          ;; (grammar [id pattern] ...) = id <- pattern
          ;;                              ...
@@ -381,7 +381,7 @@
                                                          (let ([offset (assq (ast-node-x node) offsets)])
                                                            (if offset
                                                                (encode-ast CALL (car offset) (cdr offset))
-                                                               (peg-error "(grammar _)" ERROR-UNDEFINED-RULE (list (ast-node-x node)))))]
+                                                               (peg-error "grammar" ERROR-UNDEFINED-RULE (list (ast-node-x node)))))]
                                                         ;; wildcard
                                                         [else node])))))
                                     open-rules)])
@@ -409,7 +409,7 @@
            (lambda (fn px)
              (if (procedure? fn)
                  (encode-ast TRANSFORM fn (check-ast px))
-                 (peg-error "(transform _)" ERROR-TYPE-FUNCTION (list fn)))))
+                 (peg-error "transform" ERROR-TYPE-FUNCTION (list fn)))))
 
          ;; (text "abc") = a • b • c
          ;; (text "")    = ε
@@ -424,7 +424,7 @@
                             [(= size 1) (car characters)]
                             [else       (encode-ast SEQUENCE characters)]))]
                    [else
-                    (peg-error "(text _)" ERROR-TYPE-STRING (list xs))])))
+                    (peg-error "text" ERROR-TYPE-STRING (list xs))])))
 
          ;; === Unit Tests ===
 
@@ -436,11 +436,11 @@
              [C (encode-ast CHARACTER #\c)]
              [identity     (lambda (x) x)]
              [error-equal? (lambda (x y)
-                             (and (peg-error? x) (peg-error? y)
+                             (and (peg-violation? x) (peg-violation? y)
                                   (equal? (list (condition-who x) (condition-message x) (condition-irritants x))
                                           (list (condition-who y) (condition-message y) (condition-irritants y)))))]
              [peg-error    (lambda (who message irritants)
-                             (condition (make-peg-error)
+                             (condition (make-peg-violation)
                                         (make-who-condition who)
                                         (make-message-condition message)
                                         (make-irritants-condition irritants)))])
@@ -453,7 +453,7 @@
             (test-assert "character error"
                          error-equal?
                          (catch (char "a"))
-                         (peg-error "(char _)" ERROR-TYPE-CHARACTER (list "a")))
+                         (peg-error "char" ERROR-TYPE-CHARACTER (list "a")))
 
             ;; === Concatenation ===
             (test-assert "text sequence abc"
@@ -464,7 +464,7 @@
             (test-assert "text sequence error"
                          error-equal?
                          (catch (text #\a))
-                         (peg-error "(text _)" ERROR-TYPE-STRING (list #\a)))
+                         (peg-error "text" ERROR-TYPE-STRING (list #\a)))
 
             (test-assert "text epsilon"
                          ast-equal?
@@ -523,7 +523,7 @@
             (test-assert "repeat nullable"
                          error-equal?
                          (catch (repeat empty))
-                         (peg-error "(repeat _)" ERROR-NULLABLE '()))
+                         (peg-error "repeat" ERROR-NULLABLE '()))
 
             ;; === Not Predicate ===
             (test-assert "predicate !a"
@@ -551,7 +551,7 @@
             (test-assert "character set error"
                          error-equal?
                          (catch (one-of (list #\a #\b #\c)))
-                         (peg-error "(one-of _)" ERROR-TYPE-STRING (list (list #\a #\b #\c))))
+                         (peg-error "one-of" ERROR-TYPE-STRING (list (list #\a #\b #\c))))
 
             (test-assert "empty set"
                          ast-equal?
@@ -601,20 +601,20 @@
                          error-equal?
                          (catch (grammar [A (and-then (char #\a) (rule C))]
                                          [B (char #\b)]))
-                         (peg-error "(grammar _)" ERROR-UNDEFINED-RULE (list (quote C))))
+                         (peg-error "grammar" ERROR-UNDEFINED-RULE (list (quote C))))
 
             ;; Left Recursion: A → Bβ such that B ⇒ Aγ
             (test-assert "grammar, direct left recursion"
                          error-equal?
                          (catch (grammar [R (rule R)]))
-                         (peg-error "(grammar _)" ERROR-LEFT-RECURSION (list (quote R))))
+                         (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote R))))
 
             (test-assert "grammar, indirect left recursion"
                          error-equal?
                          (catch (grammar [A (and-then (rule B) (char #\x))]
                                          [B (and-then (rule C) (char #\y))]
                                          [C (and-then (rule A) (char #\z))]))
-                         (peg-error "(grammar _)" ERROR-LEFT-RECURSION (list (quote A))))
+                         (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote A))))
             ))
          
 )

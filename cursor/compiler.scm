@@ -52,20 +52,20 @@
          ;; === Compiler ===
 
          ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | captures
-         ;;   where captures = (list (list char ...) ...) | any
+         ;;   where captures = (list string ...) | any
          ;;
          ;; Transforms an AST into a parsing function, which runs a match
          ;; over a string and returns 1 of 4 results:
          ;;
          ;; 1. Boolean true for match.
          ;; 2. Boolean false for non-match.
-         ;; 3. List of lists of captured character matches.
-         ;; 4. Arbitrary values that have been captured as lists of
-         ;;    characters and then transformed by associated functions.
+         ;; 3. List of substring matches.
+         ;; 4. Arbitrary values that have been captured as substrings
+         ;;    and then transformed by associated functions.
          (define compile
            (lambda (x)
              (unless (ast? x)
-               (peg-error "(compile _)" ERROR-TYPE-AST (list x)))
+               (peg-error "compile" ERROR-TYPE-AST (list x)))
              (let* ([code      (compile-ast x)]
                     [code-list (if (pair? code) code (list code))]
                     [size      (length code-list)]
@@ -85,7 +85,7 @@
                      (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
                    (run-vm text program))))))
 
-         ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise peg-error
+         ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise error
          ;;   where code = symbol | char | number | function | charset
          ;;
          ;; According to type, delegates the recursive, depth-first transformation
@@ -107,7 +107,7 @@
                  [(CALL)           (compile-call x)]
                  [(GRAMMAR)        (compile-grammar x)]
                  [else
-                  (peg-error "(compile-ast _)" ERROR-UNKNOWN-AST (list type))]))))
+                  (peg-error "compile-ast" ERROR-UNKNOWN-AST (list type))]))))
 
          ;; (compile-symbol (ast type)) -> symbol
          (define compile-symbol

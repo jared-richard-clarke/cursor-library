@@ -26,16 +26,20 @@
                  ONE-OF
                  NONE-OF
                  MATCH
-          ;; record-type: ast        
+          ;; record-type: ast
                  encode-ast ;; constructor
                  ast?       ;; predicate
                  ast-type   ;; field
                  ast-node-x ;; field
                  ast-node-y ;; field
                  ast-equal?
-          ;; record-type: &peg -> &condition
-                 make-peg-error ;; constructor
-                 peg-error?     ;; predicate
+          ;; record-type: &peg -> &violation -> &condition
+                 make-peg-violation ;; constructor
+                 peg-violation?     ;; predicate
+          ;; record-type: &context -> &condition
+                 make-context  ;; constructor
+                 context?      ;; predicate
+                 context-items ;; field
                  peg-error)
 
          (import (rnrs)
@@ -84,7 +88,7 @@
                    node-x
                    node-y)
            (sealed #t)
-           (nongenerative PEG_AST)
+           (nongenerative peg-ast)
            (protocol
             (lambda (new)
              (case-lambda
@@ -145,30 +149,37 @@
                                      (ast-equal? a-px b-px))))]
                            [else #f]))))))
 
-         ;; record-type: &peg -> &condition
-         ;; Identifies errors that occur in PEG expressions and parsing functions.
-         (define-condition-type &peg &condition make-peg-error peg-error?)
+         ;; record-type: &peg -> &violation -> &condition
+         ;; Conditions of this type indicate a violation specific to this
+         ;; Parsing Expression Grammar library.
+         (define-condition-type &peg &violation make-peg-violation peg-violation?)
+         
+         ;; record-type: &context -> &condition
+         ;; Provides context by collating the list of conditions that triggered
+         ;; the current condition.
+         (define-condition-type &context &condition make-context context?
+           (items context-items))
 
          ;; (peg-error who message irritants)        -> raise exception
          ;; (peg-error who message irritants errors) -> raise exception
          ;;   where who       = string
          ;;         message   = string
          ;;         irritants = (list any)
-         ;;         errors    = condition
-         ;; A convenience function for creating, combining, and raising &peg
-         ;; condition objects.
+         ;;         context   = (list condition)
+         ;; A convenience function for creating and raising compound conditions
+         ;; of type &peg, which is a subtype of &violation.
          (define peg-error
            (case-lambda
             [(who message irritants)
-             (raise (condition (make-peg-error)
+             (raise (condition (make-peg-violation)
                                (make-who-condition who)
                                (make-message-condition message)
                                (make-irritants-condition irritants)))]
-            [(who message irritants errors)
-             (raise (condition (make-peg-error)
+            [(who message irritants context)
+             (raise (condition (make-peg-violation)
                                (make-who-condition who)
                                (make-message-condition message)
                                (make-irritants-condition irritants)
-                               errors))]))
+                               (make-context (simple-conditions context))))]))
 
 )

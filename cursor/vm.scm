@@ -183,7 +183,7 @@
                                (if (null? captures)
                                    #t
                                    (collect-captures captures text))]
-                              ;; undefined operation -> raise peg-error
+                              ;; undefined operation -> raise error
                               [else
                                (peg-error "virtual machine" ERROR-VM (list code))])))]
                         ;; Handles logic for when the virtual machine enters a failing state.
@@ -230,13 +230,13 @@
                                            (let ([function (capture-function capture)])
                                              (state (cdr stack-1)
                                                     stack-2
-                                                    (guard (x [(peg-error? x)
-                                                               (raise x)]
+                                                    (guard (context [(peg-violation? context)
+                                                               (raise context)]
                                                               [else
                                                                (peg-error (string-append "transform: " (datum->string function))
                                                                           ERROR-TRANSFORM
                                                                           (list accumulator)
-                                                                          x)])
+                                                                          context)])
                                                            (function accumulator))))]
                                           [else
                                            (state (cdr stack-1)
@@ -247,13 +247,13 @@
                            (let [(captured-text (substring text start stop))]
                              (if (null? function)
                                  (cons captured-text accumulator)
-                                 (cons (guard (x [(peg-error? x)
-                                                  (raise x)]
+                                 (cons (guard (context [(peg-violation? context)
+                                                  (raise context)]
                                                  [else
                                                   (peg-error (string-append "capture: " (datum->string function))
                                                              ERROR-CAPTURE
                                                              (list captured-text)
-                                                             x)])
+                                                             context)])
                                               (function captured-text))
                                        accumulator))))])
                  ;; === collect-captures: start state ===
