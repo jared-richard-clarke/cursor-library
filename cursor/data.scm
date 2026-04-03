@@ -84,6 +84,7 @@
                    node-x
                    node-y)
            (sealed #t)
+           (nongenerative PEG_AST)
            (protocol
             (lambda (new)
              (case-lambda
