@@ -160,8 +160,8 @@
          (define-condition-type &context &condition make-context context?
            (items context-items))
 
-         ;; (peg-error who message irritants)        -> raise exception
-         ;; (peg-error who message irritants errors) -> raise exception
+         ;; (peg-error who message irritants)         -> raise exception
+         ;; (peg-error who message irritants context) -> raise exception
          ;;   where who       = string
          ;;         message   = string
          ;;         irritants = (list any)

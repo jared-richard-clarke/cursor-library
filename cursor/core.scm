@@ -36,7 +36,7 @@
 
          ;; === Helper Functions ===
 
-         ;; (assert-ast ast) -> ast | raise error
+         ;; (assert-ast ast) -> ast | raise exception
          ;; Asserts the given argument is an AST. Otherwise,
          ;; throws an error.
          (define assert-ast
@@ -100,7 +100,7 @@
                       (recur node-y grammar)]
                      [else #f]))))))
 
-         ;; (check-grammar (vector ast)) -> (vector ast) | raise error
+         ;; (check-grammar (vector ast)) -> (vector ast) | raise exception
          ;; Checks if a list of grammar rules is potentially left-recursive
          ;; by running a simulation on that list. This is an approximation.
          ;;
@@ -192,7 +192,7 @@
                                                           rule-x
                                                           rule-y)))
                                                   rules)))])
-                 ;; Loop over and check each rule in grammar. Raise error if error flag is set to true.
+                 ;; Loop over and check each rule in grammar. Raise exception if error flag is set to true.
                  (let loop ([index 0])
                    (cond [error-flag
                           (peg-error "grammar" ERROR-LEFT-RECURSION (list (find-rule)))]
