@@ -40,6 +40,7 @@
                  make-context  ;; constructor
                  context?      ;; predicate
                  context-items ;; field
+          ;; raise exceptions
                  peg-error)
 
          (import (rnrs)
