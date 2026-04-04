@@ -79,7 +79,7 @@
                                (vector-set! buffer index (car xs))
                                (loop (+ index 1) (cdr xs))]))])
                  ;; Returns parsing function, which runs a PEG virtual machine over a string.
-                 ;; Contains virtual machine instructions within its closure.
+                 ;; Function contains virtual machine instructions within its closure.
                  (lambda (text)
                    (unless (string? text)
                      (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
@@ -154,7 +154,7 @@
                                                    code-x
                                                    COMMIT (+ offset-y 2)
                                                    code-y))))])
-               ;; "cdr" discards the final offset, returning only the compiled code.
+               ;; "cdr" discards the accumulated offset, returning only the compiled code.
                (cdr (let recur ([nodes (ast-node-x x)])
                       (if (null? (cdr nodes))
                           (let ([code (compile-ast (car nodes))])
