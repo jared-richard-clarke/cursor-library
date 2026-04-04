@@ -36,14 +36,14 @@
 
          ;; === Helper Functions ===
 
-         ;; (check-ast ast) -> ast | raise error
-         ;; Returns the given argument if it is an AST. Otherwise,
+         ;; (assert-ast ast) -> ast | raise error
+         ;; Asserts the given argument is an AST. Otherwise,
          ;; throws an error.
-         (define check-ast
+         (define assert-ast
            (lambda (x)
              (if (ast? x)
                  x
-                 (peg-error "check-ast" ERROR-TYPE-CODE (list x)))))
+                 (peg-error "assert-ast" ERROR-TYPE-CODE (list x)))))
 
          ;; (flatten-ast symbol (list ast)) -> (list ast)
          ;; Flattens a nested list of ASTs of the given type by one level.
@@ -54,7 +54,7 @@
                       (and (ast? x)
                            (eq? type (ast-type x))))
                     (append (ast-node-x (car xs)) (flatten-ast type (cdr xs)))]
-                   [else (cons (check-ast (car xs))
+                   [else (cons (assert-ast (car xs))
                                (flatten-ast type (cdr xs)))])))
 
          ;; (nullable? ast) -> boolean
@@ -236,7 +236,7 @@
          (define and-then
            (case-lambda
              [()  empty]
-             [(x) (check-ast x)]
+             [(x) (assert-ast x)]
              [xs  (encode-ast SEQUENCE (flatten-ast SEQUENCE xs))]))
 
          ;; === Ordered Choice: Limited Backtracking ===
@@ -251,7 +251,7 @@
          (define or-else
            (case-lambda
             [()  fail]
-            [(x) (check-ast x)]
+            [(x) (assert-ast x)]
             [xs  (encode-ast CHOICE (flatten-ast CHOICE xs))]))
 
          ;; (maybe px) = px?
@@ -267,7 +267,7 @@
          ;; (repeat px) -> (ast REPEAT px)
          (define repeat
            (lambda (px)
-             (let ([pattern (check-ast px)])
+             (let ([pattern (assert-ast px)])
                (if (not (nullable? pattern))
                    (encode-ast REPEAT pattern)
                    (peg-error "repeat" ERROR-NULLABLE '())))))
@@ -285,13 +285,13 @@
          ;; (is? px) -> (ast IS px)
          (define is?
            (lambda (px)
-             (encode-ast IS (check-ast px))))
+             (encode-ast IS (assert-ast px))))
 
          ;; (is-not? px) = !px
          ;; (is-not? px) -> (ast IS-NOT px)
          (define is-not?
            (lambda (px)
-             (encode-ast IS-NOT (check-ast px))))
+             (encode-ast IS-NOT (assert-ast px))))
 
          ;; (one-of "abc") = [abc]
          ;; (one-of "")    = ∅
@@ -349,8 +349,8 @@
              [(_ [rule-x body-x]
                  [rule-y body-y]
                  ...)
-              (let ([rule-x (encode-ast RULE (quote rule-x) (check-ast body-x))]
-                    [rule-y (encode-ast RULE (quote rule-y) (check-ast body-y))]
+              (let ([rule-x (encode-ast RULE (quote rule-x) (assert-ast body-x))]
+                    [rule-y (encode-ast RULE (quote rule-y) (assert-ast body-y))]
                     ...)
                 (let* ([symbols    (quote (rule-x rule-y ...))]
                        [offsets    (zip symbols (iota (length symbols)))]
@@ -398,7 +398,7 @@
            (case-lambda
              [(px) (capture '() px)]
              [(fn px)
-              (encode-ast CAPTURE (if (procedure? fn) fn '()) (check-ast px))]))
+              (encode-ast CAPTURE (if (procedure? fn) fn '()) (assert-ast px))]))
 
          ;; (transform fn px)
          ;;   where fn = function
@@ -408,7 +408,7 @@
          (define transform
            (lambda (fn px)
              (if (procedure? fn)
-                 (encode-ast TRANSFORM fn (check-ast px))
+                 (encode-ast TRANSFORM fn (assert-ast px))
                  (peg-error "transform" ERROR-TYPE-FUNCTION (list fn)))))
 
          ;; (text "abc") = a • b • c
