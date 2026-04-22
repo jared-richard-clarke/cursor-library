@@ -1,0 +1,26 @@
+* Changelog: Cursor
+
+All notable changes to *Cursor* are documented in this file.
+
+** [2.0.0] 2026
+
+*** Added
+
+- ~CHANGELOG.org~, which contains notable changes to *Cursor*.
+
+- Directory ~unicode~, which contains lookup tables for grapheme cluster segmentation.
+
+*** Changed
+
+- ~(capture px)~ and ~(capture function px)~ operate over ~(substring string start end)~
+  instead of ~(list char ...)~.
+
+- ~(transform function px)~: Restricted ~function~ scope to captures and transformations
+  within the pattern ~px~. Captures and transformations are passed directly as arguments,
+  where before all arguments were passed through a shared accumulator with an optional stack
+  discipline.
+
+*** Deprecated
+*** Removed
+*** Fixed
+*** Security
