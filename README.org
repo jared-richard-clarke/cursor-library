@@ -335,44 +335,44 @@ a rule defined within the grammar.
 
 *** ~(capture px)~ or ~(capture function px)~
 
-Pushes string matched by the sub-expression onto a stack. This stack will later
-be returned to the caller. An optional function is applied to the capture before
-it is pushed onto the stack.
+Extracts a copy of the substring matched by pattern ~px~. An optional function
+transforms said substring.
 
 #+begin_src scheme
   ;; Capture
   (define abc (compile (capture (text "abc"))))
   (abc "abcdef") ;; -> "abc"
 
-  ;; Capture with Function
+  ;; Capture Function
   (define ABC (compile (capture string-upcase (text "abc"))))
   (ABC "abcdef") ;; -> "ABC"
+
+  ;; Capture Sequence
+  (define abc-def (compile (and-then (capture (text "abc")) (capture (text "def")))))
+  (abc-def "abcdef") ;; -> ("abc" "def")
+
+  ;; Captures Nested
+  (define ABC-abc (compile (capture string-upcase (capture (text "abc")))))
+  (ABC-abc "abcdef") ;; -> ("ABC" "abc")
 #+end_src
 
 *** ~(transform function px)~
 
-Captures operate by pushing their values onto a stack, which is implemented as a cons list.
-Capturing expression ~A~ and then ~B~ places the stack in state ~(list B A)~.
-For the given function, ~transform~ provides direct access to the stack state
-as computed by parsing expression ~px~.
-
-The provided function can transform said state arbitrarily, although transformations
-compose best by maintaining a stack discipline. In other words,
-~(function stack)~ -> ~stack~, where ~stack~ = ~(list x y ...)~.
+~transform~ applies ~function~ to captures and transformations within pattern ~px~.
 
 #+begin_src scheme
-  (define digits (repeat+1 (one-of "0123456789")))
+  (define digits (capture string->list (repeat+1 (one-of "0123456789"))))
 
-  (define stack->number
-    (lambda (stack)
+  (define convert
+    (lambda xs
       (let ([offset (char->integer #\0)]
             [radix  10])
         (fold-left (lambda (accum digit)
                      (+ (* radix accum) (- (char->integer digit) offset)))
                    0
-                   stack))))
+                   xs))))
 
-  (define string->number (compile (transform stack->number digits)))
+  (define string->number (compile (transform convert digits)))
 
   (string->number "123") ;; -> 123
 #+end_src
@@ -386,7 +386,7 @@ a string and returns one of four results:
 
 2. Boolean false for non-match.
 
-3. A list of captured substrings.
+3. A captured substring or a list of captured substrings.
 
-4. Arbitrary values that have been captured as substrings
-   and then transformed by associated functions.
+4. An arbitrary value or a list of arbitrary values that have been captured
+   as substrings and then transformed by associated functions.
