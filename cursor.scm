@@ -155,10 +155,10 @@
           ;;
           ;; 2. Boolean false for non-match.
           ;;
-          ;; 3. A list of substrings.
+          ;; 3. A captured substring or a list of captured substrings.
           ;;
-          ;; 4. Arbitrary values that have been captured as substrings and then
-          ;;    transformed by associated functions.
+          ;; 4. An arbitrary value or a list of arbitrary values that have been captured
+          ;;    as substrings and then transformed by associated functions.
           compile)
   (import (cursor core)
           (cursor compiler)))
