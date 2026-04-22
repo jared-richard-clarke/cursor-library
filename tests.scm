@@ -7,8 +7,7 @@
         (only (examples arithmetic) arithmetic:tests)
         (only (examples csv) csv:tests)
         ; (only (examples json) json:tests)
-        ; (only (examples match) match:tests)
-        )
+        (only (examples match) match:tests))
 
 (define run-tests
   (lambda xs
@@ -21,5 +20,4 @@
            arithmetic:tests
            csv:tests
            ; json:tests
-           ; match:tests
-           )
+           match:tests)
