@@ -20,6 +20,8 @@
                  CAPTURE-START
                  CAPTURE-STOP
                  TRANSFORM
+                 TRANSFORM-START
+                 TRANSFORM-STOP
                  REPEAT
                  IS
                  IS-NOT
@@ -33,10 +35,10 @@
                  ast-node-x ;; field
                  ast-node-y ;; field
                  ast-equal?
-          ;; record-type: &peg -> &violation -> &condition
+          ;; record-type: &peg < &violation < &condition
                  make-peg-violation ;; constructor
                  peg-violation?     ;; predicate
-          ;; record-type: &context -> &condition
+          ;; record-type: &context < &condition
                  make-context  ;; constructor
                  context?      ;; predicate
                  context-items ;; field
@@ -69,6 +71,8 @@
                CAPTURE-START
                CAPTURE-STOP
                TRANSFORM
+               TRANSFORM-START
+               TRANSFORM-STOP
                REPEAT
                IS
                IS-NOT
@@ -150,12 +154,12 @@
                                      (ast-equal? a-px b-px))))]
                            [else #f]))))))
 
-         ;; record-type: &peg -> &violation -> &condition
+         ;; record-type: &peg < &violation < &condition
          ;; Conditions of this type indicate a violation specific to this
          ;; Parsing Expression Grammar library.
          (define-condition-type &peg &violation make-peg-violation peg-violation?)
          
-         ;; record-type: &context -> &condition
+         ;; record-type: &context < &condition
          ;; Provides context by collating the list of conditions that triggered
          ;; the current condition.
          (define-condition-type &context &condition make-context context?

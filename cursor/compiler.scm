@@ -9,11 +9,11 @@
                  (cursor collections charset))
 
          ;; === Error Constants ===
-         
+
          (define ERROR-TYPE-AST    "not an abstract syntax tree")
          (define ERROR-TYPE-STRING "argument must be of type string")
          (define ERROR-UNKNOWN-AST "unknown AST type")
-         
+
          ;; === Helper Functions ===
          ;;
          ;; These helper functions assume pairs are lists. This assumption
@@ -59,9 +59,9 @@
          ;;
          ;; 1. Boolean true for match.
          ;; 2. Boolean false for non-match.
-         ;; 3. List of substring matches.
-         ;; 4. Arbitrary values that have been captured as substrings
-         ;;    and then transformed by associated functions.
+         ;; 3. A captured substring or a list of captured substrings.
+         ;; 4. An arbitrary value or a list of arbitrary values that have been captured
+         ;;    as substrings and then transformed by associated functions.
          (define compile
            (lambda (x)
              (unless (ast? x)
@@ -214,15 +214,17 @@
 
          ;; === Transformations ===
          ;;
-         ;; (compile-transform (ast TRANSFORM node-x node-y)) -> (list code TRANSFORM fn)
+         ;; (compile-transform (ast TRANSFORM node-x node-y)) -> (list TRANSFORM-START fn code TRANSFORM-STOP)
          (define compile-transform
            (lambda (x)
              (let ([fn   (ast-node-x x)]
                    [code (compile-ast (ast-node-y x))])
-               (fold-code code TRANSFORM fn))))
+               (fold-code TRANSFORM-START fn
+                          code
+                          TRANSFORM-STOP))))
 
          ;; === Grammars ===
-         
+
          ;; (compile-call (ast CALL node-x node-y)) -> (list OPEN-CALL symbol)
          (define compile-call
            (lambda (x)
@@ -317,7 +319,7 @@
                                             ys)]
                                   [else
                                    (equal? xs ys)]))])
-            
+
             (test-assert "character literal"
                          code-equal?
                          (compile-ast A)
