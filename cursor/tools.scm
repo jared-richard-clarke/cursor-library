@@ -3,6 +3,7 @@
                  test-assert
                  test-chunk
                  enum
+                 singleton?
                  iota
                  zip-with
                  zip
@@ -97,6 +98,20 @@
              [(_ x y ...)
               (begin (define x (quote x))
                      (define y (quote y)) ...)]))
+
+         ;; (singleton? x) -> boolean
+         ;;   where x = any
+         ;;
+         ;; Predicate function returns boolean true for a proper list of length one.
+         ;; Returns boolean false otherwise.
+         ;;
+         ;; (singleton? 7)       -> #f
+         ;; (singleton? '(7 11)) -> #f
+         ;; (singleton? '(7))    -> #t
+         (define singleton?
+           (lambda (x)
+             (and (pair? x)
+                  (null? (cdr x)))))
 
          ;; (iota count)            -> (list 0 ... (+ 0 (* (- count 1) 1)))
          ;; (iota count start)      -> (list start ... (+ start (* (- count 1) 1)))
