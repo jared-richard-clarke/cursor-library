@@ -15,36 +15,21 @@
          (define-record-type csv
            (fields header rows))
 
-         ;; Side Note: "columns" should be called "fields", but name conflicts
+         ;; Side Note: "columns" should be called "fields", but this name conflicts
          ;; with the "fields" form of "define-record-type".
          (define-record-type row
            (fields columns))
 
-         (define capture-fields
+         (define capture-row
            (lambda (px)
-             (transform (lambda (stack)
-                          (let loop ([stack stack]
-                                     [row   '()])
-                            (cond [(or (null? stack)
-                                       (row? (car stack)))
-                                   (cons (make-row row) stack)]
-                                  [else
-                                   (loop (cdr stack)
-                                         (cons (car stack) row))])))
+             (transform (lambda xs
+                          (make-row xs))
                         px)))
 
-         (define capture-rows
+         (define capture-csv
            (lambda (px)
-             (transform (lambda (stack)
-                          (let loop ([stack stack]
-                                     [rows  '()])
-                            (cond [(null? stack)
-                                   (let ([header (car rows)]
-                                         [rows   (cdr rows)])
-                                     (make-csv header rows))]
-                                  [else
-                                   (loop (cdr stack)
-                                         (cons (car stack) rows))])))
+             (transform (lambda (header . rows)
+                          (make-csv header rows))
                         px)))
 
          (define fullstop
@@ -57,17 +42,15 @@
 
          (define csv-grammar
            (fullstop
-            (grammar [File   (capture-rows
-                              (and-then (rule Header)
-                                        (repeat+1 (rule Row))))]
-                     
+            (grammar [File   (capture-csv (and-then (capture-row (rule Header))
+                                                    (repeat+1 (capture-row (rule Row)))))]
+
                      [Header (rule Row)]
-                     
-                     [Row    (capture-fields
-                              (and-then (separate-by (rule Field) (char #\,))
-                                        (maybe (char #\return))
-                                        (char #\newline)))]
-                     
+
+                     [Row    (and-then (separate-by (rule Field) (char #\,))
+                                       (maybe (char #\return))
+                                       (char #\newline))]
+
                      [Field  (or-else (capture (repeat+1 (none-of "\",\n\r")))
                                       (and-then (char #\")
                                                 (capture (repeat (none-of "\"")))
@@ -78,9 +61,9 @@
 
          (define tests
            (test-chunk
-            
+
             "CSV"
-            
+
             ([sample-books
               (call-with-input-file "examples/samples/csv/books.csv"
                 (lambda (port) (get-string-all port)))]
@@ -88,19 +71,19 @@
              [sample-customers
               (call-with-input-file "examples/samples/csv/customers.csv"
                 (lambda (port) (get-string-all port)))]
-             
+
              [row-equal?
               (lambda (x y)
                 (and (row? x) (row? y)
                      (equal? (row-columns x)
                              (row-columns y))))]
-             
+
              [rows-equal?
               (lambda (xs ys)
                 (and (list? xs) (list? ys)
                      (= (length xs) (length ys))
                      (for-all row-equal? xs ys)))]
-             
+
              [csv-equal?
               (lambda (x y)
                 (and (csv? x) (csv? y)

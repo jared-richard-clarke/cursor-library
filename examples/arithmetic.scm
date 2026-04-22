@@ -18,20 +18,26 @@
                         (string->number x 10))
                       px)))
 
+         (define fold-equation
+           (lambda xs
+             (let loop ([x  (car xs)]
+                        [ys (cdr xs)])
+               (cond [(null? ys)
+                      x]
+                     [else
+                      (let ([op (car ys)]
+                            [y  (cadr ys)])
+                        (loop (op x y)
+                              (cddr ys)))]))))
+
          (define binary
            (lambda (px op py)
-             (and-then px
-                       (repeat
-                        (transform (lambda (stack)
-                                     (let ([y  (car stack)]
-                                           [fn (cadr stack)]
-                                           [x  (caddr stack)])
-                                       (cons (fn x y) (cdddr stack))))
-                                   (and-then op py))))))
+             (transform fold-equation
+                        (and-then px (repeat (and-then op py))))))
 
          (define digit  (one-of "0123456789"))
          (define digits (repeat+1 digit))
-         
+
          (define sign        (maybe (or-else (char #\-) (char #\+))))
          (define whole       (or-else (char #\0) digits))
          (define integer     (and-then sign whole))
@@ -50,19 +56,18 @@
 
          (define add-sub (or-else add subtract))
          (define mul-div (or-else multiply divide))
-         
+
          (define arithmetic-grammar
-           (transform (lambda (stack) (car stack))
-                      (grammar [Expression (binary (rule Term) add-sub (rule Term))]
-                               [Term       (binary (rule Factor) mul-div (rule Factor))]
-                               [Factor     (binary (rule Primary) power (rule Factor))]
-                               [Primary    (and-then whitespace
-                                                     (or-else (and-then (char #\()
-                                                                        (rule Expression)
-                                                                        (char #\)))
-                                                              (rule Number))
-                                                     whitespace)]
-                               [Number (capture-number real-number)])))
+           (grammar [Expression (binary (rule Term) add-sub (rule Term))]
+                    [Term       (binary (rule Factor) mul-div (rule Factor))]
+                    [Factor     (binary (rule Primary) power (rule Factor))]
+                    [Primary    (and-then whitespace
+                                          (or-else (and-then (char #\()
+                                                             (rule Expression)
+                                                             (char #\)))
+                                                   (rule Number))
+                                          whitespace)]
+                    [Number (capture-number real-number)]))
 
          (define parse-expression (compile arithmetic-grammar))
 

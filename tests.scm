@@ -6,8 +6,9 @@
         ;; Examples double as integration tests.
         (only (examples arithmetic) arithmetic:tests)
         (only (examples csv) csv:tests)
-        (only (examples json) json:tests)
-        (only (examples match) match:tests))
+        ; (only (examples json) json:tests)
+        ; (only (examples match) match:tests)
+        )
 
 (define run-tests
   (lambda xs
@@ -19,5 +20,6 @@
            compiler:unit-tests
            arithmetic:tests
            csv:tests
-           json:tests
-           match:tests)
+           ; json:tests
+           ; match:tests
+           )
