@@ -5,15 +5,30 @@
                  (cursor tools)
                  (cursor collections charset))
 
-         (define ERROR-VM        "unrecognized instruction")
-         (define ERROR-CAPTURE   "provided function must operate over string")
-         (define ERROR-TRANSFORM "provided function pushes stack into invalid state")
+         (define ERROR-VM         "unrecognized instruction in virtual machine")
+         (define ERROR-VM-COLLECT "unrecognized instruction in virtual machine's collect captures phase")
+         (define ERROR-CAPTURE    "provided function must operate over string")
+         (define ERROR-TRANSFORM  "provided function pushes transformation into invalid state")
 
          (define-record-type entry
-           (fields ip (mutable sp) (mutable captures)))
+           (fields ip
+                   (mutable sp)
+                   (mutable captures)))
 
          (define-record-type capture
-           (fields type function offset))
+           (fields type
+                   function
+                   offset))
+
+         (define-record-type call-frame
+           (fields (mutable arguments)
+                   stack))
+
+         (define CALL-STACK-BASE (make-call-frame '() '()))
+
+         (define call-stack-empty?
+           (lambda (call-frame)
+             (eq? call-frame CALL-STACK-BASE)))
 
          (define run-vm
            (lambda (text program)
@@ -169,16 +184,23 @@
                                       sp
                                       stack
                                       (cons (make-capture CAPTURE-STOP '() sp) captures))]
-                              ;; [TRANSFORM operation]
-                              ;; (ip, sp, stack, captures) -> (ip+2, sp, stack, (TRANSFORM, operation):captures)
-                              [(eq? code TRANSFORM)
+                              ;; [TRANSFORM-START operation]
+                              ;; (ip, sp, stack, captures) -> (ip+2, sp, stack, (TRANSFORM-START, operation):captures)
+                              [(eq? code TRANSFORM-START)
                                (let ([operation (vector-ref program (+ ip 1))])
                                  (state (+ ip 2)
                                         sp
                                         stack
-                                        (cons (make-capture TRANSFORM operation 0) captures)))]
+                                        (cons (make-capture TRANSFORM-START operation 0) captures)))]
+                              ;; [TRANSFORM-STOP]
+                              ;; (ip, sp, stack, captures) -> (ip+1, sp, stack, TRANSFORM-STOP:captures)
+                              [(eq? code TRANSFORM-STOP)
+                               (state (+ ip 1)
+                                      sp
+                                      stack
+                                      (cons (make-capture TRANSFORM-STOP '() 0) captures))]
                               ;; [MATCH]
-                              ;; (ip, sp, stack, captures) -> boolean | any
+                              ;; (ip, sp, stack, captures) -> boolean | any | (list any)
                               [(eq? code MATCH)
                                (if (null? captures)
                                    #t
@@ -206,57 +228,100 @@
                                           (cdr stack)
                                           (entry-captures entry))))]))])
                  ;; === run-vm: start state ===
+                 ;;
+                 ;; (state ip sp stack captures)
                  (state 0 0 '() '())))))
 
          (define collect-captures
            (lambda (captures text)
-             (let ([captures (reverse captures)])
-               (letrec ([state
-                         (lambda (stack-1 stack-2 accumulator)
-                           (cond [(null? stack-1)
-                                  accumulator]
-                                 [else
-                                  (let ([capture (car stack-1)])
-                                    (cond [(eq? (capture-type capture) CAPTURE-STOP)
-                                           (let ([head (car stack-2)]
-                                                 [tail capture])
-                                             (let ([function (capture-function head)]
-                                                   [start    (capture-offset head)]
-                                                   [stop     (capture-offset tail)])
-                                               (state (cdr stack-1)
-                                                      (cdr stack-2)
-                                                      (collect function start stop accumulator))))]
-                                          [(eq? (capture-type capture) TRANSFORM)
-                                           (let ([function (capture-function capture)])
-                                             (state (cdr stack-1)
-                                                    stack-2
-                                                    (guard (context [(peg-violation? context)
-                                                               (raise context)]
-                                                              [else
-                                                               (peg-error (string-append "transform: " (datum->string function))
-                                                                          ERROR-TRANSFORM
-                                                                          (list accumulator)
-                                                                          context)])
-                                                           (function accumulator))))]
-                                          [else
-                                           (state (cdr stack-1)
-                                                  (cons (car stack-1) stack-2)
-                                                  accumulator)]))]))]
-                        [collect
-                         (lambda (function start stop accumulator)
-                           (let [(captured-text (substring text start stop))]
-                             (if (null? function)
-                                 (cons captured-text accumulator)
-                                 (cons (guard (context [(peg-violation? context)
-                                                  (raise context)]
-                                                 [else
-                                                  (peg-error (string-append "capture: " (datum->string function))
-                                                             ERROR-CAPTURE
-                                                             (list captured-text)
-                                                             context)])
-                                              (function captured-text))
-                                       accumulator))))])
-                 ;; === collect-captures: start state ===
-                 (state captures '() '())))))
+             (letrec ([state
+                       (lambda (stack-x stack-y call-stack accumulator)
+                         (cond [(null? stack-x)
+                                (if (singleton? accumulator)
+                                    (car accumulator)
+                                    accumulator)]
+                               [else
+                                (let ([capture (car stack-x)]
+                                      [type    (capture-type (car stack-x))])
+                                  (cond [(eq? type CAPTURE-STOP)
+                                         (state (cdr stack-x)
+                                                (cons capture stack-y)
+                                                call-stack
+                                                accumulator)]
+                                        [(eq? type CAPTURE-START)
+                                         (let ([head capture]
+                                               [tail (car stack-y)])
+                                           (let ([function (capture-function head)]
+                                                 [start    (capture-offset   head)]
+                                                 [stop     (capture-offset   tail)])
+                                             (let ([result (apply-capture function text start stop)])
+                                               (cond [(call-stack-empty? call-stack)
+                                                      (state (cdr stack-x)
+                                                             (cdr stack-y)
+                                                             call-stack
+                                                             (cons result accumulator))]
+                                                     [else
+                                                      (let ([arguments (call-frame-arguments call-stack)])
+                                                        (call-frame-arguments-set! call-stack (cons result arguments))
+                                                        (state (cdr stack-x)
+                                                               (cdr stack-y)
+                                                               call-stack
+                                                               accumulator))]))))]
+                                        [(eq? type TRANSFORM-STOP)
+                                         (state (cdr stack-x)
+                                                stack-y
+                                                (make-call-frame '() call-stack)
+                                                accumulator)]
+                                        [(eq? type TRANSFORM-START)
+                                         (let ([function  (capture-function     capture)]
+                                               [arguments (call-frame-arguments call-stack)]
+                                               [previous  (call-frame-stack     call-stack)])
+                                           (let ([result (apply-transform function arguments)])
+                                             (cond [(call-stack-empty? previous)
+                                                    (state (cdr stack-x)
+                                                           stack-y
+                                                           previous
+                                                           (append result accumulator))]
+                                                   [else
+                                                    (let ([arguments (call-frame-arguments previous)])
+                                                      (call-frame-arguments-set! previous (append result arguments))
+                                                      (state (cdr stack-x)
+                                                             stack-y
+                                                             previous
+                                                             accumulator))])))]
+                                        [else
+                                         (peg-error "virtual machine"
+                                                    ERROR-VM-COLLECT
+                                                    (list type))]))]))]
+                      [apply-capture
+                       (lambda (function text start stop)
+                         (let ([segment (substring text start stop)])
+                           (if (null? function)
+                               segment
+                               (guard (context [(peg-violation? context)
+                                                (raise context)]
+                                               [else
+                                                (peg-error (string-append "capture: " (datum->string function))
+                                                           ERROR-CAPTURE
+                                                           (list segment)
+                                                           context)])
+                                      (function segment)))))]
+                      [apply-transform
+                       (lambda (function arguments)
+                         (call-with-values
+                             (lambda ()
+                               (guard (context [(peg-violation? context)
+                                                (raise context)]
+                                               [else
+                                                (peg-error (string-append "transform: " (datum->string function))
+                                                           ERROR-TRANSFORM
+                                                           arguments
+                                                           context)])
+                                      (apply function arguments)))
+                           list))])
+               ;; === collect-captures: start state ===
+               ;;
+               ;; (state stack-x stack-y call-stack accumulator)
+               (state captures '() CALL-STACK-BASE '()))))
 
-         )
+)
