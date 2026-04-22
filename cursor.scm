@@ -126,21 +126,13 @@
           ;; === (capture px) or (capture fn px) ===
           ;; where fn = string -> any
           ;;
-          ;; Pushes a string matched by the sub-expression onto a stack.
-          ;; This stack will later be returned to the caller. An optional function
-          ;; is applied to the capture before it is pushed onto the stack.
+          ;; Extracts a copy of the substring matched by pattern px. An optional
+          ;; function transforms said substring.
           capture
           ;; === (transform fn px) ===
-          ;; where fn = stack -> any
+          ;; where fn = (captures ...) -> (captures ...)
           ;;
-          ;; Captures operate by pushing their values onto a stack that is implemented as a cons list.
-          ;; Capturing expression "A" and then "B" places the stack in state "(list B A)".
-          ;; For the given function "fn", "transform" provides direct access to the stack state
-          ;; as computed by its subexpression "px".
-          ;;
-          ;; Function "fn" can transform said state arbitrarily, although transformations
-          ;; compose best by maintaining a stack discipline. In other words,
-          ;; fn = stack -> stack, where stack = (list x y ...).
+          ;; Applies function to captures and transformations within pattern px.
           transform
           ;; === (text "xyz") ==
           ;;
