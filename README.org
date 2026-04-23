@@ -375,7 +375,7 @@ own copy of a substring.
   (define digits (capture string->list (repeat+1 (one-of "0123456789"))))
 
   (define convert
-    (lambda xs
+    (lambda (xs)
       (let ([offset (char->integer #\0)]
             [radix  10])
         (fold-left (lambda (accum digit)
