@@ -5,34 +5,83 @@
                  (cursor tools)
                  (cursor collections charset))
 
+         ;; === Error Constants ===
+
          (define ERROR-VM         "unrecognized instruction in virtual machine")
          (define ERROR-VM-COLLECT "unrecognized instruction in virtual machine's collect captures phase")
          (define ERROR-CAPTURE    "provided function must operate over string")
          (define ERROR-TRANSFORM  "provided function pushes transformation into invalid state")
 
+         ;; === VM Data Structures ===
+
+         ;; record: (entry ip sp captures)
+         ;;   where ip       = number: instruction index
+         ;;         sp       = number: string index
+         ;;         captures = (list capture): capture list state
+         ;;
+         ;; Stack entry used to save states wihin the virtual machine.
+         ;; Allows backtracking.
          (define-record-type entry
            (fields ip
                    (mutable sp)
                    (mutable captures)))
 
+         ;; record: (capture type function offset)
+         ;;   where type     = symbol: CAPTURE-START | CAPTURE-STOP | TRANSFORM-START | TRANSFORM-STOP
+         ;;         function = procedure: the function of the associated capture or transform.
+         ;;         offset   = number: the string index of a successful capture.
+         ;;
+         ;; Element of captures list. Used to extract captures and process
+         ;; transformations after a successful match.
          (define-record-type capture
            (fields type
                    function
                    offset))
 
+         ;; record: (call-frame arguments stack)
+         ;;  where arguments = (list any): the arguments list of the current call frame.
+         ;;        stack     = call-frame
+         ;;
+         ;; Builds the arguments list for the current transform and tracks the call frame
+         ;; that the current call frame must return to after it finishes executing.
+         ;; The recursively-defined call-frame is similar to a cons cell. Whereas a series
+         ;; of cons cells create a linked list, a series of call frames create a call stack.
          (define-record-type call-frame
            (fields (mutable arguments)
                    stack))
 
+         ;; The terminus of a call stack. Similar to '() of a proper list.
          (define CALL-STACK-BASE (make-call-frame '() '()))
 
+         ;; (call-stack-empty? call-frame) -> boolean
+         ;;
+         ;; Predicate function returns boolean true if the call-frame is the empty call frame.
+         ;; Returns boolean false otherwise. Similar to the predicate function "null?".
          (define call-stack-empty?
            (lambda (call-frame)
              (eq? call-frame CALL-STACK-BASE)))
 
+         ;; (run-vm text program) -> boolean | string | (list string) | any | (list any)
+         ;;   where text    = string
+         ;;         program = (vector instruction)
+         ;;
+         ;; Executes the given virtual machine program over the given text.
+         ;; The semantics of this virtual machine are similar to the semantics of the LPeg
+         ;; virtual machine by Sérgio Medeiros and Roberto Ierusalimschy. However,
+         ;; whereas state  manipulation is implicit in the "for" loops and "goto"
+         ;; statements of LPeg, state manipulation is explicit in the tail-call-based,
+         ;; continuation-passing style of Cursor.
          (define run-vm
            (lambda (text program)
              (let ([size (string-length text)])
+               ;; (state ip sp stack captures) -> (state ip sp stack captures) | (fail-state ip sp stack captures) | result
+               ;;   where ip       = number: instruction index
+               ;;         sp       = number: string index
+               ;;         stack    = (list (entry | number)): saved states
+               ;;         captures = (list capture): captures list
+               ;;         result   = #t | string | (list string) | any | (list any): return value
+               ;;
+               ;; Moves the virtual machine forward, passing the VM state from one tail call to the next.
                (letrec ([state
                          (lambda (ip sp stack captures)
                            (let ([code (vector-ref program ip)])
@@ -57,10 +106,10 @@
                                       sp
                                       stack
                                       captures)]
-                              ;; [ANY, sp ≤ |text|]
+                              ;; [ANY, sp < |text|]
                               ;; (ip, sp, stack, captures) -> (ip+1, sp+1, stack, captures)
                               ;;
-                              ;; [ANY, sp > |text|]
+                              ;; [ANY, sp ≥ |text|]
                               ;; (ip, sp, stack, captures) -> (fail, sp, stack, captures)
                               [(eq? code ANY)
                                (if (< sp size)
@@ -200,7 +249,7 @@
                                       stack
                                       (cons (make-capture TRANSFORM-STOP '() 0) captures))]
                               ;; [MATCH]
-                              ;; (ip, sp, stack, captures) -> boolean | any | (list any)
+                              ;; (ip, sp, stack, captures) -> boolean | string | (list string) | any | (list any)
                               [(eq? code MATCH)
                                (if (null? captures)
                                    #t
@@ -208,11 +257,14 @@
                               ;; undefined operation -> raise error
                               [else
                                (peg-error "virtual machine" ERROR-VM (list code))])))]
-                        ;; Handles logic for when the virtual machine enters a failing state.
+                        ;; (fail-state ip sp stack captures) -> (state ip sp stack captures) | (fail-state ip sp stack captures) | #f
+                        ;;
+                        ;; Handles logic for when the VM enters a failing state.
                         [fail-state
                          (lambda (ip sp stack captures)
                            (cond
-                            ;; If the stack is empty, then the match has failed.
+                            ;; If the stack is empty, all options have been exhausted
+                            ;; and the match has failed.
                             [(null? stack)
                              #f]
                             [else
@@ -232,8 +284,30 @@
                  ;; (state ip sp stack captures)
                  (state 0 0 '() '())))))
 
+         ;; (collect-captures captures text) -> boolean | string | (list string) | any | (list any)
+         ;;   where captures = (list capture)
+         ;;         text     = string
+         ;;
+         ;; Using the captures list and associated text, collect-captures extracts
+         ;; and transforms the substrings of a successful match.
          (define collect-captures
            (lambda (captures text)
+             ;; (state stack-x stack-y call-stack accumulator) -> (state stack-x stack-y call-stack accumulator) | result
+             ;;   where stack-x     = (list capture)
+             ;;         stack-y     = (list capture)
+             ;;         call-stack  = call-frame
+             ;;         accumulator = (list any)
+             ;;         result      = string | (list string) | any | (list any)
+             ;;
+             ;; Moves "collect-captures" forward, passing state from one tail call to the next.
+             ;;
+             ;; === Internals ===
+             ;;
+             ;; - stack-x and stack-y: unpack the captures list for substring extraction.
+             ;; - call-stack: tracks data for call frames, collecting captures, applying
+             ;;   transformations, and maintaining scope.
+             ;; - accumulator: collects all the transformations and captures that will
+             ;;   eventually be returned as output for "collect-captures".
              (letrec ([state
                        (lambda (stack-x stack-y call-stack accumulator)
                          (cond [(null? stack-x)
@@ -293,6 +367,15 @@
                                          (peg-error "virtual machine"
                                                     ERROR-VM-COLLECT
                                                     (list type))]))]))]
+                      ;; (apply-capture function text start stop) -> string | any | raise exception
+                      ;;   where function = (string) -> any | '()
+                      ;;         text     = string
+                      ;;         start    = number: start index
+                      ;;         stop     = number: stop index
+                      ;;
+                      ;; Extracts substrings from text, and, if a function is supplied,
+                      ;; applies that function to the extracted string. Will raise an
+                      ;; exception if the provided function raises an exception.
                       [apply-capture
                        (lambda (function text start stop)
                          (let ([segment (substring text start stop)])
@@ -306,6 +389,13 @@
                                                            (list segment)
                                                            context)])
                                       (function segment)))))]
+                      ;; (apply-transform function arguments) -> any | raise exception
+                      ;;   where function  = (capture ...) -> (capture ...)
+                      ;;         arguments = (list any)
+                      ;;
+                      ;; Applies function to list of arguments. Will raise an exception if function
+                      ;; parameters do not match arguments list or an exception is raised within
+                      ;; the function itself.
                       [apply-transform
                        (lambda (function arguments)
                          (call-with-values

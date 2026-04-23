@@ -47,6 +47,10 @@
           ;; A parsing expression that matches and consumes
           ;; the provided character.
           char
+          ;; === (text "xyz") ==
+          ;;
+          ;; Transforms a string into a sequence of character matches.
+          text
           ;; === (and-then px py ...) ===
           ;;
           ;; Sequences zero or more parsing expressions. Each expression
@@ -59,7 +63,7 @@
           ;; === (or-else px py ...) ===
           ;;
           ;; Ordered choice with limited backtracking. Succeeds on the
-          ;; first matching expression of zero or more parsing expressions.
+          ;; first matching expression of one or more parsing expressions.
           ;; For each failing expression, backtracks to the original input
           ;; position and tries the subsequent expression.
           ;;
@@ -124,20 +128,26 @@
           ;; must be a symbol that identifies a rule defined within the grammar.
           rule
           ;; === (capture px) or (capture fn px) ===
-          ;; where fn = string -> any
+          ;; where fn = (string) -> any
           ;;
           ;; Extracts a copy of the substring matched by pattern px. An optional
           ;; function transforms said substring.
+          ;;
+          ;; Captures cannot manipulate the output of other captures. Each returns
+          ;; their own copy of a substring.
           capture
           ;; === (transform fn px) ===
           ;; where fn = (captures ...) -> (captures ...)
           ;;
           ;; Applies function to captures and transformations within pattern px.
-          transform
-          ;; === (text "xyz") ==
           ;;
-          ;; Transforms a string into a sequence of character matches.
-          text
+          ;; - "transform" cannot extract substrings directly. "capture" provides substrings.
+          ;;
+          ;; - Unlike captures, nested transformations pass their output to enclosing
+          ;;   transformations combined with any captures outside them but within
+          ;;   the enclosing transformation. Transformation chaining allows the
+          ;;   construction of sophisticated parsers.
+          transform
           ;; === (compile px) ===
           ;;
           ;; Transforms a parsing expression into a parsing function, which runs a match

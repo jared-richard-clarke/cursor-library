@@ -96,7 +96,7 @@ A parsing expression that matches and consumes any character. Fails only on empt
 
 *** ~(char #\x)~
 
-A parsing expression that, when compiled, matches and consumes the provided character.
+A parsing expression that matches and consumes the provided character.
 In the R6RS standard for Scheme, characters are atomic objects — indivisible data
 representing letters, digits, special symbols, and non-graphic control characters.
 
@@ -107,14 +107,15 @@ representing letters, digits, special symbols, and non-graphic control character
   (A? "B") ;; -> #f
 #+end_src
 
-The author strongly recommends using *(text "x")* over *(char #\x)*.
+I strongly recommend using *(text "x")* over *(char #\x)*.
 
 *(text "x")* abstracts over code point complexities made explicit by *(char #\x)*.
 
 *Scheme characters are not user-perceived characters*. Although distinct from Scheme's
-numeric types, each Scheme character datum maps to a Unicode code point — a unique
-integer ranging from 0 through 1,114,111. *Code points map inconsistently to graphemes*
-— what a person might perceive to be a character.
+numeric types, each Scheme character datum maps to a Unicode code point — an integer
+ranging from ~0~ through ~\xD800~ and ~\xE000~ through ~\x10FFF~.
+A user-percieved character maps to a grapheme cluster — a collection of one or
+more Unicode code points.
 
 *** ~(text "xyz")~
 
@@ -338,6 +339,9 @@ a rule defined within the grammar.
 Extracts a copy of the substring matched by pattern ~px~. An optional function
 transforms said substring.
 
+Captures cannot manipulate the output of other captures. Each returns their
+own copy of a substring.
+
 #+begin_src scheme
   ;; Capture
   (define abc (compile (capture (text "abc"))))
@@ -360,6 +364,13 @@ transforms said substring.
 
 ~transform~ applies ~function~ to captures and transformations within pattern ~px~.
 
+- ~transform~ cannot extract substrings directly. ~capture~ provides substrings.
+  
+- Unlike captures, nested transformations pass their output to enclosing
+  transformations combined with any captures outside them but within the
+  enclosing transformation. Transformation chaining allows the construction
+  of sophisticated parsers.
+
 #+begin_src scheme
   (define digits (capture string->list (repeat+1 (one-of "0123456789"))))
 
@@ -372,9 +383,12 @@ transforms said substring.
                    0
                    xs))))
 
-  (define string->number (compile (transform convert digits)))
+  (define add-1 (lambda (x) (+ x 1)))
 
-  (string->number "123") ;; -> 123
+  (define transform-string
+    (compile (transform add-1 (transform convert digits)))
+
+  (transform-string "123") ;; -> 124
 #+end_src
 
 *** ~(compile px)~

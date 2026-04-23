@@ -17,7 +17,7 @@
          ;; === Helper Functions ===
          ;;
          ;; These helper functions assume pairs are lists. This assumption
-         ;; is safe as long as ASTs compile to either terminals or lists.
+         ;; is true as long as ASTs compile to either terminals or lists.
          ;; We make this assumption for efficiency. Checking for lists is
          ;; an O(n) operation, where n is the length of the list.
 

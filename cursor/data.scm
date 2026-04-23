@@ -49,6 +49,8 @@
                  (cursor tools)
                  (cursor collections charset))
 
+         ;; === enumerations ===
+         ;;
          ;; Symbols that identify nodes within abstract syntax trees
          ;; and instructions within instruction lists.
          (enum EMPTY
@@ -80,10 +82,12 @@
                NONE-OF
                MATCH)
 
-         ;; record-type: (ast type node-x node-y)
-         ;;                where type = symbol
-         ;;                      node-x = ast | (list ast ...) | (vector ast ...)
-         ;;                      node-y = ast | (list ast ...) | (vector ast ...)
+         ;; === Abstract Syntax Tree ===
+
+         ;; record: (ast type node-x node-y)
+         ;;   where type = symbol
+         ;;         node-x = ast | (list ast) | (vector ast)
+         ;;         node-y = ast | (list ast) | (vector ast)
          ;;
          ;; The leaves and branches within an abstract syntax tree.
          ;; The type identifies the node. The child nodes are themselves
@@ -101,10 +105,8 @@
                [(type node-x)        (new type node-x '())]
                [(type node-x node-y) (new type node-x node-y)]))))
 
-         ;; empty, fail, any, character, sequence, choice, repeat,
-         ;; is?, is-not?, one-of, none-of, call, grammar, rule, capture
-
          ;; (ast-equal? ast ast) -> boolean
+         ;;
          ;; Deep, structural comparison of ASTs.
          (define ast-equal?
            (lambda (a b)
@@ -154,11 +156,13 @@
                                      (ast-equal? a-px b-px))))]
                            [else #f]))))))
 
+         ;; === Conditions and Error Handling ===
+
          ;; record-type: &peg < &violation < &condition
          ;; Conditions of this type indicate a violation specific to this
          ;; Parsing Expression Grammar library.
          (define-condition-type &peg &violation make-peg-violation peg-violation?)
-         
+
          ;; record-type: &context < &condition
          ;; Provides context by collating the list of conditions that triggered
          ;; the current condition.
@@ -171,6 +175,7 @@
          ;;         message   = string
          ;;         irritants = (list any)
          ;;         context   = (list condition)
+         ;;
          ;; A convenience function for creating and raising compound conditions
          ;; of type &peg, which is a subtype of &violation.
          (define peg-error

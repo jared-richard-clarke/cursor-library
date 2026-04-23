@@ -162,7 +162,7 @@
          ;;   where xs = list
          ;;         ys = list
          ;;
-         ;; Combines two lists pairwise. If one list is shorter than the other,
+         ;; Conses two lists pairwise. If one list is shorter than the other,
          ;; excess elements of the longer list are discarded.
          ;;
          ;; (zip '(a b c) '(1 2 3)) -> '((a. 1) (b . 2) (c . 3))

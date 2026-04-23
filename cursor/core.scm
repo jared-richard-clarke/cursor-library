@@ -37,6 +37,7 @@
          ;; === Helper Functions ===
 
          ;; (assert-ast ast) -> ast | raise exception
+         ;;
          ;; Asserts the given argument is an AST. Otherwise,
          ;; throws an error.
          (define assert-ast
@@ -46,6 +47,7 @@
                  (peg-error "assert-ast" ERROR-TYPE-CODE (list x)))))
 
          ;; (flatten-ast symbol (list ast)) -> (list ast)
+         ;;
          ;; Flattens a nested list of ASTs of the given type by one level.
          (define flatten-ast
            (lambda (type xs)
@@ -58,6 +60,7 @@
                                (flatten-ast type (cdr xs)))])))
 
          ;; (nullable? ast) -> boolean
+         ;;
          ;; Checks if an AST might trigger an infinite loop.
          ;; This is an approximation.
          (define nullable?
@@ -101,6 +104,7 @@
                      [else #f]))))))
 
          ;; (check-grammar (vector ast)) -> (vector ast) | raise exception
+         ;;
          ;; Checks if a list of grammar rules is potentially left-recursive
          ;; by running a simulation on that list. This is an approximation.
          ;;
