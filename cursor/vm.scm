@@ -19,7 +19,7 @@
          ;;         sp       = number: string index
          ;;         captures = (list capture): capture list state
          ;;
-         ;; Stack entry used to save states wihin the virtual machine.
+         ;; Stack entry used to save states within the virtual machine.
          ;; Allows backtracking.
          (define-record-type entry
            (fields ip
