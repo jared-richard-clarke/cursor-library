@@ -24,40 +24,45 @@
          (define-record-type array
            (fields elements))
 
-         (define capture-list
-           (lambda (px)
-             (let ([base-transform
-                    (lambda (px)
-                      (transform (lambda (stack)
-                                   (cons (list (car stack)) (cdr stack)))
-                                 px))]
-                   [repeat-transform
-                    (lambda (px)
-                      (transform (lambda (stack)
-                                   (let ([x  (car  stack)]
-                                         [xs (cadr stack)])
-                                     (cons (cons x xs) (cddr stack))))
-                                 px))]
-                   [reverse-transform
-                    (lambda (px)
-                      (transform (lambda (stack)
-                                   (cons (reverse (car stack)) (cdr stack)))
-                                 px))])
-               (reverse-transform
-                (and-then (base-transform px)
-                          (repeat (and-then (char #\,) (repeat-transform px))))))))
-
          (define ws (repeat (one-of " \r\n\t")))
 
-         (define replace
-           (lambda (px y)
-             (capture (lambda (x) y) px)))
+         (define capture-json
+           (lambda (px)
+             (transform (lambda (x)
+                          (make-json x))
+                        px)))
+
+         (define capture-object
+           (lambda (px)
+             (transform (lambda xs
+                          (make-object xs))
+                        px)))
+
+         (define capture-array
+           (lambda (px)
+             (transform (lambda xs
+                          (make-array xs))
+                        px)))
+
+         (define capture-member
+           (lambda (px)
+             (transform (lambda (x y)
+                          (cons x y))
+                        px)))
 
          (define capture-number
            (lambda (px)
              (capture (lambda (x)
                         (string->number x 10))
                       px)))
+
+         (define replace
+           (lambda (px y)
+             (capture (lambda (x) y) px)))
+
+         (define separate-by
+           (lambda (px sep)
+             (and-then px (repeat (and-then sep px)))))
 
          (define control-characters "\"/\b\f\n\r\t\\")
          
@@ -73,6 +78,7 @@
                                                        (char #\E))
                                               sign
                                               digits)))
+
          (define real-number (and-then integer fraction exponent))
          
          (define hex-character (and-then (char #\u) hex hex hex hex))
@@ -81,71 +87,47 @@
                                    (or-else (one-of control-characters)
                                             hex-character)))
 
-         (define capture-member
-           (lambda (px)
-             (transform (lambda (stack)
-                          (let ([value (car  stack)]
-                                [key   (cadr stack)])
-                            (cons (cons key value) (cddr stack))))
-                        px)))
-
-         (define build-with
-           (lambda (constructor)
-             (lambda (px)
-               (transform (lambda (stack)
-                            (cons (constructor (car stack)) (cdr stack)))
-                          px))))
-
-         (define capture-object (build-with make-object))
-         (define capture-array  (build-with make-array))
-
-         (define capture-json
-           (lambda (px)
-             (transform (lambda (stack)
-                          (let ([element (car stack)])
-                            (make-json element)))
-                        px)))
-
          (define json-grammar
-           (capture-json
-            (grammar [Element    (and-then ws (rule Value) ws)]
-                    
-                     [Value      (or-else (rule Object)
-                                          (rule Array)
-                                          (rule String)
-                                          (rule Number)
-                                          (rule True)
-                                          (rule False)
-                                          (rule Null))]
+           (grammar [JSON       (capture-json (rule Element))]
 
-                     [Object     (and-then (char #\{)
-                                           (capture-object (or-else (rule Members) ws))
-                                           (char #\}))]
+                    [Element    (and-then ws (rule Value) ws)]
 
-                     [Members    (capture-list (rule Member))]
+                    [Value      (or-else (rule Object)
+                                         (rule Array)
+                                         (rule String)
+                                         (rule Number)
+                                         (rule True)
+                                         (rule False)
+                                         (rule Null))]
 
-                     [Member     (capture-member
-                                  (and-then ws (rule String) ws (char #\:) (rule Element)))]
+                    [Object     (and-then (char #\{)
+                                          (capture-object (or-else (rule Members) ws))
+                                          (char #\}))]
 
-                     [Array      (and-then (char #\[)
-                                           (capture-array (or-else (rule Elements) ws))
-                                           (char #\]))]
+                    [Members    (separate-by (rule Member) (char #\,))]
 
-                     [Elements   (capture-list (rule Element))]
+                    [Member     (capture-member
+                                 (and-then ws (rule String) ws (char #\:) (rule Element)))]
 
-                     [String     (and-then (char #\")
-                                           (capture (rule Characters))
-                                           (char #\"))]
+                    [Array      (and-then (char #\[)
+                                          (capture-array (or-else (rule Elements) ws))
+                                          (char #\]))]
 
-                     [Characters (repeat (rule Character))]
+                    [Elements   (separate-by (rule Element) (char #\,))]
 
-                     [Character  (or-else (none-of control-characters) escaped)]
+                    [String     (and-then (char #\")
+                                          (capture (rule Characters))
+                                          (char #\"))]
 
-                     [Number     (capture-number real-number)]
+                    [Characters (repeat (rule Character))]
 
-                     [True       (replace (text "true") #t)]
-                     [False      (replace (text "false") #f)]
-                     [Null       (replace (text "null") 'null)])))
+                    [Character  (or-else (none-of control-characters) escaped)]
+
+                    [Number     (capture-number real-number)]
+
+                    [True       (replace (text "true")  #t)]
+                    [False      (replace (text "false") #f)]
+                    [Null       (replace (text "null")  'null)]))
 
          (define parse-json (compile json-grammar))
 

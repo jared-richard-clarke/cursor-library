@@ -6,7 +6,7 @@
         ;; Examples double as integration tests.
         (only (examples arithmetic) arithmetic:tests)
         (only (examples csv) csv:tests)
-        ; (only (examples json) json:tests)
+        (only (examples json) json:tests)
         (only (examples match) match:tests))
 
 (define run-tests
@@ -19,5 +19,5 @@
            compiler:unit-tests
            arithmetic:tests
            csv:tests
-           ; json:tests
+           json:tests
            match:tests)
