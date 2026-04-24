@@ -51,8 +51,7 @@
 
          ;; === Compiler ===
 
-         ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | captures
-         ;;   where captures = (list string ...) | any
+         ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | string | (list string) | any | (list any)
          ;;
          ;; Transforms an AST into a parsing function, which runs a match
          ;; over a string and returns 1 of 4 results:
@@ -78,14 +77,14 @@
                               [else
                                (vector-set! buffer index (car xs))
                                (loop (+ index 1) (cdr xs))]))])
-                 ;; Returns parsing function, which runs a PEG virtual machine over a string.
+                 ;; Returns parsing function, which runs a PEG virtual machine over a given string.
                  ;; Function contains virtual machine instructions within its closure.
                  (lambda (text)
                    (unless (string? text)
                      (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
                    (run-vm text program))))))
 
-         ;; (compile-ast (ast type node-x node-y)) -> code | (list code ...) | raise error
+         ;; (compile-ast (ast type node-x node-y)) -> code | (list code) | raise exception
          ;;   where code = symbol | char | number | function | charset
          ;;
          ;; According to type, delegates the recursive, depth-first transformation

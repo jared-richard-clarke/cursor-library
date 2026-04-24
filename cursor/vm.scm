@@ -65,7 +65,7 @@
          ;;   where text    = string
          ;;         program = (vector instruction)
          ;;
-         ;; Executes the given virtual machine program over the given text.
+         ;; Executes the given virtual-machine program over the given text.
          ;; The semantics of this virtual machine are similar to the semantics of the LPeg
          ;; virtual machine by Sérgio Medeiros and Roberto Ierusalimschy. However,
          ;; whereas state  manipulation is implicit in the "for" loops and "goto"
@@ -288,7 +288,7 @@
          ;;   where captures = (list capture)
          ;;         text     = string
          ;;
-         ;; Using the captures list and associated text, collect-captures extracts
+         ;; Using the captures list and associated text, "collect-captures" extracts
          ;; and transforms the substrings of a successful match.
          (define collect-captures
            (lambda (captures text)
@@ -307,7 +307,7 @@
              ;; - call-stack: tracks data for call frames, collecting captures, applying
              ;;   transformations, and maintaining scope.
              ;; - accumulator: collects all the transformations and captures that will
-             ;;   eventually be returned as output for "collect-captures".
+             ;;   eventually be returned as output from "collect-captures".
              (letrec ([state
                        (lambda (stack-x stack-y call-stack accumulator)
                          (cond [(null? stack-x)
@@ -368,7 +368,7 @@
                                                     ERROR-VM-COLLECT
                                                     (list type))]))]))]
                       ;; (apply-capture function text start stop) -> string | any | raise exception
-                      ;;   where function = (string) -> any | '()
+                      ;;   where function = '() | (string) -> any
                       ;;         text     = string
                       ;;         start    = number: start index
                       ;;         stop     = number: stop index

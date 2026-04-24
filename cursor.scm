@@ -133,20 +133,19 @@
           ;; Extracts a copy of the substring matched by pattern px. An optional
           ;; function transforms said substring.
           ;;
-          ;; Captures cannot manipulate the output of other captures. Each returns
-          ;; their own copy of a substring.
+          ;; - Captures cannot manipulate the output of other captures. Each returns
+          ;;   their own copy of a substring.
           capture
           ;; === (transform fn px) ===
           ;; where fn = (captures ...) -> (captures ...)
           ;;
           ;; Applies function to captures and transformations within pattern px.
           ;;
-          ;; - "transform" cannot extract substrings directly. "capture" provides substrings.
+          ;; - "transform" cannot extract substrings directly. "capture" extracts substrings.
           ;;
-          ;; - Unlike captures, nested transformations pass their output to enclosing
-          ;;   transformations combined with any captures outside them but within
-          ;;   the enclosing transformation. Transformation chaining allows the
-          ;;   construction of sophisticated parsers.
+          ;; - Unlike captures, nested transformations pass their output — combined with any
+          ;;   sibling captures — to their enclosing transformation. Transformation chaining
+          ;;   allows the construction of sophisticated parsers.
           transform
           ;; === (compile px) ===
           ;;

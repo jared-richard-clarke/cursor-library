@@ -210,6 +210,9 @@
          ;;   where hashtable: hash      = hash-equal
          ;;         hashtable: predicate = equal?
          ;;         size                 = non-negative, exact integer
+         ;;
+         ;; Convenience function for constructing hashtables with hash "hash-equal"
+         ;; and predicate "equal?".
          (define make-equal-hashtable
            (case-lambda
             [()

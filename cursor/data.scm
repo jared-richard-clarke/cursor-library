@@ -50,7 +50,7 @@
                  (cursor collections charset))
 
          ;; === enumerations ===
-         ;;
+
          ;; Symbols that identify nodes within abstract syntax trees
          ;; and instructions within instruction lists.
          (enum EMPTY
@@ -159,11 +159,13 @@
          ;; === Conditions and Error Handling ===
 
          ;; record-type: &peg < &violation < &condition
+         ;;
          ;; Conditions of this type indicate a violation specific to this
          ;; Parsing Expression Grammar library.
          (define-condition-type &peg &violation make-peg-violation peg-violation?)
 
          ;; record-type: &context < &condition
+         ;;
          ;; Provides context by collating the list of conditions that triggered
          ;; the current condition.
          (define-condition-type &context &condition make-context context?

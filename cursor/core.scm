@@ -39,7 +39,7 @@
          ;; (assert-ast ast) -> ast | raise exception
          ;;
          ;; Asserts the given argument is an AST. Otherwise,
-         ;; throws an error.
+         ;; raises an exception.
          (define assert-ast
            (lambda (x)
              (if (ast? x)
@@ -108,7 +108,7 @@
          ;; Checks if a list of grammar rules is potentially left-recursive
          ;; by running a simulation on that list. This is an approximation.
          ;;
-         ;; Raises an error on potential left recursion. Otherwise, returns
+         ;; Raises an exception on potential left recursion. Otherwise, returns
          ;; list unchanged.
          ;;
          ;; Side Note: The rules list is a vector for O(1) lookup.
