@@ -55,7 +55,7 @@
 
          ;; (call-stack-empty? call-frame) -> boolean
          ;;
-         ;; Predicate function returns boolean true if the call-frame is the empty call frame.
+         ;; Predicate function returns boolean true if the call frame is the empty call frame.
          ;; Returns boolean false otherwise. Similar to the predicate function "null?".
          (define call-stack-empty?
            (lambda (call-frame)
@@ -66,8 +66,8 @@
          ;;         program = (vector instruction)
          ;;
          ;; Executes the given virtual-machine program over the given text.
-         ;; The semantics of this virtual machine are similar to the semantics of the LPeg
-         ;; virtual machine by Sérgio Medeiros and Roberto Ierusalimschy. However,
+         ;; The semantics of this virtual machine are similar to the semantics of the
+         ;; LPeg virtual machine by Sérgio Medeiros and Roberto Ierusalimschy. However,
          ;; whereas state  manipulation is implicit in the "for" loops and "goto"
          ;; statements of LPeg, state manipulation is explicit in the tail-call-based,
          ;; continuation-passing style of Cursor.
@@ -288,7 +288,7 @@
          ;;   where captures = (list capture)
          ;;         text     = string
          ;;
-         ;; Using the captures list and associated text, "collect-captures" extracts
+         ;; Using the captures list and associated text, collect-captures extracts
          ;; and transforms the substrings of a successful match.
          (define collect-captures
            (lambda (captures text)
@@ -299,15 +299,17 @@
              ;;         accumulator = (list any)
              ;;         result      = string | (list string) | any | (list any)
              ;;
-             ;; Moves "collect-captures" forward, passing state from one tail call to the next.
+             ;; Moves collect-captures forward, passing state from one tail call to the next.
              ;;
              ;; === Internals ===
              ;;
              ;; - stack-x and stack-y: unpack the captures list for substring extraction.
+             ;;
              ;; - call-stack: tracks data for call frames, collecting captures, applying
              ;;   transformations, and maintaining scope.
+             ;;
              ;; - accumulator: collects all the transformations and captures that will
-             ;;   eventually be returned as output from "collect-captures".
+             ;;   eventually be returned as output from collect-captures.
              (letrec ([state
                        (lambda (stack-x stack-y call-stack accumulator)
                          (cond [(null? stack-x)
@@ -393,9 +395,9 @@
                       ;;   where function  = (capture ...) -> (capture ...)
                       ;;         arguments = (list any)
                       ;;
-                      ;; Applies function to list of arguments. Will raise an exception if function
-                      ;; parameters do not match arguments list or an exception is raised within
-                      ;; the function itself.
+                      ;; Applies function to list of arguments. Will raise an exception if the function
+                      ;; arity does not match the length of the arguments list or an exception is raised
+                      ;; within the function itself.
                       [apply-transform
                        (lambda (function arguments)
                          (call-with-values
