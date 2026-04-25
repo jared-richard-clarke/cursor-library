@@ -1,8 +1,9 @@
 (library (cursor core)
          (export empty
                  fail
-                 any
                  char
+                 text
+                 any
                  and-then
                  or-else
                  maybe
@@ -16,7 +17,6 @@
                  grammar
                  capture
                  transform
-                 text
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor data)
@@ -29,35 +29,40 @@
          (define ERROR-TYPE-SYMBOL    "not a symbol")
          (define ERROR-TYPE-STRING    "not a string")
          (define ERROR-TYPE-FUNCTION  "not a function")
-         (define ERROR-TYPE-CODE      "undefined operation")
+         (define ERROR-TYPE-CODE      "undefined parsing expression")
          (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
          (define ERROR-NULLABLE       "expression within may cause infinite loop")
          (define ERROR-LEFT-RECURSION "rule may be left recursive")
 
          ;; === Helper Functions ===
 
-         ;; (assert-ast ast) -> ast | raise exception
+         ;; (assert-ast (ast | char | string)) -> ast | raise exception
          ;;
-         ;; Asserts the given argument is an AST. Otherwise,
-         ;; raises an exception.
+         ;; Performs one of four tasks:
+         ;; 1. Asserts the given argument is an AST.
+         ;; 2. Asserts the given argument is a char and transforms it into an AST.
+         ;; 3. Asserts the given argument is a string and transforms it into an AST.
+         ;; 4. Raises an exception.
          (define assert-ast
            (lambda (x)
-             (if (ast? x)
-                 x
-                 (peg-error "assert-ast" ERROR-TYPE-CODE (list x)))))
+             (cond [(char? x)   (char x)]
+                   [(string? x) (text x)]
+                   [(ast? x)    x]
+                   [else
+                    (peg-error "assert-ast" ERROR-TYPE-CODE (list x))])))
 
          ;; (flatten-ast symbol (list ast)) -> (list ast)
          ;;
          ;; Flattens a nested list of ASTs of the given type by one level.
          (define flatten-ast
            (lambda (type xs)
-             (cond [(null? xs) xs]
-                   [(let ([x (car xs)])
-                      (and (ast? x)
-                           (eq? type (ast-type x))))
-                    (append (ast-node-x (car xs)) (flatten-ast type (cdr xs)))]
-                   [else (cons (assert-ast (car xs))
-                               (flatten-ast type (cdr xs)))])))
+             (if (null? xs)
+                 xs
+                 (let ([ast  (assert-ast (car xs))]
+                       [next (cdr xs)])
+                   (if (eq? type (ast-type ast))
+                       (append (ast-node-x ast) (flatten-ast type next))
+                       (cons ast (flatten-ast type next)))))))
 
          ;; (nullable? ast) -> boolean
          ;;
@@ -321,7 +326,7 @@
          ;;
          ;; Operation returns the universal set minus the provided characters.
          ;; In this context, the universal set contains all characters
-         ;; as provided by R6RS — particularly Chez Scheme. 
+         ;; as provided by R6RS — particularly Chez Scheme.
          (define none-of
            (lambda (xs)
              (cond [(string? xs)
@@ -477,17 +482,12 @@
 
             (test-assert "and-then abc"
                          ast-equal?
-                         (and-then (char #\a)
-                                   (char #\b)
-                                   (char #\c))
+                         (and-then #\a #\b #\c)
                          (encode-ast SEQUENCE (list A B C)))
 
             (test-assert "and-then nested"
                          ast-equal?
-                         (and-then (and-then (char #\a)
-                                             (char #\b))
-                                   (char #\c)
-                                   (text "ba"))
+                         (and-then (and-then #\a #\b) #\c "ba")
                          (encode-ast SEQUENCE (list A B C B A)))
 
             (test-assert "and-then identity"
@@ -498,14 +498,12 @@
             ;; === Ordered Choice ===
             (test-assert "or-else, a / b"
                          ast-equal?
-                         (or-else (char #\a) (char #\b))
+                         (or-else #\a #\b)
                          (encode-ast CHOICE (list A B)))
 
             (test-assert "or-else nested"
                          ast-equal?
-                         (or-else (char #\a)
-                                  (or-else (char #\b)
-                                           (char #\c)))
+                         (or-else #\a (or-else #\b #\c))
                          (encode-ast CHOICE (list A B C)))
 
             (test-assert "or-else identity"
@@ -516,12 +514,12 @@
             ;; === Repetition ===
             (test-assert "repeat a*"
                          ast-equal?
-                         (repeat (char #\a))
+                         (repeat #\a)
                          (encode-ast REPEAT A))
 
             (test-assert "repeat a+"
                          ast-equal?
-                         (repeat+1 (char #\a))
+                         (repeat+1 #\a)
                          (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
 
             (test-assert "repeat nullable"
@@ -532,13 +530,13 @@
             ;; === Not Predicate ===
             (test-assert "predicate !a"
                          ast-equal?
-                         (is-not? (char #\a))
+                         (is-not? #\a)
                          (encode-ast IS-NOT A))
 
             ;; === Predicate ===
             (test-assert "predicate &a"
                          ast-equal?
-                         (is? (char #\a))
+                         (is? #\a)
                          (encode-ast IS A))
 
             ;; === Sets ===
@@ -570,24 +568,24 @@
             ;; === Captures ===
             (test-assert "capture, baseline"
                          ast-equal?
-                         (capture (char #\a))
+                         (capture #\a)
                          (encode-ast CAPTURE '() A))
 
             (test-assert "capture, true positive"
                          ast-equal?
-                         (capture identity (char #\a))
+                         (capture identity #\a)
                          (encode-ast CAPTURE identity A))
 
             (test-assert "capture, false positive, + ≠ identity"
                          ast-equal?
-                         (capture + (char #\a))
+                         (capture + #\a)
                          (encode-ast CAPTURE identity A))
 
             ;; === Grammars ===
             (test-assert "grammar, baseline"
                          ast-equal?
-                         (grammar [R1 (and-then (text "ab") (rule R2))]
-                                  [R2 (text "c")])
+                         (grammar [R1 (and-then "ab" (rule R2))]
+                                  [R2 "c"])
                          (encode-ast GRAMMAR
                                      (vector (encode-ast RULE
                                                          (quote R1)
@@ -603,8 +601,8 @@
 
             (test-assert "undefined rule"
                          error-equal?
-                         (catch (grammar [A (and-then (char #\a) (rule C))]
-                                         [B (char #\b)]))
+                         (catch (grammar [A (and-then #\a (rule C))]
+                                         [B #\b]))
                          (peg-error "grammar" ERROR-UNDEFINED-RULE (list (quote C))))
 
             ;; Left Recursion: A → Bβ such that B ⇒ Aγ
@@ -615,10 +613,10 @@
 
             (test-assert "grammar, indirect left recursion"
                          error-equal?
-                         (catch (grammar [A (and-then (rule B) (char #\x))]
-                                         [B (and-then (rule C) (char #\y))]
-                                         [C (and-then (rule A) (char #\z))]))
+                         (catch (grammar [A (and-then (rule B) #\x)]
+                                         [B (and-then (rule C) #\y)]
+                                         [C (and-then (rule A) #\z)]))
                          (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote A))))
             ))
-         
+
 )

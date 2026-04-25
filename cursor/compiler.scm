@@ -10,9 +10,9 @@
 
          ;; === Error Constants ===
 
-         (define ERROR-TYPE-AST    "not an abstract syntax tree")
+         (define ERROR-TYPE-AST    "not a PEG expression")
          (define ERROR-TYPE-STRING "argument must be of type string")
-         (define ERROR-UNKNOWN-AST "unknown AST type")
+         (define ERROR-UNKNOWN-AST "unknown PEG expression")
 
          ;; === Helper Functions ===
          ;;
@@ -51,9 +51,9 @@
 
          ;; === Compiler ===
 
-         ;; (compile (ast type node-x node-y)) -> (function string) -> boolean | string | (list string) | any | (list any)
+         ;; (compile ((ast type node-x node-y) | char | string)) -> (function string) -> (boolean | string | (list string) | any | (list any))
          ;;
-         ;; Transforms an AST into a parsing function, which runs a match
+         ;; Transforms a PEG expression into a parsing function, which runs a match
          ;; over a string and returns 1 of 4 results:
          ;;
          ;; 1. Boolean true for match.
@@ -63,7 +63,7 @@
          ;;    as substrings and then transformed by associated functions.
          (define compile
            (lambda (x)
-             (unless (ast? x)
+             (unless (or (ast? x) (char? x) (string? x))
                (peg-error "compile" ERROR-TYPE-AST (list x)))
              (let* ([code      (compile-ast x)]
                     [code-list (if (pair? code) code (list code))]
@@ -84,7 +84,7 @@
                      (peg-error "parsing function" ERROR-TYPE-STRING (list text)))
                    (run-vm text program))))))
 
-         ;; (compile-ast (ast type node-x node-y)) -> code | (list code) | raise exception
+         ;; (compile-ast ((ast type node-x node-y) | char | string)) -> code | (list code) | raise exception
          ;;   where code = symbol | char | number | function | charset
          ;;
          ;; According to type, delegates the recursive, depth-first transformation
@@ -92,21 +92,26 @@
          ;; for ASTs whose type is undefined.
          (define compile-ast
            (lambda (x)
-             (let ([type (ast-type x)])
-               (case type
-                 [(EMPTY ANY FAIL) (compile-symbol x)]
-                 [(CHARACTER)      (compile-character x)]
-                 [(SEQUENCE)       (compile-sequence x)]
-                 [(CHOICE)         (compile-choice x)]
-                 [(REPEAT)         (compile-repeat x)]
-                 [(IS IS-NOT)      (compile-predicate x)]
-                 [(ONE-OF NONE-OF) (compile-set x)]
-                 [(CAPTURE)        (compile-capture x)]
-                 [(TRANSFORM)      (compile-transform x)]
-                 [(CALL)           (compile-call x)]
-                 [(GRAMMAR)        (compile-grammar x)]
-                 [else
-                  (peg-error "compile-ast" ERROR-UNKNOWN-AST (list type))]))))
+             (if (char? x)
+                 x
+                 (let ([ast (if (string? x)
+                                (text x)
+                                x)])
+                   (let ([type (ast-type ast)])
+                     (case type
+                       [(EMPTY ANY FAIL) (compile-symbol ast)]
+                       [(CHARACTER)      (compile-character ast)]
+                       [(SEQUENCE)       (compile-sequence ast)]
+                       [(CHOICE)         (compile-choice ast)]
+                       [(REPEAT)         (compile-repeat ast)]
+                       [(IS IS-NOT)      (compile-predicate ast)]
+                       [(ONE-OF NONE-OF) (compile-set ast)]
+                       [(CAPTURE)        (compile-capture ast)]
+                       [(TRANSFORM)      (compile-transform ast)]
+                       [(CALL)           (compile-call ast)]
+                       [(GRAMMAR)        (compile-grammar ast)]
+                       [else
+                        (peg-error "compile-ast" ERROR-UNKNOWN-AST (list type))]))))))
 
          ;; (compile-symbol (ast type)) -> symbol
          (define compile-symbol
@@ -290,9 +295,9 @@
          (define unit-tests
            (test-chunk
             "Cursor Compiler"
-            ([A (char #\a)]
-             [B (char #\b)]
-             [C (char #\c)]
+            ([A #\a]
+             [B #\b]
+             [C #\c]
              [set-ABC (make-charset "abc")]
              [identity    (lambda (x) x)]
              [code-equal? (lambda (xs ys)
@@ -326,12 +331,12 @@
 
             (test-assert "text sequence abc"
                          code-equal?
-                         (compile-ast (text "abc"))
+                         (compile-ast "abc")
                          '(#\a #\b #\c))
 
             (test-assert "text epsilon"
                          code-equal?
-                         (compile-ast (text ""))
+                         (compile-ast "")
                          EMPTY)
 
             (test-assert "and-then abc"
@@ -433,9 +438,9 @@
 
             (test-assert "finite state machine"
                          code-equal?
-                         (compile-ast (grammar [X (and-then (char #\x) (rule Y))]
-                                               [Y (and-then (char #\y) (rule Z))]
-                                               [Z (char #\z)]))
+                         (compile-ast (grammar [X (and-then #\x (rule Y))]
+                                               [Y (and-then #\y (rule Z))]
+                                               [Z #\z]))
                          '(CALL 4 JUMP 12 #\x JUMP 3 RETURN #\y JUMP 3 RETURN #\z RETURN))))
 
 )
