@@ -42,19 +42,18 @@
 
          (define csv-grammar
            (fullstop
-            (grammar [File   (capture-csv (and-then (capture-row (rule Header))
-                                                    (repeat+1 (capture-row (rule Row)))))]
+            (grammar [File   (capture-csv
+                              (and-then (capture-row (rule Header))
+                                        (repeat+1 (capture-row (rule Row)))))]
 
                      [Header (rule Row)]
 
-                     [Row    (and-then (separate-by (rule Field) (char #\,))
-                                       (maybe (char #\return))
-                                       (char #\newline))]
+                     [Row    (and-then (separate-by (rule Field) #\,)
+                                       (maybe #\return)
+                                       #\newline)]
 
                      [Field  (or-else (capture (repeat+1 (none-of "\",\n\r")))
-                                      (and-then (char #\")
-                                                (capture (repeat (none-of "\"")))
-                                                (char #\"))
+                                      (and-then #\" (capture (repeat (none-of "\""))) #\")
                                       empty)])))
 
          (define parse-csv (compile csv-grammar))

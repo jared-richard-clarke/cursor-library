@@ -16,7 +16,7 @@
              (and-then px (repeat (and-then sep px)))))
 
          (define ws (repeat (one-of " \t\r\n")))
-         
+
          (define trim
            (lambda (px)
              (and-then ws px ws)))
@@ -24,26 +24,26 @@
          (define digit (one-of "0123456789"))
 
          (define byte
-           (or-else (and-then (char #\2) (char #\5) (one-of "012345"))
-                    (and-then (char #\2) (one-of "01234") digit)
-                    (and-then (char #\1) digit digit)
+           (or-else (and-then #\2 #\5 (one-of "012345"))
+                    (and-then #\2 (one-of "01234") digit)
+                    (and-then #\1 digit digit)
                     (and-then (one-of "123456789") digit)
                     digit))
 
          ;; === RGB Tuple ===
          ;;
          ;; rgb([0-255], [0-255], [0-255])
-         
+
          (define rgb-list
-           (let ([comma    (char #\,)]
+           (let ([comma    #\,]
                  [rgb-code (trim byte)])
              (and-then rgb-code
                        comma
                        rgb-code
                        comma
                        rgb-code)))
-         
-         (define rgb (and-then (text "rgb") (char #\() rgb-list (char #\))))
+
+         (define rgb (and-then "rgb(" rgb-list ")"))
 
          (define rgb? (compile (fullstop (trim rgb))))
 
@@ -56,9 +56,9 @@
          ;; +-----+-----+-----+-----+
          ;; ^-----------------------^
          ;;     32 bits / 4 bytes
-         
+
          (define IPv4
-           (let ([dot (char #\.)])
+           (let ([dot #\.])
              (and-then byte dot byte dot byte dot byte)))
 
          (define IPv4? (compile (fullstop (trim IPv4))))
@@ -69,39 +69,37 @@
          ;; Author: Bryan Ford
 
          ;; --- Lexical Syntax ---
-         
+
          (define eol
-           (let ([n (char #\newline)]
-                 [r (char #\return)])
+           (let ([n #\newline]
+                 [r #\return])
              (or-else (and-then r n)
                       n
                       r)))
          (define space
-           (or-else (char #\space)
-                    (char #\tab)
-                    eol))
-         
+           (or-else #\space #\tab eol))
+
          (define comment
-           (and-then (char #\#)
+           (and-then "#"
                      (repeat (and-then (is-not? eol) any))
                      eol))
-         
+
          (define spacing
            (repeat (or-else space comment)))
 
-         (define left-arrow    (and-then (text "<-") spacing))
-         (define slash         (and-then (char #\/) spacing))
-         (define predicate-and (and-then (char #\&) spacing))
-         (define predicate-not (and-then (char #\!) spacing))
-         (define question      (and-then (char #\?) spacing))
-         (define star          (and-then (char #\.) spacing))
-         (define plus          (and-then (char #\+) spacing))
-         (define open          (and-then (char #\() spacing))
-         (define close         (and-then (char #\)) spacing))
-         (define dot           (and-then (char #\.) spacing))
+         (define left-arrow    (and-then "<-" spacing))
+         (define slash         (and-then "/"  spacing))
+         (define predicate-and (and-then "&"  spacing))
+         (define predicate-not (and-then "!"  spacing))
+         (define question      (and-then "?"  spacing))
+         (define star          (and-then "*"  spacing))
+         (define plus          (and-then "+"  spacing))
+         (define open          (and-then "("  spacing))
+         (define close         (and-then ")"  spacing))
+         (define dot           (and-then "."  spacing))
 
          (define character
-           (let ([escape     (and-then (char #\\) (char #\\))]
+           (let ([escape     (and-then #\\ #\\)]
                  [zero-two   (one-of "012")]
                  [zero-seven (one-of "01234567")])
              (or-else (and-then escape
@@ -111,14 +109,15 @@
                       (and-then (is-not? escape) any))))
 
          (define range
-           (or-else (and-then character (char #\-) character)
+           (or-else (and-then character "-" character)
                     character))
 
          (define class
-           (and-then (char #\[)
-                     (repeat (and-then (is-not? (char #\]))
-                                       range))
-                     (char #\])
+           (and-then "["
+                     (repeat
+                      (and-then (is-not? "]")
+                                range))
+                     "]"
                      spacing))
 
          (define literal
@@ -128,8 +127,8 @@
                               (repeat (and-then (is-not? sep) px))
                               sep
                               spacing))])
-             (or-else (template character (char #\'))
-                      (template character (char #\")))))
+             (or-else (template character #\')
+                      (template character #\"))))
 
          (define identifier
            (let* ([start  (one-of "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")]
@@ -162,17 +161,17 @@
 
          (define tests
            (test-chunk
-            
+
             "Match"
-            
+
             ([samples-eq?
               (lambda (xs ys)
                 (for-all eq? xs ys))]
 
              [all-true  '(#t #t #t #t)]
-             
+
              [all-false '(#f #f #f #f)]
-             
+
              [samples-rgb:true   '("rgb(0,0,0)"
                                    "rgb( 0, 100, 255 )"
                                    "rgb(255, 255, 255)"
@@ -182,7 +181,7 @@
                                    "(0, 0, 0)"
                                    "rgb(0, 0, 0"
                                    "rgb(2555, 255, 255)")]
-             
+
              [samples-IPv4:true  '("234.201.51.223"
                                    "198.147.209.2"
                                    "203.222.97.55"

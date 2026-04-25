@@ -70,22 +70,20 @@
          (define digits (repeat+1 digit))
          (define hex    (one-of "0123456789abcdefABCDEF"))
 
-         (define sign        (maybe (char #\-)))
-         (define whole       (or-else (char #\0) digits))
+         (define sign        (maybe #\-))
+         (define whole       (or-else #\0 digits))
          (define integer     (and-then sign whole))
-         (define fraction    (maybe (and-then (char #\.) digits)))
-         (define exponent    (maybe (and-then (or-else (char #\e)
-                                                       (char #\E))
+         (define fraction    (maybe (and-then #\. digits)))
+         (define exponent    (maybe (and-then (or-else #\e #\E)
                                               sign
                                               digits)))
 
          (define real-number (and-then integer fraction exponent))
          
-         (define hex-character (and-then (char #\u) hex hex hex hex))
+         (define hex-character (and-then #\u hex hex hex hex))
 
-         (define escaped (and-then (char #\\)
-                                   (or-else (one-of control-characters)
-                                            hex-character)))
+         (define escaped (and-then #\\ (or-else (one-of control-characters)
+                                                hex-character)))
 
          (define json-grammar
            (grammar [JSON       (capture-json (rule Element))]
@@ -100,24 +98,18 @@
                                          (rule False)
                                          (rule Null))]
 
-                    [Object     (and-then (char #\{)
-                                          (capture-object (or-else (rule Members) ws))
-                                          (char #\}))]
+                    [Object     (and-then "{" (capture-object (or-else (rule Members) ws)) "}")]
 
-                    [Members    (separate-by (rule Member) (char #\,))]
+                    [Members    (separate-by (rule Member) ",")]
 
                     [Member     (capture-member
-                                 (and-then ws (rule String) ws (char #\:) (rule Element)))]
+                                 (and-then ws (rule String) ws ":" (rule Element)))]
 
-                    [Array      (and-then (char #\[)
-                                          (capture-array (or-else (rule Elements) ws))
-                                          (char #\]))]
+                    [Array      (and-then "[" (capture-array (or-else (rule Elements) ws)) "]")]
 
-                    [Elements   (separate-by (rule Element) (char #\,))]
+                    [Elements   (separate-by (rule Element) ",")]
 
-                    [String     (and-then (char #\")
-                                          (capture (rule Characters))
-                                          (char #\"))]
+                    [String     (and-then #\" (capture (rule Characters)) #\")]
 
                     [Characters (repeat (rule Character))]
 
@@ -125,9 +117,9 @@
 
                     [Number     (capture-number real-number)]
 
-                    [True       (replace (text "true")  #t)]
-                    [False      (replace (text "false") #f)]
-                    [Null       (replace (text "null")  'null)]))
+                    [True       (replace "true"  #t)]
+                    [False      (replace "false" #f)]
+                    [Null       (replace "null"  'null)]))
 
          (define parse-json (compile json-grammar))
 
