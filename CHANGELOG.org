@@ -12,6 +12,10 @@ All notable changes to *Cursor* are documented in this file.
 
 *** Changed
 
+- Scheme strings and characters are now base types of PEG expressions. They no
+  longer need to be wrapped in ~text~ or ~char~ constructors. ~text~ and ~char~
+  are no longer part of the public API.
+
 - ~(capture px)~ and ~(capture function px)~ operate over ~(substring string start end)~
   instead of ~(list char ...)~.
 
