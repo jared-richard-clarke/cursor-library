@@ -27,7 +27,7 @@ My library's API is parsing expression operators converted to s-expressions.
 |-----------+-----------------------------------------|
 | ~ε~       | ~empty~                                 |
 | ~.~       | ~any~                                   |
-| ~"x"~     | ~(char #\x)~ or ~(text "x")~            |
+| ~"x"~     | ~#\x~ or ~"x"~                          |
 | ~p?~      | ~(maybe p)~                             |
 | ~p*~      | ~(repeat p)~                            |
 | ~p+~      | ~(repeat+1 p)~                          |
@@ -94,36 +94,31 @@ A parsing expression that matches and consumes any character. Fails only on empt
   (any? "")  ;; -> #f
 #+end_src
 
-*** ~(char #\x)~
+*** Type ~char~: ~#\x~
 
 A parsing expression that matches and consumes the provided character.
 In the R6RS standard for Scheme, characters are atomic objects — indivisible data
 representing letters, digits, special symbols, and non-graphic control characters.
 
 #+begin_src scheme
-  (define A? (compile (char #\A)))
+  (define A? (compile #\A))
 
   (A? "A") ;; -> #t
   (A? "B") ;; -> #f
 #+end_src
 
-I strongly recommend using *(text "x")* over *(char #\x)*.
-
-*(text "x")* abstracts over code point complexities made explicit by *(char #\x)*.
-
 *Scheme characters are not user-perceived characters*. Although distinct from Scheme's
 numeric types, each Scheme character datum maps to a Unicode code point — an integer
 ranging from ~0~ through ~\xD800~ and ~\xE000~ through ~\x10FFF~.
-A user-percieved character maps to a grapheme cluster, which is a collection of one
-or more Unicode code points.
+A user-percieved character might map to one or more Scheme characters.
 
-*** ~(text "xyz")~
+*** Type ~string~: ~"xyz"~
 
-Transforms a string into a sequence of character matches.
+Transforms into a sequence of character matches. An empty string, ~""~, becomes
+an ~empty~ expression, the identity element of a sequence.
 
 #+begin_src scheme
-  ;; (text "ABC") -> (and-then (char #\A) (char #\B) (char #\C))
-  (define ABC? (compile (text "ABC")))
+  (define ABC? (compile "ABC"))
 
   (ABC? "ABC") ;; -> #t
   (ABC? "AbC") ;; -> #f
@@ -134,14 +129,14 @@ Transforms a string into a sequence of character matches.
 Sequences zero or more parsing expressions. Each expression must match part of the input.
 If any one expression fails, the entire sequence fails, consuming no input.
 
+~and-then~ with one argument transforms into its inner expression.
+
 ~and-then~ with zero arguments produces the ~empty~ expression, the identity element for sequences.
 
 #+begin_src scheme
   (define ABC?
     (compile
-      (and-then (char #\A)
-                (char #\B)
-                (char #\C))))
+      (and-then #\A #\B #\C)))
 
   (ABC? "ABC") ;; -> #t
   (ABC? "CBA") ;; -> #f
@@ -156,15 +151,15 @@ Ordered choice with limited backtracking. Succeeds on the first matching express
 parsing expressions. For each failing expression, backtracks to the original input position and tries
 the subsequent expression.
 
+~or-else~ with one argument transforms into its inner expression.
+
 ~or-else~ with zero arguments produces the ~fail~ expression, the identity element for choices.
 A ~fail~ expression unconditionally fails on all inputs.
 
 #+begin_src scheme
   (define A-B-or-C?
     (compile
-      (or-else (char #\A)
-               (char #\B)
-               (char #\C))))
+      (or-else #\A #\B #\C)))
 
   (A-B-or-C? "C") ;; -> #t
   (A-B-or-C? "A") ;; -> #t
@@ -182,8 +177,7 @@ never backtracking.
 #+begin_src scheme
   (define A-maybe-B?
     (compile
-      (and-then (char #\A)
-                (maybe (char #\B)))))
+      (and-then #\A (maybe #\B))))
 
   (A-maybe-B? "AB") ;; -> #t
   (A-maybe-B? "A")  ;; -> #t
@@ -227,8 +221,7 @@ matches its subexpression. In either case, consumes no input.
 #+begin_src scheme
   (define A?
     (compile
-      (and-then (is? (char #\A))
-                any)))
+      (and-then (is? #\A) any)))
 
   (A? "A") ;; -> #t
   (A? "B") ;; -> #f
@@ -243,8 +236,7 @@ of its subexpression. In either case, consumes no input.
 #+begin_src scheme
   (define not-A?
     (compile
-      (and-then (is-not? (char #\A))
-                any)))
+      (and-then (is-not? #\A) any)))
 
   (not-A? "A") ;; -> #f
   (not-A? "B") ;; -> #t
@@ -298,11 +290,11 @@ an error on potentially left-recursive patterns.
   ;; Non-Recursive Pattern
   (define ABC
     (grammar
-      [A (and-then (char #\A) (rule B))]
-      [B (and-then (char #\B) (rule C))]
-      [C (char #\C)]))
+      [A (and-then #\A (rule B))]
+      [B (and-then #\B (rule C))]
+      [C #\C]))
 
-  (define ABC? (compile ABC)) ;; - equivalent -> (define ABC? (compile (text "ABC")))
+  (define ABC? (compile ABC)) ;; - equivalent -> (define ABC? (compile "ABC"))
 
   (ABC? "ABC") ;; -> #t
   (ABC? "BAC") ;; -> #f
@@ -310,9 +302,9 @@ an error on potentially left-recursive patterns.
   ;; Recursive Pattern
   (define nested
     (grammar
-      [X (and-then (char #\()
+      [X (and-then "("
                    (or-else (rule X) empty)
-                   (char #\)))]))
+                   ")")]))
 
   (define nested? (compile nested))
 
@@ -323,9 +315,9 @@ an error on potentially left-recursive patterns.
   (grammar [R (rule R)])
 
   ;; Indirect Left Recursion (throws error)
-  (grammar [R1 (and-then (rule R2) (char #\X))]
-           [R2 (and-then (rule R3) (char #\Y))]
-           [R3 (and-then (rule R1) (char #\Z))])
+  (grammar [R1 (and-then (rule R2) #\X)]
+           [R2 (and-then (rule R3) #\Y)]
+           [R3 (and-then (rule R1) #\Z)])
 #+end_src
 
 *** ~(rule id)~
@@ -344,19 +336,19 @@ transforms said substring.
 
 #+begin_src scheme
   ;; Capture
-  (define abc (compile (capture (text "abc"))))
+  (define abc (compile (capture "abc")))
   (abc "abcdef") ;; -> "abc"
 
   ;; Capture Function
-  (define ABC (compile (capture string-upcase (text "abc"))))
+  (define ABC (compile (capture string-upcase "abc")))
   (ABC "abcdef") ;; -> "ABC"
 
   ;; Capture Sequence
-  (define abc-def (compile (and-then (capture (text "abc")) (capture (text "def")))))
+  (define abc-def (compile (and-then (capture "abc") (capture "def"))))
   (abc-def "abcdef") ;; -> ("abc" "def")
 
   ;; Captures Nested
-  (define ABC-abc (compile (capture string-upcase (capture (text "abc")))))
+  (define ABC-abc (compile (capture string-upcase (capture "abc"))))
   (ABC-abc "abcdef") ;; -> ("ABC" "abc")
 #+end_src
 
