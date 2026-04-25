@@ -58,13 +58,13 @@ A helper function such as ~(fullstop px)~ can ensure a pattern matches its entir
   ;; === Sample Pattern Matchers ===
 
   ;; without "fullstop":
-  (define ABC? (compile (text "ABC")))
+  (define ABC? (compile "ABC"))
 
   (ABC? "ABC")    ;; -> #t
   (ABC? "ABCDEF") ;; -> #t
 
   ;; with "fullstop":
-  (define ABC? (compile (fullstop (text "ABC"))))
+  (define ABC? (compile (fullstop "ABC")))
 
   (ABC? "ABC")    ;; -> #t
   (ABC? "ABCDEF") ;; -> #f
