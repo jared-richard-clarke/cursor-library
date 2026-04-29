@@ -405,9 +405,12 @@
          ;; (capture px)    -> (ast CAPTURE '() px)
          (define capture
            (case-lambda
-             [(px) (capture '() px)]
-             [(fn px)
-              (encode-ast CAPTURE (if (procedure? fn) fn '()) (assert-ast px))]))
+            [(px)
+             (encode-ast CAPTURE '() (assert-ast px))]
+            [(fn px)
+             (unless (procedure? fn)
+               (peg-error "capture" ERROR-TYPE-FUNCTION (list fn)))
+             (encode-ast CAPTURE fn (assert-ast px))]))
 
          ;; (transform fn px)
          ;;   where fn = function
