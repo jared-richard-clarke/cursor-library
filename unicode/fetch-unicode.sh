@@ -24,10 +24,12 @@ fetch "https://www.unicode.org/license.txt"
 
 cd "$(dirname "$0")/data"
 
-fetch "https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt"
-fetch "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt"
-fetch "https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt"
+VERSION="17.0.0"
+
+fetch "https://www.unicode.org/Public/${VERSION}/ucd/DerivedCoreProperties.txt"
+fetch "https://www.unicode.org/Public/${VERSION}/ucd/emoji/emoji-data.txt"
+fetch "https://www.unicode.org/Public/${VERSION}/ucd/auxiliary/GraphemeBreakProperty.txt"
 
 # Fetch grapheme-break test data.
 
-fetch "https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakTest.txt"
+fetch "https://www.unicode.org/Public/${VERSION}/ucd/auxiliary/GraphemeBreakTest.txt"
