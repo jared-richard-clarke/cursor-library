@@ -143,8 +143,8 @@
 
          ;; (zip-with fn xs ys) -> (list)
          ;;   where fn = function
-         ;;         xs = list
-         ;;         ys = list
+         ;;         xs = (list any)
+         ;;         ys = (list any)
          ;;
          ;; Combines two lists pairwise, using the provided function.
          ;; If one list is shorter than the other, excess elements of
@@ -159,8 +159,8 @@
                        (zip-with fn (cdr xs) (cdr ys))))))
 
          ;; (zip xs ys) -> (list (x . y) ...)
-         ;;   where xs = list
-         ;;         ys = list
+         ;;   where xs = (list any)
+         ;;         ys = (list any)
          ;;
          ;; Conses two lists pairwise. If one list is shorter than the other,
          ;; excess elements of the longer list are discarded.
@@ -172,7 +172,7 @@
 
          ;; (vector-fold fn xs) -> any
          ;;   where fn = function
-         ;;         xs = list
+         ;;         xs = (vector any)
          ;;
          ;; Combines vector elements pairwise, left to right, into an accumulative
          ;; value using the provided binary function. The first element in the
@@ -191,7 +191,7 @@
 
           ;; (vector-for-all fn xs) -> boolean
          ;;   where fn = function
-         ;;         xs = list
+         ;;         xs = (vector any)
          ;;
          ;; Checks if all elements satisfy the given predicate.
          ;;
