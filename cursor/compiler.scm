@@ -4,9 +4,9 @@
          (import (rnrs)
                  (cursor core)
                  (cursor data)
-                 (cursor tools)
                  (cursor vm)
-                 (cursor collections charset))
+                 (cursor collections charset)
+                 (cursor tools))
 
          ;; === Error Constants ===
 

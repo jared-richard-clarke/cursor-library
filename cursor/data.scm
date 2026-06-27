@@ -46,8 +46,8 @@
                  peg-error)
 
          (import (rnrs)
-                 (cursor tools)
-                 (cursor collections charset))
+                 (cursor collections charset)
+                 (cursor tools))
 
          ;; === enumerations ===
 

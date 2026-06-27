@@ -2,8 +2,8 @@
          (export run-vm)
          (import (rnrs)
                  (cursor data)
-                 (cursor tools)
-                 (cursor collections charset))
+                 (cursor collections charset)
+                 (cursor tools))
 
          ;; === Error Constants ===
 

@@ -20,8 +20,8 @@
                  (rename (unit-tests core:unit-tests)))
          (import (rnrs)
                  (cursor data)
-                 (cursor tools)
-                 (cursor collections charset))
+                 (cursor collections charset)
+                 (cursor tools))
 
          ;; === Error Messages ===
 
