@@ -9,6 +9,7 @@
                  zip
                  vector-fold
                  vector-for-all
+                 make-equal-hashtable
                  string-hashtable
                  string-buffer
                  datum->string)
@@ -204,6 +205,23 @@
                        [(fn (vector-ref xs index))
                         (loop (+ index 1))]
                        [else #f])))))
+
+         ;; (make-equal-hashtable)      -> equal hashtable
+         ;; (make-equal-hashtable size) -> equal hashtable
+         ;;   where size = non-negative, exact integer
+         ;;
+         ;; hasher: equal-hash
+         ;; predicate: equal?
+         ;;
+         ;; A convenience function for building equal hashtables.
+         ;; Accepts an optional size argument, which sets the
+         ;; hashtable's initial capacity.
+         (define make-equal-hashtable
+           (case-lambda
+            [()
+             (make-hashtable equal-hash equal?)]
+            [(size)
+             (make-hashtable equal-hash equal? size)]))
 
          ;; (string-hashtable (key value) ...) -> string-hashtable
          ;;   where key   = string
