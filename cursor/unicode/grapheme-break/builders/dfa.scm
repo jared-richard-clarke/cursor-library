@@ -4,7 +4,7 @@
                  dfa-start
                  dfa-accept
                  dfa-table
-                 (rename (unit-tests dfa-unit-tests)))
+                 (rename (unit-tests dfa:unit-tests)))
          (import (rnrs)
                  (cursor unicode grapheme-break constants)
                  (cursor tools))
