@@ -1,4 +1,4 @@
-(library (unicode grapheme-break constants)
+(library (cursor unicode grapheme-break constants)
          (export OTHER
                  CR
                  LF
@@ -21,6 +21,7 @@
                  TOTAL-INDIC-BREAKS
                  TOTAL-EXTENDED-PICTOGRAPHICS
                  TOTAL-PROPERTIES
+                 ALPHABET
                  grapheme-break-property?
                  grapheme-break->string
                  grapheme-break->constant)
@@ -55,6 +56,26 @@
          (define TOTAL-INDIC-BREAKS            3)
          (define TOTAL-EXTENDED-PICTOGRAPHICS  1)
          (define TOTAL-PROPERTIES             18)
+
+         (define ALPHABET
+           (list OTHER
+                 CR
+                 LF
+                 CONTROL
+                 L
+                 V
+                 LV
+                 LVT
+                 T
+                 REGIONAL-INDICATOR
+                 PREPEND
+                 EXTEND
+                 ZWJ
+                 SPACING-MARK
+                 INDIC-CONSONANT
+                 INDIC-EXTEND
+                 INDIC-LINKER
+                 EXTENDED-PICTOGRAPHIC))
 
          (define grapheme-break-property?
            (lambda (x)
