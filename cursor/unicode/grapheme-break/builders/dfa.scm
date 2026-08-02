@@ -569,7 +569,7 @@
 
          ;; === Deterministic Finite Automaton: Extended Grapheme Clusters ===
 
-         (define DFA (compile extended-grapheme-cluster))
+         (define DFA 'todo)
 
          (define unit-tests
            (test-chunk

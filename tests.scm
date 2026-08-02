@@ -9,6 +9,8 @@
         (only (examples json) json:tests)
         (only (examples match) match:tests)
         ;; Test grapheme-break components.
+        (only (cursor unicode grapheme-break builders code-point-trie)
+              code-point-trie:unit-tests)
         (only (cursor unicode grapheme-break builders dfa)
               dfa:unit-tests))
 
@@ -39,7 +41,8 @@
                   json:tests
                   match:tests)]
       [(string=? command command-unicode)
-       (run-tests dfa:unit-tests)]
+       (run-tests code-point-trie:unit-tests
+                  dfa:unit-tests)]
       [(string=? command command-all)
        (run-tests core:unit-tests
                   charset:unit-tests
