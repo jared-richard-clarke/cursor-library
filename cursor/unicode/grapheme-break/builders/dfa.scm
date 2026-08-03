@@ -21,12 +21,12 @@
          ;; === Data Types ===
 
          ;; record: (dfa fail start accept table)
-         ;;   where fail   = number
+         ;;   where fail   = (pair number number)
          ;;         start  = number
          ;;         accept = (pair number number)
          ;;         table  = (vector number)
          ;;
-         ;; fail:   Fail state offset. Always 0.
+         ;; fail:   Fail state offsets. Always 0..STRIDE, exclusive.
          ;; start:  Start state offset.
          ;; accept: Accept states. Exclusive range. May include the start state.
          ;; table:  All transitions packed in a vector. States are delineated by stride,
@@ -239,7 +239,7 @@
                    [(epsilon? x)
                     EMPTY]
                    [(negate? x)
-                    x]
+                    (cadr x)]
                    [else
                     (list NEGATE x)])))
 
@@ -558,9 +558,9 @@
 
              (let-values ([(transitions sorted-states)
                            (enumerate (explore START-STATE))])
-               (let* ([fail   0]
+               (let* ([fail   (cons 0 STRIDE)]
                       [start  (car (hashtable-ref transitions START-STATE #f))]
-                      [accept (cons (+ fail STRIDE)
+                      [accept (cons STRIDE
                                     (if (nullable? START-STATE)
                                         (+ start STRIDE)
                                         start))]
@@ -574,7 +574,49 @@
          (define unit-tests
            (test-chunk
             "Builders: DFA"
-            ()
+
+            ;; Because the DFAs in this module are constructed using hashmaps, the order
+            ;; of states is non-deterministic. The only parts that can be reliably reproduced,
+            ;; and therefore tested, are the fail, start, and accept fields. The table field
+            ;; can only be compared by size.
+            ([dfa-partial-equal?
+              (lambda (x y)
+                (and (dfa? x)
+                     (dfa? y)
+                     (let ([fail-x   (dfa-fail x)]
+                           [start-x  (dfa-start x)]
+                           [accept-x (dfa-accept x)]
+                           [table-x  (dfa-table x)]
+                           [fail-y   (dfa-fail y)]
+                           [start-y  (dfa-start y)]
+                           [accept-y (dfa-accept y)]
+                           [table-y  (dfa-table y)])
+                       (and (equal? (list fail-x start-x accept-x)
+                                    (list fail-y start-y accept-y))
+                            (= (vector-length table-x)
+                               (vector-length table-y))))))]
+             
+             [test-pattern-1 crlf]
+             
+             [test-machine-1
+              (make-dfa '(0 . 18)
+                        54
+                        '(18 . 54)
+                        '#(0  0  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+                           0  0  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+                           0  0 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+                           0 36 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))]
+
+             [test-pattern-2 not-control]
+             
+             [test-machine-2
+              (make-dfa '(0 . 18)
+                        36
+                        '(18 . 54)
+                        '#( 0 0 0 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+                            0 0 0 0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+                           18 0 0 0 18 18 18 18 18 18 18 18 18 18 18 18 18 18))])
+            
             ;; === tests: regex constructors ===
             (test-assert "sanity check"
                          equal?
@@ -644,6 +686,36 @@
             (test-assert "(negate EPSILON) = EMPTY"
                          equal?
                          (negate EPSILON)
-                         EMPTY)))
+                         EMPTY)
+
+            (test-assert "(negate (negate OTHER)) = OTHER"
+                         equal?
+                         (negate (negate OTHER))
+                         OTHER)
+            
+            (test-assert "(derive crlf LF)"
+                         equal?
+                         (derive crlf LF)
+                         EPSILON)
+
+            (test-assert "(derive RI-sequence OTHER)"
+                         equal?
+                         (derive RI-sequence OTHER)
+                         EMPTY)
+
+            (test-assert "(derive CR*LF CR)"
+                         equal?
+                         (derive (concat (repeat CR) LF) CR)
+                         (concat (repeat CR) LF))
+
+            (test-assert "regex->dfa: 1"
+                         dfa-partial-equal?
+                         (compile test-pattern-1)
+                         test-machine-1)
+
+            (test-assert "regex->dfa: 2"
+                         dfa-partial-equal?
+                         (compile test-pattern-2)
+                         test-machine-2)))
 
 )
