@@ -19,7 +19,7 @@
 
          (define accept-state?
            (lambda (x)
-             (and (<= x ACCEPT-START)
+             (and (>= x ACCEPT-START)
                   (<  x ACCEPT-STOP))))
 
          (define next-state
