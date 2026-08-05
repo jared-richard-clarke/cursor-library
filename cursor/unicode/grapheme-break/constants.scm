@@ -21,6 +21,11 @@
                  TOTAL-INDIC-BREAKS
                  TOTAL-EXTENDED-PICTOGRAPHICS
                  TOTAL-PROPERTIES
+                 INDIC-BREAK-OFFSET
+                 EXTENDED-PICTOGRAPHIC-OFFSET
+                 GB-TOTAL-BITS
+                 IB-TOTAL-BITS
+                 EP-TOTAL-BITS
                  ALPHABET
                  grapheme-break-property?
                  grapheme-break->string
@@ -57,6 +62,17 @@
          (define TOTAL-EXTENDED-PICTOGRAPHICS  1)
          (define TOTAL-PROPERTIES             18)
 
+         (define INDIC-BREAK-OFFSET           TOTAL-GRAPHEME-BREAKS)
+         (define EXTENDED-PICTOGRAPHIC-OFFSET (+ TOTAL-GRAPHEME-BREAKS TOTAL-INDIC-BREAKS))
+
+         ;; === Bitwise Properties ===
+
+         (define GB-TOTAL-BITS (bitwise-length TOTAL-GRAPHEME-BREAKS))
+         (define IB-TOTAL-BITS (bitwise-length TOTAL-INDIC-BREAKS))
+         (define EP-TOTAL-BITS (bitwise-length TOTAL-EXTENDED-PICTOGRAPHICS))
+
+         ;; === Alphabetic Sequence ===
+
          (define ALPHABET
            (list OTHER
                  CR
@@ -76,6 +92,8 @@
                  INDIC-EXTEND
                  INDIC-LINKER
                  EXTENDED-PICTOGRAPHIC))
+
+         ;; === Predicates and Conversions ===
 
          (define grapheme-break-property?
            (lambda (x)
