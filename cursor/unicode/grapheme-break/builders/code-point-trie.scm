@@ -2,6 +2,7 @@
          (export (rename (unit-tests code-point-trie:unit-tests)))
          (import (rnrs)
                  (cursor unicode grapheme-break constants)
+                 (cursor collections charset)
                  (cursor tools))
 
          ;; === Unicode Character Database: Side Notes ===
@@ -49,37 +50,11 @@
          ;;                 table-2 = (vector number)
          ;;                 table-3 = (vector number)
          ;;
-         ;; A prefix trie, implented as a multi-stage lookup table.
+         ;; A prefix trie, implemented as a multi-stage lookup table.
          (define-record-type code-point-trie
            (fields table-1
                    table-2
                    table-3))
-
-         ;; record: (charset table)
-         ;;           where table = (hash-table char boolean)
-         ;;
-         ;; A character set with O(1) lookup.
-         (define-record-type charset
-           (fields table)
-           (protocol
-            (lambda (new)
-              (lambda (text)
-                (let* ([characters (string->list text)]
-                       [capacity   (length characters)]
-                       [hashtable  (make-eqv-hashtable capacity)])
-                  (new (fold-left (lambda (accum x)
-                                    (hashtable-set! accum x #t)
-                                    accum)
-                                  hashtable
-                                  characters)))))))
-
-         ;; (charset-has? char) -> boolean
-         ;;
-         ;; Membership testing of a given character within a given character set.
-         (define charset-has?
-           (lambda (self x)
-             (let ([table (charset-table self)])
-               (hashtable-contains? table x))))
 
          ;; === Input/Output ===
 
