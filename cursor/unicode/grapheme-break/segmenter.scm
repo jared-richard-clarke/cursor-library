@@ -48,6 +48,9 @@
          (define EP-BIT-START (+ GB-TOTAL-BITS IB-TOTAL-BITS))
          (define EP-BIT-STOP  (+ GB-TOTAL-BITS IB-TOTAL-BITS EP-TOTAL-BITS))
 
+         (define IB-BIT-SHIFT GB-TOTAL-BITS)
+         (define EP-BIT-SHIFT (+ GB-TOTAL-BITS IB-TOTAL-BITS))
+
          (define get-grapheme-property
            (lambda (x)
              (bitwise-bit-field x GB-BIT-START GB-BIT-STOP)))
