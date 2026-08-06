@@ -22,8 +22,9 @@
                [(xs)
                 (unless (string? xs)
                   (assertion-violation 'charset "argument is not a string" xs))
-                (let ([characters (string->list xs)]
-                      [hashtable  (make-eqv-hashtable)])
+                (let* ([characters (string->list xs)]
+                       [capacity   (length characters)]
+                       [hashtable  (make-eqv-hashtable capacity)])
                   (new (fold-left (lambda (accum x)
                                     (hashtable-set! accum x #t)
                                     accum)
@@ -109,7 +110,7 @@
              [list-eq-set? (lambda (list-x set-y)
                              (and (= (length list-x) (charset-size set-y))
                                   (for-all (lambda (x) (charset-has? set-y x)) list-x)))])
-            
+
             (test-assert "ordered list, character set"
                          list-eq-set?
                          (list a b c d)
