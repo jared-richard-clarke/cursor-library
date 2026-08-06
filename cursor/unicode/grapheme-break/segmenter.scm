@@ -7,27 +7,27 @@
 
          ;; === DFA Constants ===
 
-         (define FAIL-START   (car (dfa-fail DFA)))
-         (define FAIL-STOP    (cdr (dfa-fail DFA)))
-         (define START-STATE  (dfa-start DFA))
-         (define ACCEPT-START (car (dfa-accept DFA)))
-         (define ACCEPT-STOP  (cdr (dfa-accept DFA)))
-         (define TRANSITIONS  (dfa-table DFA))
+         (define FAIL-OFFSET-START   (car (dfa-fail DFA)))
+         (define FAIL-OFFSET-STOP    (cdr (dfa-fail DFA)))
+         (define START-STATE         (dfa-start DFA))
+         (define ACCEPT-OFFSET-START (car (dfa-accept DFA)))
+         (define ACCEPT-OFFSET-STOP  (cdr (dfa-accept DFA)))
+         (define TRANSITION-TABLE    (dfa-table DFA))
 
          ;; === DFA Predicates and Functions ===
 
          (define fail-state?
            (lambda (x)
-             (< x FAIL-STOP)))
+             (< x FAIL-OFFSET-STOP)))
 
          (define accept-state?
            (lambda (x)
-             (and (>= x ACCEPT-START)
-                  (<  x ACCEPT-STOP))))
+             (and (>= x ACCEPT-OFFSET-START)
+                  (<  x ACCEPT-OFFSET-STOP))))
 
          (define next-state
            (lambda (state symbol)
-             (vector-ref TRANSITIONS (+ state symbol))))
+             (vector-ref TRANSITION-TABLE (+ state symbol))))
 
          ;;            exact integer
          ;;           +--------------+
@@ -39,30 +39,30 @@
          ;;
          ;; === Bitwise Constants ===
          
-         (define GB-BIT-START 0)
-         (define GB-BIT-STOP  GB-TOTAL-BITS)
+         (define GB-BIT-OFFSET-START 0)
+         (define GB-BIT-OFFSET-STOP  GB-TOTAL-BITS)
          
-         (define IB-BIT-START GB-TOTAL-BITS)
-         (define IB-BIT-STOP  (+ GB-TOTAL-BITS IB-TOTAL-BITS))
+         (define IB-BIT-OFFSET-START GB-TOTAL-BITS)
+         (define IB-BIT-OFFSET-STOP  (+ GB-TOTAL-BITS IB-TOTAL-BITS))
          
-         (define EP-BIT-START (+ GB-TOTAL-BITS IB-TOTAL-BITS))
-         (define EP-BIT-STOP  (+ GB-TOTAL-BITS IB-TOTAL-BITS EP-TOTAL-BITS))
+         (define EP-BIT-OFFSET-START (+ GB-TOTAL-BITS IB-TOTAL-BITS))
+         (define EP-BIT-OFFSET-STOP  (+ GB-TOTAL-BITS IB-TOTAL-BITS EP-TOTAL-BITS))
 
          (define IB-BIT-SHIFT GB-TOTAL-BITS)
          (define EP-BIT-SHIFT (+ GB-TOTAL-BITS IB-TOTAL-BITS))
 
          (define get-grapheme-property
            (lambda (x)
-             (bitwise-bit-field x GB-BIT-START GB-BIT-STOP)))
+             (bitwise-bit-field x GB-BIT-OFFSET-START GB-BIT-OFFSET-STOP)))
 
          (define get-indic-property
            (lambda (x)
-             (+ (bitwise-bit-field x IB-BIT-START IB-BIT-STOP)
+             (+ (bitwise-bit-field x IB-BIT-OFFSET-START IB-BIT-OFFSET-STOP)
                 INDIC-BREAK-OFFSET)))
 
          (define get-emoji-property
            (lambda (x)
-             (+ (bitwise-bit-field x EP-BIT-START EP-BIT-STOP)
+             (+ (bitwise-bit-field x EP-BIT-OFFSET-START EP-BIT-OFFSET-STOP)
                 EXTENDED-PICTOGRAPHIC-OFFSET)))
 
 )
