@@ -2,7 +2,6 @@
          (export (rename (unit-tests code-point-trie:unit-tests)))
          (import (rnrs)
                  (cursor unicode grapheme-break constants)
-                 (cursor collections charset)
                  (cursor tools))
 
          ;; === Unicode Character Database: Side Notes ===
@@ -56,6 +55,33 @@
                    table-2
                    table-3))
 
+         ;; record: (charset table)
+         ;;           where table = (hashtable char boolean)
+         ;;
+         ;; A simplied version of charset from collections. Added here to avoid
+         ;; circular dependencies between collections and unicode modules.
+         (define-record-type charset
+           (fields table)
+           (protocol
+            (lambda (new)
+              (lambda (text)
+                (let* ([characters (string->list text)]
+                       [capacity   (length characters)]
+                       [hashtable  (make-eqv-hashtable capacity)])
+                  (new (fold-left (lambda (accum x)
+                                    (hashtable-set! accum x #t)
+                                    accum)
+                                  hashtable
+                                  characters)))))))
+
+         ;; (charset-has? char) -> boolean
+         ;;
+         ;; Membership testing of a given character within a given character set.
+         (define charset-has?
+           (lambda (self x)
+             (let ([table (charset-table self)])
+               (hashtable-contains? table x))))
+
          ;; === Input/Output ===
 
          ;; (open-file string) -> textual-input-port
@@ -91,7 +117,7 @@
          ;;   where predicate = char | (procedure char) -> boolean
          (define match-with
            (lambda (x)
-             
+
              (define predicate
                (cond [(char? x)
                       (lambda (y) (char=? x y))]
@@ -119,10 +145,10 @@
          (define and-then
            (lambda parsers
              (lambda (match? text index stop captures)
-               
+
                (define index-reset    index)
                (define captures-reset captures)
-               
+
                (define loop
                  (lambda (parsers match? text index stop captures)
                    (if (null? parsers)
@@ -133,7 +159,7 @@
                            (if match?
                                (loop (cdr parsers) match? text next stop captures)
                                (values #f text index-reset stop captures-reset)))))))
-               
+
                (loop parsers match? text index stop captures))))
 
          ;; (maybe parser) -> parser
@@ -200,10 +226,10 @@
                      #f)))))
 
          ;; === Parsers and Predicates ===
-         
+
          (define string->hex
            (lambda (text)
-             (string->number text 16)))         
+             (string->number text 16)))
 
          (define hex-digit?
            (let ([set (make-charset HEX-DIGITS)])
@@ -218,13 +244,13 @@
          (define whitespace     (repeat (match-with SPACE)))
 
          (define period         (match-with PERIOD))
-         
+
          (define semicolon      (match-with SEMICOLON))
 
          (define hex-digit      (match-with hex-digit?))
 
          (define letters        (repeat+1 (match-with letter?)))
-         
+
          (define range-operator (and-then period period))
 
          (define code-point
@@ -254,13 +280,13 @@
          ;; and outputs.
          (define parse-field
            (lambda (line)
-             
+
              (define output (run field-parser line))
 
              (define raise-assertion
                (lambda (message)
                  (assertion-violation 'parse-field message output)))
-             
+
              (cond [(eq? output #f)
                     #f]
                    [(list? output)
@@ -278,7 +304,7 @@
                              (raise-assertion "output must contain 2 to 3 fields")]))]
                    [else
                     (raise-assertion "unexpected output")])))
-         
+
          ;; (find-string pattern) -> scanner | raise exception
          ;;   where pattern = string
          ;;         scanner = (procedure port) -> boolean
@@ -288,9 +314,9 @@
          ;; a textual-input port.
          (define find-string
            (lambda (pattern)
-             
+
              (define pattern-reset (string->list pattern))
-             
+
              (lambda (port)
                (unless (and (textual-port? port) (input-port? port))
                  (assertion-violation 'find-string-procedure "not a textual input port" port))
@@ -353,32 +379,32 @@
                            [property-y (code-point-data-property y)])
                        (equal? (list start-x stop-x property-x)
                                (list start-y stop-y property-y)))))])
-            
+
             (test-assert "parser combinator: code-points, single"
                          equal?
                          (catch-parser-state code-points "002B")
                          (parser-state #t "002B" 4 4 '("002B")))
-            
+
             (test-assert "parser combinator: code-points, double"
                          equal?
                          (catch-parser-state code-points "003C..003E")
                          (parser-state #t "003C..003E" 10 10 '("003E" "003C")))
-            
+
             (test-assert "parser combinator: property"
                          equal?
                          (catch-parser-state property "Prepend")
                          (parser-state #t "Prepend" 7 7 '("Prepend")))
-            
+
             (test-assert "parser combinator: property, indic"
                          equal?
                          (catch-parser-state property "InCB; Consonant")
                          (parser-state #t "InCB; Consonant" 15 15 '("InCB; Consonant")))
-            
+
             (test-assert "parser combinator: field-parser #1"
                          equal?
                          (catch-parser-state field-parser "11A84..11A89 ; Prepend")
                          (parser-state #t "11A84..11A89 ; Prepend" 22 22 '("Prepend" "11A89" "11A84")))
-            
+
             (test-assert "parser combinator: field-parser #2"
                          equal?
                          (catch-parser-state field-parser "11082 ; SpacingMark")
