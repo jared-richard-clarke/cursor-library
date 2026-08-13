@@ -33,10 +33,11 @@
 
          ;; === Data Types ===
 
-         ;; record: (code-point-data start stop property)
-         ;;           where start    = number
-         ;;                 stop     = number
-         ;;                 property = number, grapheme-break constant
+         ;; record: code-point-data
+         ;; constructor: (make-code-point-data start stop property) -> code-point-data
+         ;;                where start    = number
+         ;;                      stop     = number
+         ;;                      property = number, grapheme-break constant
          ;;
          ;; Data field from within the unicode database.
          (define-record-type code-point-data
@@ -44,10 +45,11 @@
                    stop
                    property))
 
-         ;; record: (code-point-trie table-1 table-2 table-3)
-         ;;           where table-1 = (vector number)
-         ;;                 table-2 = (vector number)
-         ;;                 table-3 = (vector number)
+         ;; record: code-point-trie
+         ;; constructor: (make-code-point-trie table-1 table-2 table-3) -> code-point-trie
+         ;;                where table-1 = (vector number)
+         ;;                      table-2 = (vector number)
+         ;;                      table-3 = (vector number)
          ;;
          ;; A prefix trie, implemented as a multi-stage lookup table.
          (define-record-type code-point-trie
@@ -55,8 +57,9 @@
                    table-2
                    table-3))
 
-         ;; record: (charset table)
-         ;;           where table = (hashtable char boolean)
+         ;; record: charset
+         ;; constructor: (make-charset text) -> charset
+         ;;                where text = string
          ;;
          ;; A simplied version of charset from collections. Added here to avoid
          ;; circular dependencies between collections and unicode modules.
@@ -81,6 +84,51 @@
            (lambda (self x)
              (let ([table (charset-table self)])
                (hashtable-contains? table x))))
+
+         ;; record: hashtable-list
+         ;; constructor: (make-hashtable-list hash predicate) -> hashtable-list
+         ;;                where hash      = procedure
+         ;                       predicate = procedure
+         ;;
+         ;; A hashtable that preserves the order of its entries.
+         (define-record-type hashtable-list
+           (fields table
+                   (mutable sequence))
+           (protocol
+            (lambda (new)
+              (lambda (hash predicate)
+                (new (make-hashtable hash predicate) '())))))
+
+         (define hashtable-list-ref
+           (lambda (self k default)
+             (let ([table (hashtable-list-table self)])
+               (hashtable-ref table k default))))
+
+         (define hashtable-list-set!
+           (lambda (self k v)
+             (let ([table    (hashtable-list-table self)]
+                   [sequence (hashtable-list-sequence self)])
+               (unless (hashtable-contains? table k)
+                 (hashtable-set! table k v)
+                 (hashtable-list-sequence-set! self (cons k sequence))))))
+
+         (define hashtable-list-keys
+           (lambda (self)
+            
+             (define reverse-list->vector
+               (lambda (xs)
+                 (let* ([size       (length xs)]
+                        [new-vector (make-vector size)])
+                   (let loop ([xs    xs]
+                              [index (- size 1)])
+                     (cond [(null? xs)
+                            new-vector]
+                           [else
+                            (vector-set! new-vector index (car xs))
+                            (loop (cdr xs) (- index 1))])))))
+             
+             (let ([sequence (hashtable-list-sequence self)])
+               (reverse-list->vector sequence))))
 
          ;; === Input/Output ===
 
