@@ -24,7 +24,7 @@ fetch "https://www.unicode.org/license.txt"
 
 cd "$(dirname "$0")/data"
 
-VERSION="17.0.0"
+VERSION="18.0.0"
 
 fetch "https://www.unicode.org/Public/${VERSION}/ucd/DerivedCoreProperties.txt"
 fetch "https://www.unicode.org/Public/${VERSION}/ucd/emoji/emoji-data.txt"
