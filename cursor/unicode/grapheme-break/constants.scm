@@ -15,7 +15,8 @@
                  SPACING-MARK
                  INDIC-CONSONANT
                  INDIC-EXTEND
-                 INDIC-LINKER
+                 INDIC-LINKER-AND-EXTEND
+                 INDIC-LINKER-SUB-EXTEND
                  EXTENDED-PICTOGRAPHIC
                  TOTAL-GRAPHEME-BREAKS
                  TOTAL-INDIC-BREAKS
@@ -23,9 +24,6 @@
                  TOTAL-PROPERTIES
                  INDIC-BREAK-OFFSET
                  EXTENDED-PICTOGRAPHIC-OFFSET
-                 GB-TOTAL-BITS
-                 IB-TOTAL-BITS
-                 EP-TOTAL-BITS
                  ALPHABET
                  grapheme-break-property?
                  grapheme-break->string
@@ -36,40 +34,37 @@
          ;; === Extended Grapheme Break Properties ===
 
          ;; - Grapheme Break Properties -
-         (define OTHER                  0)
-         (define CR                     1)
-         (define LF                     2)
-         (define CONTROL                3)
-         (define L                      4)
-         (define V                      5)
-         (define LV                     6)
-         (define LVT                    7)
-         (define T                      8)
-         (define REGIONAL-INDICATOR     9)
-         (define PREPEND               10)
-         (define EXTEND                11)
-         (define ZWJ                   12)
-         (define SPACING-MARK          13)
+         (define OTHER                    0)
+         (define CR                       1)
+         (define LF                       2)
+         (define CONTROL                  3)
+         (define L                        4)
+         (define V                        5)
+         (define LV                       6)
+         (define LVT                      7)
+         (define T                        8)
+         (define REGIONAL-INDICATOR       9)
+         (define PREPEND                 10)
+         (define EXTEND                  11)
+         (define ZWJ                     12)
+         (define SPACING-MARK            13)
          ;; - Indic Break Properties -
-         (define INDIC-CONSONANT       14)
-         (define INDIC-EXTEND          15)
-         (define INDIC-LINKER          16)
+         (define INDIC-CONSONANT         14)
+         (define INDIC-EXTEND            15)
+         ;; Linker ∩ Extend
+         (define INDIC-LINKER-AND-EXTEND 16)
+         ;; Linker \ Extend
+         (define INDIC-LINKER-SUB-EXTEND 17)
          ;; - Extended Pictographic Property -
-         (define EXTENDED-PICTOGRAPHIC 17)
+         (define EXTENDED-PICTOGRAPHIC   18)
 
          (define TOTAL-GRAPHEME-BREAKS        14)
-         (define TOTAL-INDIC-BREAKS            3)
+         (define TOTAL-INDIC-BREAKS            4)
          (define TOTAL-EXTENDED-PICTOGRAPHICS  1)
-         (define TOTAL-PROPERTIES             18)
+         (define TOTAL-PROPERTIES             19)
 
          (define INDIC-BREAK-OFFSET           TOTAL-GRAPHEME-BREAKS)
          (define EXTENDED-PICTOGRAPHIC-OFFSET (+ TOTAL-GRAPHEME-BREAKS TOTAL-INDIC-BREAKS))
-
-         ;; === Bitwise Properties ===
-
-         (define GB-TOTAL-BITS (bitwise-length TOTAL-GRAPHEME-BREAKS))
-         (define IB-TOTAL-BITS (bitwise-length TOTAL-INDIC-BREAKS))
-         (define EP-TOTAL-BITS (bitwise-length TOTAL-EXTENDED-PICTOGRAPHICS))
 
          ;; === Alphabetic Sequence ===
 
@@ -90,7 +85,8 @@
                  SPACING-MARK
                  INDIC-CONSONANT
                  INDIC-EXTEND
-                 INDIC-LINKER
+                 INDIC-LINKER-AND-EXTEND
+                 INDIC-LINKER-SUB-EXTEND
                  EXTENDED-PICTOGRAPHIC))
 
          ;; === Predicates and Conversions ===

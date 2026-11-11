@@ -56,7 +56,7 @@
 
          ;; literal ∈ Σ,
          ;;   where Σ = Any grapheme-break property as defined in Annex #29
-         ;;             of the Unicode standard, version 17.
+         ;;             of the Unicode standard, version 18.
          ;;
          ;; In formal language theory, Σ usually denotes a finite alphabet
          ;; for a given language.
@@ -347,7 +347,7 @@
          ;; === Patterns ===
          ;;
          ;; Regular expression patterns as defined in Table 1c. of Annex #29
-         ;; of the Unicode standard, version 17.0.0.
+         ;; of the Unicode standard, version 18.0.0.
          ;;
          ;; Side Note: Adjacent expressions imply concatenation.
          ;;            CR LF = CR • LF
@@ -377,21 +377,22 @@
                    (repeat (concat (repeat EXTEND)
                                    ZWJ
                                    EXTENDED-PICTOGRAPHIC))))
+         
+         ;; (Indic-Linker \ Extend) Indic-Extend* Indic-Consonant
+         (define core-linker-conjunct
+           (concat INDIC-LINKER-SUB-EXTEND
+                   (repeat INDIC-EXTEND)
+                   INDIC-CONSONANT))
+         
+         ;; (Indic-Linker ∩ Extend) Indic-Extend* Indic-Consonant
+         (define conjunct-extension
+           (concat INDIC-LINKER-ADD-EXTEND
+                   (repeat INDIC-EXTEND)
+                   INDIC-CONSONANT)))
 
-         ;; Consonant (Extend* Linker (Extend|Linker)* Consonant)+
-         (define conjunct-cluster
-           (concat INDIC-CONSONANT
-                   (repeat+1
-                    (concat (repeat INDIC-EXTEND)
-                            INDIC-LINKER
-                            (repeat
-                             (union INDIC-EXTEND
-                                    INDIC-LINKER))
-                            INDIC-CONSONANT))))
-
-         ;; [^Control CR LF] ≈ ¬(Control + CR + LF)
-         (define not-control
-           (negate (union CONTROL CR LF)))
+         ;; [^Control CR LF Extend ZWJ SpacingMark] ≈ ¬(Control + CR + LF + Extend + ZWJ + SpacingMark)
+         (define negated-properties
+           (negate (union CONTROL CR LF EXTEND ZWJ SPACINGMARK)))
 
          ;; - compose -
 
@@ -401,11 +402,12 @@
            (union hangul-syllable
                   RI-sequence
                   xpicto-sequence
-                  conjunct-cluster
-                  not-control))
+                  core-linker-conjunct
+                  negated-properties))
 
          (define postcore
-           (union EXTEND
+           (union conjunct-extension
+                  EXTEND
                   ZWJ
                   SPACING-MARK))
 
