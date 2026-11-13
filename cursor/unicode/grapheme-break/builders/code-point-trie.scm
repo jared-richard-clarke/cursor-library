@@ -46,16 +46,14 @@
                    property))
 
          ;; record: code-point-trie
-         ;; constructor: (make-code-point-trie table-1 table-2 table-3) -> code-point-trie
-         ;;                where table-1 = (vector number)
-         ;;                      table-2 = (vector number)
-         ;;                      table-3 = (vector number)
+         ;; constructor: (make-code-point-trie prefix block) -> code-point-trie
+         ;;                where prefix = (vector number)
+         ;;                      block  = (vector number)
          ;;
          ;; A prefix trie, implemented as a multi-stage lookup table.
          (define-record-type code-point-trie
-           (fields table-1
-                   table-2
-                   table-3))
+           (fields prefix
+                   block))
 
          ;; record: charset
          ;; constructor: (make-charset text) -> charset
@@ -181,6 +179,76 @@
                       (values #t text (+ index 1) stop captures)]
                      [else
                       (values #f text index stop captures)]))))
+
+         (define match-literal
+           (lambda xs
+
+             (define ACCEPT (quote ACCEPT))
+             (define REJECT (quote REJECT))
+             
+             (define patterns (map string->list xs))
+             
+             (define derive
+               (lambda (pattern prefix)
+                 (let ([head (car pattern)]
+                       [tail (cdr pattern)])
+                   (cond [(char=? head prefix)
+                          (if (null? tail)
+                              ACCEPT
+                              tail)]
+                         [else
+                          REJECT]))))
+
+             (define derive-lockstep
+               (lambda (patterns prefix)
+                 (let loop ([current-list patterns]
+                            [next-list    '()]
+                            [accept?       #f])
+                   (cond [(null? current-list)
+                          (values accept? next-list)]
+                         [else
+                          (let* ([pattern    (car current-list)]
+                                 [derivation (derive pattern prefix)])
+                            (cond [(eq? derivation ACCEPT)
+                                   (loop (cdr current-list)
+                                         next-list
+                                         #t)]
+                                  [(eq? derivation REJECT)
+                                   (loop (cdr current-list)
+                                         next-list
+                                         accept?)]
+                                  [else
+                                   (loop (cdr current-list)
+                                         (cons derivation next-list)
+                                         accept?)]))]))))
+             
+             (define main-loop
+               (lambda (match? text index stop patterns saved-offset)
+                 (cond [(= index stop)
+                        (values match? saved-offset)]
+                       [else
+                        (let ([prefix (string-ref text index)])
+                          (let-values ([(accept? patterns)
+                                        (derive-lockstep patterns prefix)])
+                            (cond [(null? patterns)
+                                   (values match? saved-offset)]
+                                  [accept?
+                                   (main-loop #t
+                                              text
+                                              (+ index 1)
+                                              stop
+                                              patterns
+                                              (+ saved-offset 1))]
+                                  [else
+                                   (main-loop match?
+                                              text
+                                              (+ index 1)
+                                              stop
+                                              patterns
+                                              saved-offset)])))])))
+             
+             (lambda (match? text index stop captures)
+               )))
 
          ;; (and-then parser ...) -> parser
          ;; (and-then) ≈ ε
@@ -357,7 +425,7 @@
          ;;   where pattern = string
          ;;         scanner = (procedure port) -> boolean
          ;;
-         ;; Inputs a pattern and outputs an unanchored, non-backtracking,
+         ;; Inputs a pattern and outputs an anchored, multi-line, non-backtracking,
          ;; pattern-matching function, tailored to finding a match within
          ;; a textual-input port.
          (define find-string
@@ -365,9 +433,18 @@
 
              (define pattern-reset (string->list pattern))
 
+             (define skip-line
+               (lambda (port)
+                 (let loop ()
+                   (let ([x (get-char port)])
+                     (unless (or (port-eof? port)
+                                 (char=? x #\newline))
+                       (loop))))))
+
              (lambda (port)
                (unless (and (textual-port? port) (input-port? port))
-                 (assertion-violation 'find-string-procedure "not a textual input port" port))
+                 (assertion-violation 'find-string "not a textual input port" port))
+               
                (let loop ([pattern pattern-reset])
                  (cond [(null? pattern)
                         #t]
@@ -376,9 +453,11 @@
                        [else
                         (let ([x (car pattern)]
                               [y (get-char port)])
-                          (if (char=? x y)
-                              (loop (cdr pattern))
-                              (loop pattern-reset)))])))))
+                          (cond [(char=? x y)
+                                 (loop (cdr pattern))]
+                                [else
+                                 (skip-line port)
+                                 (loop pattern-reset)]))])))))
 
          ;; === Scanners ===
          ;;
@@ -390,17 +469,17 @@
          ;;
          ;; If a scan returns boolean true, the port will have advanced
          ;; past the terminus of the matching string. If a scan returns
-         ;; boolean false, the port will have exhausted its contents.
+         ;; boolean false, it will have exhausted the port's contents.
 
          ;; (indic-conjunct-header? port) -> boolean
          ;;   where port = textual-input port
          (define indic-conjunct-header?
-           (find-string "# Derived Property: Indic_Conjunct_Break\n"))
+           (find-string "# Derived Property: Indic_Conjunct_Break"))
 
          ;; (extended-pictographic-header? port) -> boolean
          ;;   where port = textual-input port
          (define extended-pictographic-header?
-           (find-string "# All omitted code points have Extended_Pictographic=No\n"))
+           (find-string "# All omitted code points have Extended_Pictographic=No"))
 
          (define unit-tests
            (test-chunk
