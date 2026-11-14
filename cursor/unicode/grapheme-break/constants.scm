@@ -18,22 +18,34 @@
                  INDIC-LINKER-AND-EXTEND
                  INDIC-LINKER-SUB-EXTEND
                  EXTENDED-PICTOGRAPHIC
-                 TOTAL-GRAPHEME-BREAKS
-                 TOTAL-INDIC-BREAKS
-                 TOTAL-EXTENDED-PICTOGRAPHICS
-                 TOTAL-PROPERTIES
-                 INDIC-BREAK-OFFSET
-                 EXTENDED-PICTOGRAPHIC-OFFSET
+                 INDIC-LINKER
+                 OTHER-STRING
+                 CR-STRING
+                 LF-STRING
+                 CONTROL-STRING
+                 L-STRING
+                 V-STRING
+                 LV-STRING
+                 LVT-STRING
+                 T-STRING
+                 REGIONAL-INDICATOR-STRING
+                 PREPEND-STRING
+                 EXTEND-STRING
+                 ZWJ-STRING
+                 SPACING-MARK-STRING
+                 INDIC-CONSONANT-STRING
+                 INDIC-EXTEND-STRING
+                 INDIC-LINKER-STRING
+                 EXTENDED-PICTOGRAPHIC-STRING
                  ALPHABET
-                 grapheme-break-property?
-                 grapheme-break->string
-                 grapheme-break->constant)
+                 ALPHABET-LENGTH
+                 string->grapheme-break)
          (import (rnrs)
                  (cursor tools))
 
-         ;; === Extended Grapheme Break Properties ===
+         ;; === Enumerated Constants ===
 
-         ;; - Grapheme Break Properties -
+         ;; - Extended Grapheme Break Properties -
          (define OTHER                    0)
          (define CR                       1)
          (define LF                       2)
@@ -58,15 +70,34 @@
          ;; - Extended Pictographic Property -
          (define EXTENDED-PICTOGRAPHIC   18)
 
-         (define TOTAL-GRAPHEME-BREAKS        14)
-         (define TOTAL-INDIC-BREAKS            4)
-         (define TOTAL-EXTENDED-PICTOGRAPHICS  1)
-         (define TOTAL-PROPERTIES             19)
+         ;; - Indic Linker Property -
+         ;;
+         ;; A distinct indic-conjunct break property that in a DFA
+         ;; must either include or exclude the Extend property.
+         (define INDIC-LINKER 19)
 
-         (define INDIC-BREAK-OFFSET           TOTAL-GRAPHEME-BREAKS)
-         (define EXTENDED-PICTOGRAPHIC-OFFSET (+ TOTAL-GRAPHEME-BREAKS TOTAL-INDIC-BREAKS))
+         ;; === Grapheme Break Identifier Strings ===
 
-         ;; === Alphabetic Sequence ===
+         (define OTHER-STRING                 "Other")
+         (define CR-STRING                    "CR")
+         (define LF-STRING                    "LF")
+         (define CONTROL-STRING               "Control")
+         (define L-STRING                     "L")
+         (define V-STRING                     "V")
+         (define LV-STRING                    "LV")
+         (define LVT-STRING                   "LVT")
+         (define T-STRING                     "T")
+         (define REGIONAL-INDICATOR-STRING    "Regional_Indicator")
+         (define PREPEND-STRING               "Prepend")
+         (define EXTEND-STRING                "Extend")
+         (define ZWJ-STRING                   "ZWJ")
+         (define SPACING-MARK-STRING          "SpacingMark")
+         (define INDIC-CONSONANT-STRING       "InCB; Consonant")
+         (define INDIC-EXTEND-STRING          "InCB; Extend")
+         (define INDIC-LINKER-STRING          "InCB; Linker")
+         (define EXTENDED-PICTOGRAPHIC-STRING "Extended_Pictographic")
+
+         ;; === DFA Alphabet ===
 
          (define ALPHABET
            (list OTHER
@@ -89,67 +120,36 @@
                  INDIC-LINKER-SUB-EXTEND
                  EXTENDED-PICTOGRAPHIC))
 
-         ;; === Predicates and Conversions ===
+         (define ALPHABET-LENGTH (length ALPHABET))
 
-         (define grapheme-break-property?
+         ;; === Grapheme Break Identifier String Conversion ===
+
+         ;; Maps grapheme-break identifier strings to their enumerated constants.
+         (define grapheme-break-table
+           (string-hashtable (OTHER-STRING                 OTHER)
+                             (CR-STRING                    CR)
+                             (LF-STRING                    LF)
+                             (CONTROL-STRING               CONTROL)
+                             (L-STRING                     L)
+                             (V-STRING                     V)
+                             (LV-STRING                    LV)
+                             (LVT-STRING                   LVT)
+                             (T-STRING                     T)
+                             (REGIONAL-INDICATOR-STRING    REGIONAL-INDICATOR)
+                             (PREPEND-STRING               PREPEND)
+                             (EXTEND-STRING                EXTEND)
+                             (ZWJ-STRING                   ZWJ)
+                             (SPACING-MARK-STRING          SPACING-MARK)
+                             (INDIC-CONSONANT-STRING       INDIC-CONSONANT)
+                             (INDIC-EXTEND-STRING          INDIC-EXTEND)
+                             (INDIC-LINKER-STRING          INDIC-LINKER)
+                             (EXTENDED-PICTOGRAPHIC-STRING EXTENDED-PICTOGRAPHIC)))
+
+         (define string->grapheme-break
            (lambda (x)
-             (and (>= x 0) (< x TOTAL-PROPERTIES))))
-
-         ;; Maps enumerated constants to their strings.
-         (define grapheme-break-string-table
-           '#("Other"
-              "CR"
-              "LF"
-              "Control"
-              "L"
-              "V"
-              "LV"
-              "LVT"
-              "T"
-              "Regional_Indicator"
-              "Prepend"
-              "Extend"
-              "ZWJ"
-              "SpacingMark"
-              "InCB; Consonant"
-              "InCB; Extend"
-              "InCB; Linker"
-              "Extended_Pictographic"))
-
-         (define grapheme-break->string
-           (lambda (x)
-             (unless (grapheme-break-property? x)
-               (assertion-violation 'grapheme-break->string
-                                     "not a grapheme-break"
-                                     x))
-               (vector-ref grapheme-break-string-table x)))
-
-         ;; Maps strings to their enumerated constants.
-         (define grapheme-break-constant-table
-           (string-hashtable ("Other"                 OTHER)
-                             ("CR"                    CR)
-                             ("LF"                    LF)
-                             ("Control"               CONTROL)
-                             ("L"                     L)
-                             ("V"                     V)
-                             ("LV"                    LV)
-                             ("LVT"                   LVT)
-                             ("T"                     T)
-                             ("Regional_Indicator"    REGIONAL-INDICATOR)
-                             ("Prepend"               PREPEND)
-                             ("Extend"                EXTEND)
-                             ("ZWJ"                   ZWJ)
-                             ("SpacingMark"           SPACING-MARK)
-                             ("InCB; Consonant"       INDIC-CONSONANT)
-                             ("InCB; Extend"          INDIC-EXTEND)
-                             ("InCB; Linker"          INDIC-LINKER)
-                             ("Extended_Pictographic" EXTENDED-PICTOGRAPHIC)))
-
-         (define grapheme-break->constant
-           (lambda (x)
-             (let ([constant (hashtable-ref grapheme-break-constant-table x #f)])
+             (let ([constant (hashtable-ref grapheme-break-table x #f)])
                (unless constant
-                 (assertion-violation 'grapheme-break-name->constant
+                 (assertion-violation 'string->grapheme-break
                                       "not a grapheme-break"
                                       x))
                constant)))

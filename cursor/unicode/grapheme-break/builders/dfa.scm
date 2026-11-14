@@ -424,9 +424,9 @@
          ;; (compile regex) -> dfa
          (define compile
            (lambda (regex)
-             (define FAIL-STATE EMPTY)
+             (define FAIL-STATE  EMPTY)
              (define START-STATE regex)
-             (define STRIDE TOTAL-PROPERTIES)
+             (define STRIDE      ALPHABET-LENGTH)
 
              ;; transitions: (hashtable state (hashtable symbol state))
              ;;            ≈ (state, symbol) -> state

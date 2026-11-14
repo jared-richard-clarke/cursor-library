@@ -22,8 +22,7 @@
          (define HASH           #\#)
          (define SPACE          #\space)
          (define HEX-DIGITS     "0123456789abcdefABCDEF")
-         (define ASCII-LETTERS  "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-         (define CODE-POINT-MAX #x10FFFF)
+         (define MAX-CODE-POINT #x10FFFF)
 
          (define CODEC (utf-8-codec))
          (define EOL-STYLE (eol-style lf))
@@ -112,7 +111,7 @@
 
          (define hashtable-list-keys
            (lambda (self)
-            
+
              (define reverse-list->vector
                (lambda (xs)
                  (let* ([size       (length xs)]
@@ -124,7 +123,7 @@
                            [else
                             (vector-set! new-vector index (car xs))
                             (loop (cdr xs) (- index 1))])))))
-             
+
              (let ([sequence (hashtable-list-sequence self)])
                (reverse-list->vector sequence))))
 
@@ -164,13 +163,17 @@
          (define match-with
            (lambda (x)
 
+             (define raise-assertion
+               (lambda (message value)
+                 (assertion-violation 'match-with message value)))
+
              (define predicate
                (cond [(char? x)
                       (lambda (y) (char=? x y))]
                      [(procedure? x)
                       x]
                      [else
-                      (assertion-violation 'match-with "neither a procedure nor char" x)]))
+                      (raise-assertion "neither a procedure nor char" x)]))
 
              (lambda (match? text index stop captures)
                (cond [(= index stop)
@@ -180,14 +183,17 @@
                      [else
                       (values #f text index stop captures)]))))
 
-         (define match-literal
+         (define literal-match
            (lambda xs
+
+             (unless (for-all string? xs)
+               (assertion-violation 'literal-match "all inputs must be strings" xs))
 
              (define ACCEPT (quote ACCEPT))
              (define REJECT (quote REJECT))
-             
+
              (define patterns (map string->list xs))
-             
+
              (define derive
                (lambda (pattern prefix)
                  (let ([head (car pattern)]
@@ -221,7 +227,7 @@
                                    (loop (cdr current-list)
                                          (cons derivation next-list)
                                          accept?)]))]))))
-             
+
              (define main-loop
                (lambda (match? text index stop patterns saved-offset)
                  (cond [(= index stop)
@@ -246,8 +252,9 @@
                                               stop
                                               patterns
                                               saved-offset)])))])))
-             
+
              (lambda (match? text index stop captures)
+               ;; todo
                )))
 
          ;; (and-then parser ...) -> parser
@@ -341,7 +348,7 @@
                          (reverse captures))
                      #f)))))
 
-         ;; === Parsers and Predicates ===
+         ;; === Parsers, Predicates, and Conversions ===
 
          (define string->hex
            (lambda (text)
@@ -352,11 +359,6 @@
              (lambda (x)
                (charset-has? set x))))
 
-         (define letter?
-           (let ([set (make-charset ASCII-LETTERS)])
-             (lambda (x)
-               (charset-has? set x))))
-
          (define whitespace     (repeat (match-with SPACE)))
 
          (define period         (match-with PERIOD))
@@ -364,8 +366,6 @@
          (define semicolon      (match-with SEMICOLON))
 
          (define hex-digit      (match-with hex-digit?))
-
-         (define letters        (repeat+1 (match-with letter?)))
 
          (define range-operator (and-then period period))
 
@@ -383,7 +383,24 @@
            (and-then code-point (maybe (and-then range-operator code-point))))
 
          (define property
-           (capture (and-then letters (maybe (and-then whitespace semicolon whitespace letters)))))
+           (literal-match OTHER-STRING
+                          CR-STRING
+                          LF-STRING
+                          CONTROL-STRING
+                          L-STRING
+                          V-STRING
+                          LV-STRING
+                          LVT-STRING
+                          T-STRING
+                          REGIONAL-INDICATOR-STRING
+                          PREPEND-STRING
+                          EXTEND-STRING
+                          ZWJ-STRING
+                          SPACING-MARK-STRING
+                          INDIC-CONSONANT-STRING
+                          INDIC-EXTEND-STRING
+                          INDIC-LINKER-STRING
+                          EXTENDED-PICTOGRAPHIC-STRING))
 
          (define field-parser
            (and-then whitespace code-points whitespace semicolon whitespace property))
@@ -397,11 +414,11 @@
          (define parse-field
            (lambda (line)
 
-             (define output (run field-parser line))
-
              (define raise-assertion
-               (lambda (message)
+               (lambda (message output)
                  (assertion-violation 'parse-field message output)))
+
+             (define output (run field-parser line))
 
              (cond [(eq? output #f)
                     #f]
@@ -409,17 +426,17 @@
                     (let ([size (length output)])
                       (cond [(= size 2)
                              (let ([start    (string->hex (list-ref output 0))]
-                                   [property (grapheme-break->constant (list-ref output 1))])
+                                   [property (string->grapheme-break (list-ref output 1))])
                                (make-code-point-data start start property))]
                             [(= size 3)
                              (let ([start    (string->hex (list-ref output 0))]
                                    [stop     (string->hex (list-ref output 1))]
-                                   [property (grapheme-break->constant (list-ref output 2))])
+                                   [property (string->grapheme-break (list-ref output 2))])
                                (make-code-point-data start stop property))]
                             [else
-                             (raise-assertion "output must contain 2 to 3 fields")]))]
+                             (raise-assertion "output must contain 2 to 3 fields" output)]))]
                    [else
-                    (raise-assertion "unexpected output")])))
+                    (raise-assertion "unexpected output" output)])))
 
          ;; (find-string pattern) -> scanner | raise exception
          ;;   where pattern = string
@@ -430,6 +447,10 @@
          ;; a textual-input port.
          (define find-string
            (lambda (pattern)
+
+             (define raise-assertion
+               (lambda (message port)
+                 (assertion-violation 'find-string message port)))
 
              (define pattern-reset (string->list pattern))
 
@@ -442,9 +463,10 @@
                        (loop))))))
 
              (lambda (port)
+
                (unless (and (textual-port? port) (input-port? port))
-                 (assertion-violation 'find-string "not a textual input port" port))
-               
+                 (raise-assertion "not a textual input port" port))
+
                (let loop ([pattern pattern-reset])
                  (cond [(null? pattern)
                         #t]
@@ -474,12 +496,12 @@
          ;; (indic-conjunct-header? port) -> boolean
          ;;   where port = textual-input port
          (define indic-conjunct-header?
-           (find-string "# Derived Property: Indic_Conjunct_Break"))
+           (find-string "# Derived Property: Indic_Conjunct_Break\n"))
 
          ;; (extended-pictographic-header? port) -> boolean
          ;;   where port = textual-input port
          (define extended-pictographic-header?
-           (find-string "# All omitted code points have Extended_Pictographic=No"))
+           (find-string "# All omitted code points have Extended_Pictographic=No\n"))
 
          (define unit-tests
            (test-chunk
