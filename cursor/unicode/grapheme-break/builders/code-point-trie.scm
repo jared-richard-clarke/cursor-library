@@ -183,6 +183,12 @@
                      [else
                       (values #f text index stop captures)]))))
 
+         ;; (literal-match pattern ...) -> parser | raise exception
+         ;;   where pattern = string
+         ;;
+         ;; Returns a parser that matches text by repeatedly taking the left
+         ;; derivative of a given set of patterns. The parser runs the patterns
+         ;; in lockstep, never backtracking over the text being matched.
          (define literal-match
            (lambda xs
 
@@ -192,7 +198,7 @@
              (define ACCEPT (quote ACCEPT))
              (define REJECT (quote REJECT))
 
-             (define patterns (map string->list xs))
+             (define PATTERNS (map string->list xs))
 
              (define derive
                (lambda (pattern prefix)
@@ -228,7 +234,7 @@
                                          (cons derivation next-list)
                                          accept?)]))]))))
 
-             (define main-loop
+             (define search
                (lambda (match? text index stop patterns saved-offset)
                  (cond [(= index stop)
                         (values match? saved-offset)]
@@ -239,23 +245,26 @@
                             (cond [(null? patterns)
                                    (values match? saved-offset)]
                                   [accept?
-                                   (main-loop #t
-                                              text
-                                              (+ index 1)
-                                              stop
-                                              patterns
-                                              (+ saved-offset 1))]
+                                   (search #t
+                                           text
+                                           (+ index 1)
+                                           stop
+                                           patterns
+                                           (+ saved-offset 1))]
                                   [else
-                                   (main-loop match?
-                                              text
-                                              (+ index 1)
-                                              stop
-                                              patterns
-                                              saved-offset)])))])))
+                                   (search match?
+                                           text
+                                           (+ index 1)
+                                           stop
+                                           patterns
+                                           saved-offset)])))])))
 
              (lambda (match? text index stop captures)
-               ;; todo
-               )))
+               (let-values ([(match? saved-offset)
+                             (search match? text index stop PATTERNS index)])
+                 (if match?
+                     (values #t text saved-offset stop captures)
+                     (values #f text index stop captures))))))
 
          ;; (and-then parser ...) -> parser
          ;; (and-then) ≈ ε
