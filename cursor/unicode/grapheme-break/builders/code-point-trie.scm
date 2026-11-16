@@ -393,8 +393,7 @@
            (and-then code-point (maybe (and-then range-operator code-point))))
 
          (define property
-           (literal-match OTHER-STRING
-                          CR-STRING
+           (literal-match CR-STRING
                           LF-STRING
                           CONTROL-STRING
                           L-STRING
