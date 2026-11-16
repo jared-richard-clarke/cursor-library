@@ -245,12 +245,13 @@
                             (cond [(null? patterns)
                                    (values match? saved-offset)]
                                   [accept?
-                                   (search #t
-                                           text
-                                           (+ index 1)
-                                           stop
-                                           patterns
-                                           (+ saved-offset 1))]
+                                   (let ([offset (+ index 1)])
+                                     (search #t
+                                             text
+                                             offset
+                                             stop
+                                             patterns
+                                             offset))]
                                   [else
                                    (search match?
                                            text
