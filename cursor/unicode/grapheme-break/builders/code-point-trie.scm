@@ -512,6 +512,40 @@
          (define extended-pictographic-header?
            (find-string "# All omitted code points have Extended_Pictographic=No\n"))
 
+         ;; === Code-Point-Trie Builders ===
+
+         ;; (build-property-map port) -> property-map
+         ;;   where port         = textual input port
+         ;;         property-map = (hashtable code-point property)
+         (define build-property-map
+           (lambda (port)
+
+             ;; (hashtable code-point property)
+             (define property-map (make-eqv-hashtable))
+
+             (define enumerate
+               (lambda (data)
+                 (let ([start    (code-point-data-start    data)]
+                       [stop     (code-point-data-stop     data)]
+                       [property (code-point-data-property data)])
+                   (let loop ([code-point start] )
+                     (cond [(= code-point stop)
+                            (hashtable-set! property-map code-point property)]
+                           [else
+                            (hashtable-set! property-map code-point property)
+                            (loop (+ code-point 1))])))))
+
+             (let loop ([line (get-line port)])
+               (cond [(eof-object? line)
+                      property-map]
+                     [else
+                      (let ([data (parse-field line)])
+                        (cond [(code-point-data? data)
+                               (enumerate data)
+                               (loop (get-line port))]
+                              [else
+                               (loop (get-line port))]))]))))
+
          (define unit-tests
            (test-chunk
             "Codepoint Trie"
