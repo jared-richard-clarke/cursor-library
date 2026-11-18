@@ -1,625 +1,622 @@
 (library (cursor core)
-         (export empty
-                 fail
-                 char
-                 text
-                 any
-                 and-then
-                 or-else
-                 maybe
-                 repeat
-                 repeat+1
-                 is?
-                 is-not?
-                 one-of
-                 none-of
-                 rule
-                 grammar
-                 capture
-                 transform
-                 (rename (unit-tests core:unit-tests)))
-         (import (rnrs)
-                 (cursor data)
-                 (cursor collections charset)
-                 (cursor tools))
+  (export empty
+          fail
+          char
+          text
+          any
+          and-then
+          or-else
+          maybe
+          repeat
+          repeat+1
+          is?
+          is-not?
+          one-of
+          none-of
+          rule
+          grammar
+          capture
+          transform
+          (rename (unit-tests core:unit-tests)))
+  (import (rnrs)
+          (cursor data)
+          (cursor collections charset)
+          (cursor tools))
 
-         ;; === Error Messages ===
+  ;; === Error Messages ===
 
-         (define ERROR-TYPE-CHARACTER "not a character")
-         (define ERROR-TYPE-SYMBOL    "not a symbol")
-         (define ERROR-TYPE-STRING    "not a string")
-         (define ERROR-TYPE-FUNCTION  "not a function")
-         (define ERROR-TYPE-CODE      "undefined parsing expression")
-         (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
-         (define ERROR-NULLABLE       "expression within may cause infinite loop")
-         (define ERROR-LEFT-RECURSION "rule may be left recursive")
+  (define ERROR-TYPE-CHARACTER "not a character")
+  (define ERROR-TYPE-SYMBOL    "not a symbol")
+  (define ERROR-TYPE-STRING    "not a string")
+  (define ERROR-TYPE-FUNCTION  "not a function")
+  (define ERROR-TYPE-CODE      "undefined parsing expression")
+  (define ERROR-UNDEFINED-RULE "undefined rule in grammar")
+  (define ERROR-NULLABLE       "expression within may cause infinite loop")
+  (define ERROR-LEFT-RECURSION "rule may be left recursive")
 
-         ;; === Helper Functions ===
+  ;; === Helper Functions ===
 
-         ;; (assert-ast (ast | char | string)) -> ast | raise exception
-         ;;
-         ;; Performs one of four tasks:
-         ;; 1. Asserts the given argument is an AST.
-         ;; 2. Asserts the given argument is a char and transforms it into an AST.
-         ;; 3. Asserts the given argument is a string and transforms it into an AST.
-         ;; 4. Raises an exception.
-         (define assert-ast
-           (lambda (x)
-             (cond [(char? x)   (char x)]
-                   [(string? x) (text x)]
-                   [(ast? x)    x]
-                   [else
-                    (peg-error "assert-ast" ERROR-TYPE-CODE (list x))])))
+  ;; (assert-ast (ast | char | string)) -> ast | raise exception
+  ;;
+  ;; Performs one of four tasks:
+  ;; 1. Asserts the given argument is an AST.
+  ;; 2. Asserts the given argument is a char and transforms it into an AST.
+  ;; 3. Asserts the given argument is a string and transforms it into an AST.
+  ;; 4. Raises an exception.
+  (define assert-ast
+    (lambda (x)
+      (cond [(char? x)   (char x)]
+            [(string? x) (text x)]
+            [(ast? x)    x]
+            [else
+             (peg-error "assert-ast" ERROR-TYPE-CODE (list x))])))
 
-         ;; (flatten-ast symbol (list ast)) -> (list ast)
-         ;;
-         ;; Flattens a nested list of ASTs of the given type by one level.
-         (define flatten-ast
-           (lambda (type xs)
-             (if (null? xs)
-                 xs
-                 (let ([ast  (assert-ast (car xs))]
-                       [next (cdr xs)])
-                   (if (eq? type (ast-type ast))
-                       (append (ast-node-x ast) (flatten-ast type next))
-                       (cons ast (flatten-ast type next)))))))
+  ;; (flatten-ast symbol (list ast)) -> (list ast)
+  ;;
+  ;; Flattens a nested list of ASTs of the given type by one level.
+  (define flatten-ast
+    (lambda (type xs)
+      (if (null? xs)
+          xs
+          (let ([ast  (assert-ast (car xs))]
+                [next (cdr xs)])
+            (if (eq? type (ast-type ast))
+                (append (ast-node-x ast) (flatten-ast type next))
+                (cons ast (flatten-ast type next)))))))
 
-         ;; (nullable? ast) -> boolean
-         ;;
-         ;; Checks if an AST might trigger an infinite loop.
-         ;; This is an approximation.
-         (define nullable?
-           (lambda (x)
-             (let recur ([x x] [grammar '()])
-                        ;; Traverses sequence, checking the subsequent node
-                        ;; only if the previous node is nullable. Every node
-                        ;; in a sequence can be nullable but the last.
-               (letrec ([check-sequence (lambda (xs grammar)
-                                          (cond [(null? (cdr xs))
-                                                 (recur (car xs) grammar)]
-                                                [(recur (car xs) grammar)
-                                                 (check-sequence (cdr xs) grammar)]
-                                                [else #f]))]
-                        ;; Traverses choice, checking the previous node
-                        ;; only if the subsequent node is not nullable.
-                        ;; Every node in a choice must NOT be nullable.
-                        [check-choice (lambda (xs grammar)
-                                        (cond [(null? (cdr xs))
-                                               (recur (car xs) grammar)]
-                                              [(check-choice (cdr xs) grammar)
-                                               #t]
+  ;; (nullable? ast) -> boolean
+  ;;
+  ;; Checks if an AST might trigger an infinite loop.
+  ;; This is an approximation.
+  (define nullable?
+    (lambda (x)
+      (let recur ([x x] [grammar '()])
+                 ;; Traverses sequence, checking the subsequent node
+                 ;; only if the previous node is nullable. Every node
+                 ;; in a sequence can be nullable but the last.
+        (letrec ([check-sequence (lambda (xs grammar)
+                                   (cond [(null? (cdr xs))
+                                          (recur (car xs) grammar)]
+                                         [(recur (car xs) grammar)
+                                          (check-sequence (cdr xs) grammar)]
+                                         [else #f]))]
+                 ;; Traverses choice, checking the previous node
+                 ;; only if the subsequent node is not nullable.
+                 ;; Every node in a choice must NOT be nullable.
+                 [check-choice (lambda (xs grammar)
+                                 (cond [(null? (cdr xs))
+                                        (recur (car xs) grammar)]
+                                       [(check-choice (cdr xs) grammar)
+                                        #t]
+                                       [else
+                                        (recur (car xs) grammar)]))])
+          (let ([type   (ast-type x)]
+                [node-x (ast-node-x x)]
+                [node-y (ast-node-y x)])
+            (case type
+              [(FAIL ANY CHARACTER ONE-OF NONE-OF OPEN-CALL) #f]
+              [(EMPTY REPEAT IS IS-NOT) #t]
+              [(SEQUENCE)
+               (check-sequence node-x grammar)]
+              [(CHOICE)
+               (check-choice node-x grammar)]
+              [(GRAMMAR)
+               (recur (vector-ref node-x 0) x)]
+              [(CALL)
+               (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
+              [(RULE CAPTURE TRANSFORM)
+               (recur node-y grammar)]
+              [else #f]))))))
+
+  ;; (check-grammar (vector ast)) -> (vector ast) | raise exception
+  ;;
+  ;; Checks if a list of grammar rules is potentially left-recursive
+  ;; by running a simulation on that list. This is an approximation.
+  ;;
+  ;; Raises an exception on potential left recursion. Otherwise, returns
+  ;; list unchanged.
+  ;;
+  ;; Side Note: The rules list is a vector for O(1) lookup.
+  (define check-grammar
+    (lambda (xs)
+      (let ([nodes xs]
+            [size (vector-length xs)]
+            [rule-count (make-eqv-hashtable)]
+            [call-count 0]
+            ;; If a set of rules has accumulatively been called more than a 1000 times,
+            ;; then it is probably left-recursive. This limit is arbitrary.
+            [max-count 1000]
+            [error-flag #f])
+        (let ([check-rule (lambda (start)
+                            (letrec ([traverse-rules
+                                      (lambda (index nullable-flag)
+                                        (cond [(or error-flag (>= index size)) #f]
+                                              [else (traverse-node (vector-ref nodes index) nullable-flag)]))]
+                                     ;; Traverses sequence, checking the subsequent node only if the
+                                     ;; previous node is nullable and the error flag is set to false.
+                                     [traverse-sequence
+                                      (lambda (xs nullable-flag)
+                                        (cond [error-flag #f]
+                                              [(null? (cdr xs))
+                                               (traverse-node (car xs) nullable-flag)]
+                                              [(traverse-node (car xs) nullable-flag)
+                                               (traverse-sequence (cdr xs) nullable-flag)]
+                                              [else #f]))]
+                                     ;; Traverses choice. Each node must be checked unless
+                                     ;; the error flag is set to true.
+                                     [traverse-choice
+                                      (lambda (xs nullable-flag)
+                                        (cond [error-flag #f]
+                                              [(null? (cdr xs))
+                                               (traverse-node (car xs) nullable-flag)]
                                               [else
-                                               (recur (car xs) grammar)]))])
-                 (let ([type   (ast-type x)]
-                       [node-x (ast-node-x x)]
-                       [node-y (ast-node-y x)])
-                   (case type
-                     [(FAIL ANY CHARACTER ONE-OF NONE-OF OPEN-CALL) #f]
-                     [(EMPTY REPEAT IS IS-NOT) #t]
-                     [(SEQUENCE)
-                      (check-sequence node-x grammar)]
-                     [(CHOICE)
-                      (check-choice node-x grammar)]
-                     [(GRAMMAR)
-                      (recur (vector-ref node-x 0) x)]
-                     [(CALL)
-                      (recur (vector-ref (ast-node-x grammar) node-y) grammar)]
-                     [(RULE CAPTURE TRANSFORM)
-                      (recur node-y grammar)]
-                     [else #f]))))))
+                                               (let ([nullable-flag (traverse-node (car xs) nullable-flag)])
+                                                 (if error-flag
+                                                     #f
+                                                     (traverse-choice (cdr xs) nullable-flag)))]))]
+                                     [traverse-node
+                                      (lambda (x nullable-flag)
+                                        (cond [error-flag #f]
+                                              [else
+                                               (let ([type   (ast-type x)]
+                                                     [node-x (ast-node-x x)]
+                                                     [node-y (ast-node-y x)])
+                                                 (case type
+                                                   [(RULE)
+                                                    (set! call-count (+ call-count 1))
+                                                    (cond [error-flag #f]
+                                                          [(> call-count max-count)
+                                                           (set! error-flag #t)
+                                                           #f]
+                                                          [else
+                                                           (let ([total (hashtable-ref rule-count node-x #f)])
+                                                             (if total
+                                                                 (begin (hashtable-set! rule-count node-x (+ total 1))
+                                                                        (traverse-node node-y nullable-flag))
+                                                                 (begin (hashtable-set! rule-count node-x 1)
+                                                                        (traverse-node node-y nullable-flag))))])]
+                                                   [(EMPTY) #t]
+                                                   [(FAIL ANY CHARACTER ONE-OF NONE-OF)
+                                                    nullable-flag]
+                                                   [(SEQUENCE)
+                                                    (traverse-sequence node-x #f)]
+                                                   [(CHOICE)
+                                                    (traverse-choice node-x nullable-flag)]
+                                                   [(CALL)
+                                                    (traverse-rules node-y nullable-flag)]
+                                                   [(REPEAT IS IS-NOT)
+                                                    (traverse-node node-x #t)]
+                                                   [(CAPTURE TRANSFORM)
+                                                    (traverse-node node-y nullable-flag)]
+                                                   [else #f]))]))])
+                              (traverse-rules start #f)))]
+              ;; Look up rule with the highest call count. This rule is most likely
+              ;; responsible for left recursion.
+              [find-rule  (lambda ()
+                            (let ([rules (hashtable-keys rule-count)])
+                              (vector-fold (lambda (rule-x rule-y)
+                                             (let ([count-x (hashtable-ref rule-count rule-x 0)]
+                                                   [count-y (hashtable-ref rule-count rule-y 0)])
+                                               (if (> count-x count-y)
+                                                   rule-x
+                                                   rule-y)))
+                                           rules)))])
+          ;; Loop over and check each rule in grammar. Raise exception if error flag is set to true.
+          (let loop ([index 0])
+            (cond [error-flag
+                   (peg-error "grammar" ERROR-LEFT-RECURSION (list (find-rule)))]
+                  [(< index size)
+                   (check-rule index)
+                   (loop (+ index 1))]
+                  [else nodes]))))))
 
-         ;; (check-grammar (vector ast)) -> (vector ast) | raise exception
-         ;;
-         ;; Checks if a list of grammar rules is potentially left-recursive
-         ;; by running a simulation on that list. This is an approximation.
-         ;;
-         ;; Raises an exception on potential left recursion. Otherwise, returns
-         ;; list unchanged.
-         ;;
-         ;; Side Note: The rules list is a vector for O(1) lookup.
-         (define check-grammar
-           (lambda (xs)
-             (let ([nodes xs]
-                   [size (vector-length xs)]
-                   [rule-count (make-eqv-hashtable)]
-                   [call-count 0]
-                   ;; If a set of rules has accumulatively been called more than a 1000 times,
-                   ;; then it is probably left-recursive. This limit is arbitrary.
-                   [max-count 1000]
-                   [error-flag #f])
-               (let ([check-rule (lambda (start)
-                                   (letrec ([traverse-rules
-                                             (lambda (index nullable-flag)
-                                               (cond [(or error-flag (>= index size)) #f]
-                                                     [else (traverse-node (vector-ref nodes index) nullable-flag)]))]
-                                            ;; Traverses sequence, checking the subsequent node only if the
-                                            ;; previous node is nullable and the error flag is set to false.
-                                            [traverse-sequence
-                                             (lambda (xs nullable-flag)
-                                               (cond [error-flag #f]
-                                                     [(null? (cdr xs))
-                                                      (traverse-node (car xs) nullable-flag)]
-                                                     [(traverse-node (car xs) nullable-flag)
-                                                      (traverse-sequence (cdr xs) nullable-flag)]
-                                                     [else #f]))]
-                                            ;; Traverses choice. Each node must be checked unless
-                                            ;; the error flag is set to true.
-                                            [traverse-choice
-                                             (lambda (xs nullable-flag)
-                                               (cond [error-flag #f]
-                                                     [(null? (cdr xs))
-                                                      (traverse-node (car xs) nullable-flag)]
-                                                     [else
-                                                      (let ([nullable-flag (traverse-node (car xs) nullable-flag)])
-                                                        (if error-flag
-                                                            #f
-                                                            (traverse-choice (cdr xs) nullable-flag)))]))]
-                                            [traverse-node
-                                             (lambda (x nullable-flag)
-                                               (cond [error-flag #f]
-                                                     [else
-                                                      (let ([type   (ast-type x)]
-                                                            [node-x (ast-node-x x)]
-                                                            [node-y (ast-node-y x)])
-                                                        (case type
-                                                          [(RULE)
-                                                           (set! call-count (+ call-count 1))
-                                                           (cond [error-flag #f]
-                                                                 [(> call-count max-count)
-                                                                  (set! error-flag #t)
-                                                                  #f]
-                                                                 [else
-                                                                  (let ([total (hashtable-ref rule-count node-x #f)])
-                                                                    (if total
-                                                                        (begin (hashtable-set! rule-count node-x (+ total 1))
-                                                                               (traverse-node node-y nullable-flag))
-                                                                        (begin (hashtable-set! rule-count node-x 1)
-                                                                               (traverse-node node-y nullable-flag))))])]
-                                                          [(EMPTY) #t]
-                                                          [(FAIL ANY CHARACTER ONE-OF NONE-OF)
-                                                           nullable-flag]
-                                                          [(SEQUENCE)
-                                                           (traverse-sequence node-x #f)]
-                                                          [(CHOICE)
-                                                           (traverse-choice node-x nullable-flag)]
-                                                          [(CALL)
-                                                           (traverse-rules node-y nullable-flag)]
-                                                          [(REPEAT IS IS-NOT)
-                                                           (traverse-node node-x #t)]
-                                                          [(CAPTURE TRANSFORM)
-                                                           (traverse-node node-y nullable-flag)]
-                                                          [else #f]))]))])
-                                     (traverse-rules start #f)))]
-                     ;; Look up rule with the highest call count. This rule is most likely
-                     ;; responsible for left recursion.
-                     [find-rule  (lambda ()
-                                   (let ([rules (hashtable-keys rule-count)])
-                                     (vector-fold (lambda (rule-x rule-y)
-                                                    (let ([count-x (hashtable-ref rule-count rule-x 0)]
-                                                          [count-y (hashtable-ref rule-count rule-y 0)])
-                                                      (if (> count-x count-y)
-                                                          rule-x
-                                                          rule-y)))
-                                                  rules)))])
-                 ;; Loop over and check each rule in grammar. Raise exception if error flag is set to true.
-                 (let loop ([index 0])
-                   (cond [error-flag
-                          (peg-error "grammar" ERROR-LEFT-RECURSION (list (find-rule)))]
-                         [(< index size)
-                          (check-rule index)
-                          (loop (+ index 1))]
-                         [else nodes]))))))
+  ;; === Terminals ===
 
+  ;; empty = ε
+  ;; empty -> (ast EMPTY)
+  (define empty (encode-ast EMPTY))
 
-         ;; === Terminals ===
+  ;; fail
+  ;; fail -> (ast FAIL)
+  (define fail (encode-ast FAIL))
 
-         ;; empty = ε
-         ;; empty -> (ast EMPTY)
-         (define empty (encode-ast EMPTY))
+  ;; any = .
+  ;; any -> (ast ANY)
+  (define any (encode-ast ANY))
 
-         ;; fail
-         ;; fail -> (ast FAIL)
-         (define fail (encode-ast FAIL))
+  ;; (char #\a) = "a"
+  ;; (char #\a) -> (ast CHARACTER #\a)
+  (define char
+    (lambda (x)
+      (if (char? x)
+          (encode-ast CHARACTER x)
+          (peg-error "char" ERROR-TYPE-CHARACTER (list x)))))
 
-         ;; any = .
-         ;; any -> (ast ANY)
-         (define any (encode-ast ANY))
+  ;; === Concatenation ===
 
-         ;; (char #\a) = "a"
-         ;; (char #\a) -> (ast CHARACTER #\a)
-         (define char
-           (lambda (x)
-             (if (char? x)
-                 (encode-ast CHARACTER x)
-                 (peg-error "char" ERROR-TYPE-CHARACTER (list x)))))
+  ;; (and-then px py ...) = px • py • ...
+  ;; (and-then px)        = px
+  ;; (and-then)           = ε
+  ;;
+  ;; (and-then px py ...) -> (ast SEQUENCE (list px py ...))
+  ;; (and-then px)        -> px
+  ;; (and-then)           -> empty
+  (define and-then
+    (case-lambda
+      [()  empty]
+      [(x) (assert-ast x)]
+      [xs  (encode-ast SEQUENCE (flatten-ast SEQUENCE xs))]))
 
-         ;; === Concatenation ===
+  ;; === Ordered Choice: Limited Backtracking ===
 
-         ;; (and-then px py ...) = px • py • ...
-         ;; (and-then px)        = px
-         ;; (and-then)           = ε
-         ;;
-         ;; (and-then px py ...) -> (ast SEQUENCE (list px py ...))
-         ;; (and-then px)        -> px
-         ;; (and-then)           -> empty
-         (define and-then
-           (case-lambda
-             [()  empty]
-             [(x) (assert-ast x)]
-             [xs  (encode-ast SEQUENCE (flatten-ast SEQUENCE xs))]))
+  ;; (or-else px py ...) = px / py / ...
+  ;; (or-else px)        = px
+  ;; (or-else)           = fail
+  ;;
+  ;; (or-else px py ...) -> (ast CHOICE (list px py ...))
+  ;; (or-else px)        -> px
+  ;; (or-else)           -> fail
+  (define or-else
+    (case-lambda
+     [()  fail]
+     [(x) (assert-ast x)]
+     [xs  (encode-ast CHOICE (flatten-ast CHOICE xs))]))
 
-         ;; === Ordered Choice: Limited Backtracking ===
+  ;; (maybe px) = px?
+  ;;            = px / ε
+  ;; (maybe px) -> (ast CHOICE (list px empty))
+  (define maybe
+    (lambda (px)
+      (or-else px empty)))
 
-         ;; (or-else px py ...) = px / py / ...
-         ;; (or-else px)        = px
-         ;; (or-else)           = fail
-         ;;
-         ;; (or-else px py ...) -> (ast CHOICE (list px py ...))
-         ;; (or-else px)        -> px
-         ;; (or-else)           -> fail
-         (define or-else
-           (case-lambda
-            [()  fail]
-            [(x) (assert-ast x)]
-            [xs  (encode-ast CHOICE (flatten-ast CHOICE xs))]))
+  ;; === Repetition ===
 
-         ;; (maybe px) = px?
-         ;;            = px / ε
-         ;; (maybe px) -> (ast CHOICE (list px empty))
-         (define maybe
-           (lambda (px)
-             (or-else px empty)))
+  ;; (repeat px) = px*
+  ;; (repeat px) -> (ast REPEAT px)
+  (define repeat
+    (lambda (px)
+      (let ([pattern (assert-ast px)])
+        (if (not (nullable? pattern))
+            (encode-ast REPEAT pattern)
+            (peg-error "repeat" ERROR-NULLABLE '())))))
 
-         ;; === Repetition ===
+  ;; (repeat+1 px) = px+
+  ;;               = px • px*
+  ;; (repeat+1 px) -> (ast SEQUENCE (list px (repeat px)))
+  (define repeat+1
+    (lambda (px)
+      (and-then px (repeat px))))
 
-         ;; (repeat px) = px*
-         ;; (repeat px) -> (ast REPEAT px)
-         (define repeat
-           (lambda (px)
-             (let ([pattern (assert-ast px)])
-               (if (not (nullable? pattern))
-                   (encode-ast REPEAT pattern)
-                   (peg-error "repeat" ERROR-NULLABLE '())))))
+  ;; === Syntactic Predicates: Unlimited Lookahead ===
 
-         ;; (repeat+1 px) = px+
-         ;;               = px • px*
-         ;; (repeat+1 px) -> (ast SEQUENCE (list px (repeat px)))
-         (define repeat+1
-           (lambda (px)
-             (and-then px (repeat px))))
+  ;; (is? px) = &px
+  ;; (is? px) -> (ast IS px)
+  (define is?
+    (lambda (px)
+      (encode-ast IS (assert-ast px))))
 
-         ;; === Syntactic Predicates: Unlimited Lookahead ===
+  ;; (is-not? px) = !px
+  ;; (is-not? px) -> (ast IS-NOT px)
+  (define is-not?
+    (lambda (px)
+      (encode-ast IS-NOT (assert-ast px))))
 
-         ;; (is? px) = &px
-         ;; (is? px) -> (ast IS px)
-         (define is?
-           (lambda (px)
-             (encode-ast IS (assert-ast px))))
+  ;; (one-of "abc") = [abc]
+  ;; (one-of "")    = ∅
+  ;;   where ∅ = the empty set
+  ;;
+  ;; (one-of "abc") -> (ast ONE-OF (charset "abc"))
+  ;; (one-of "")    -> fail
+  (define one-of
+    (lambda (xs)
+      (cond [(string? xs)
+             (if (string=? xs "")
+                 fail
+                 (encode-ast ONE-OF (make-charset xs)))]
+            [else
+             (peg-error "one-of" ERROR-TYPE-STRING (list xs))])))
 
-         ;; (is-not? px) = !px
-         ;; (is-not? px) -> (ast IS-NOT px)
-         (define is-not?
-           (lambda (px)
-             (encode-ast IS-NOT (assert-ast px))))
+  ;; (none-of "abc") = [^abc]
+  ;; (none-of "")    = U
+  ;;   where U = the universal set
+  ;;
+  ;; (none-of "abc") -> (ast NONE-OF (charset "abc"))
+  ;; (none-of "")    -> any
+  ;;
+  ;; Operation returns the universal set minus the provided characters.
+  ;; In this context, the universal set contains all characters
+  ;; as provided by R6RS — particularly Chez Scheme.
+  (define none-of
+    (lambda (xs)
+      (cond [(string? xs)
+             (if (string=? xs "")
+                 any
+                 (encode-ast NONE-OF (make-charset xs)))]
+            [else
+             (peg-error "none-of" ERROR-TYPE-STRING (list xs))])))
 
-         ;; (one-of "abc") = [abc]
-         ;; (one-of "")    = ∅
-         ;;   where ∅ = the empty set
-         ;;
-         ;; (one-of "abc") -> (ast ONE-OF (charset "abc"))
-         ;; (one-of "")    -> fail
-         (define one-of
-           (lambda (xs)
-             (cond [(string? xs)
-                    (if (string=? xs "")
-                        fail
-                        (encode-ast ONE-OF (make-charset xs)))]
-                   [else
-                    (peg-error "one-of" ERROR-TYPE-STRING (list xs))])))
+  ;; === Grammar ===
 
-         ;; (none-of "abc") = [^abc]
-         ;; (none-of "")    = U
-         ;;   where U = the universal set
-         ;;
-         ;; (none-of "abc") -> (ast NONE-OF (charset "abc"))
-         ;; (none-of "")    -> any
-         ;;
-         ;; Operation returns the universal set minus the provided characters.
-         ;; In this context, the universal set contains all characters
-         ;; as provided by R6RS — particularly Chez Scheme.
-         (define none-of
-           (lambda (xs)
-             (cond [(string? xs)
-                    (if (string=? xs "")
-                        any
-                        (encode-ast NONE-OF (make-charset xs)))]
-                   [else
-                    (peg-error "none-of" ERROR-TYPE-STRING (list xs))])))
+  ;; (rule x)
+  ;;   where x = symbol
+  ;;
+  ;; (rule x)  -> (ast OPEN-CALL x)
+  (define-syntax rule
+    (syntax-rules ()
+      [(_ x)
+       (let ([id (quote x)])
+         (if (symbol? id)
+             (encode-ast OPEN-CALL id)
+             (peg-error "rule" ERROR-TYPE-SYMBOL (list id))))]))
 
-         ;; === Grammar ===
+  ;; (grammar [id pattern] ...) = id <- pattern
+  ;;                              ...
+  ;; (grammar [id pattern] ...) -> (ast GRAMMAR (vector (ast RULE id pattern) ...))
+  (define-syntax grammar
+    (syntax-rules ()
+      [(_ [rule-x body-x]
+          [rule-y body-y]
+          ...)
+       (let ([rule-x (encode-ast RULE (quote rule-x) (assert-ast body-x))]
+             [rule-y (encode-ast RULE (quote rule-y) (assert-ast body-y))]
+             ...)
+         (let* ([symbols    (quote (rule-x rule-y ...))]
+                [offsets    (zip symbols (iota (length symbols)))]
+                ;; Collect rules.
+                [open-rules (vector rule-x rule-y ...)]
+                ;; Close open calls.
+                [closed-rules
+                 (vector-map (lambda (rule)
+                               (encode-ast RULE
+                                           (ast-node-x rule)
+                                           (let recur ([node (ast-node-y rule)])
+                                             (let ([type (ast-type node)])
+                                               (case type
+                                                 ;; terminals
+                                                 [(EMPTY FAIL ANY CHARACTER CALL ONE-OF NONE-OF) node]
+                                                 ;; sequences
+                                                 [(SEQUENCE CHOICE)
+                                                  (encode-ast type (map recur (ast-node-x node)))]
+                                                 ;; non-terminals
+                                                 [(REPEAT IS IS-NOT)
+                                                  (encode-ast type (recur (ast-node-x node)))]
+                                                 [(CAPTURE TRANSFORM)
+                                                  (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
+                                                 ;; skip
+                                                 [(GRAMMAR) node]
+                                                 ;; open call -> call
+                                                 [(OPEN-CALL)
+                                                  (let ([offset (assq (ast-node-x node) offsets)])
+                                                    (if offset
+                                                        (encode-ast CALL (car offset) (cdr offset))
+                                                        (peg-error "grammar" ERROR-UNDEFINED-RULE (list (ast-node-x node)))))]
+                                                 ;; wildcard
+                                                 [else node])))))
+                             open-rules)])
+           ;; Check for possible left recursion.
+           (encode-ast GRAMMAR (check-grammar closed-rules))))]))
 
-         ;; (rule x)
-         ;;   where x = symbol
-         ;;
-         ;; (rule x)  -> (ast OPEN-CALL x)
-         (define-syntax rule
-           (syntax-rules ()
-             [(_ x)
-              (let ([id (quote x)])
-                (if (symbol? id)
-                    (encode-ast OPEN-CALL id)
-                    (peg-error "rule" ERROR-TYPE-SYMBOL (list id))))]))
+  ;; (capture fn px)
+  ;;   where fn = function
+  ;;         px = pattern
+  ;;
+  ;; (capture fn px) -> (ast CAPTURE fn px)
+  ;; (capture px)    -> (ast CAPTURE '() px)
+  (define capture
+    (case-lambda
+     [(px)
+      (encode-ast CAPTURE '() (assert-ast px))]
+     [(fn px)
+      (unless (procedure? fn)
+        (peg-error "capture" ERROR-TYPE-FUNCTION (list fn)))
+      (encode-ast CAPTURE fn (assert-ast px))]))
 
-         ;; (grammar [id pattern] ...) = id <- pattern
-         ;;                              ...
-         ;; (grammar [id pattern] ...) -> (ast GRAMMAR (vector (ast RULE id pattern) ...))
-         (define-syntax grammar
-           (syntax-rules ()
-             [(_ [rule-x body-x]
-                 [rule-y body-y]
-                 ...)
-              (let ([rule-x (encode-ast RULE (quote rule-x) (assert-ast body-x))]
-                    [rule-y (encode-ast RULE (quote rule-y) (assert-ast body-y))]
-                    ...)
-                (let* ([symbols    (quote (rule-x rule-y ...))]
-                       [offsets    (zip symbols (iota (length symbols)))]
-                       ;; Collect rules.
-                       [open-rules (vector rule-x rule-y ...)]
-                       ;; Close open calls.
-                       [closed-rules
-                        (vector-map (lambda (rule)
+  ;; (transform fn px)
+  ;;   where fn = function
+  ;;         px = pattern
+  ;;
+  ;; (transform fn px) -> (ast TRANSFORM fn px)
+  (define transform
+    (lambda (fn px)
+      (if (procedure? fn)
+          (encode-ast TRANSFORM fn (assert-ast px))
+          (peg-error "transform" ERROR-TYPE-FUNCTION (list fn)))))
+
+  ;; (text "abc") = a • b • c
+  ;; (text "")    = ε
+  ;; (text "abc") -> (ast SEQUENCE (list (char #\a) (char #\b) (char #\c)))
+  ;; (text "")    -> empty
+  (define text
+    (lambda (xs)
+      (cond [(string? xs)
+             (let* ([characters (map (lambda (x) (encode-ast CHARACTER x)) (string->list xs))]
+                    [size       (length characters)])
+               (cond [(< size 1) empty]
+                     [(= size 1) (car characters)]
+                     [else       (encode-ast SEQUENCE characters)]))]
+            [else
+             (peg-error "text" ERROR-TYPE-STRING (list xs))])))
+
+  ;; === Unit Tests ===
+
+  (define unit-tests
+    (test-chunk
+     "Cursor Core"
+     ([A (encode-ast CHARACTER #\a)]
+      [B (encode-ast CHARACTER #\b)]
+      [C (encode-ast CHARACTER #\c)]
+      [identity     (lambda (x) x)]
+      [error-equal? (lambda (x y)
+                      (and (peg-violation? x) (peg-violation? y)
+                           (equal? (list (condition-who x) (condition-message x) (condition-irritants x))
+                                   (list (condition-who y) (condition-message y) (condition-irritants y)))))]
+      [peg-error    (lambda (who message irritants)
+                      (condition (make-peg-violation)
+                                 (make-who-condition who)
+                                 (make-message-condition message)
+                                 (make-irritants-condition irritants)))])
+     ;; === Literals ===
+     (test-assert "character literal"
+                  ast-equal?
+                  (char #\a)
+                  A)
+
+     (test-assert "character error"
+                  error-equal?
+                  (catch (char "a"))
+                  (peg-error "char" ERROR-TYPE-CHARACTER (list "a")))
+
+     ;; === Concatenation ===
+     (test-assert "text sequence abc"
+                  ast-equal?
+                  (text "abc")
+                  (encode-ast SEQUENCE (list A B C)))
+
+     (test-assert "text sequence error"
+                  error-equal?
+                  (catch (text #\a))
+                  (peg-error "text" ERROR-TYPE-STRING (list #\a)))
+
+     (test-assert "text epsilon"
+                  ast-equal?
+                  (text "")
+                  empty)
+
+     (test-assert "and-then abc"
+                  ast-equal?
+                  (and-then #\a #\b #\c)
+                  (encode-ast SEQUENCE (list A B C)))
+
+     (test-assert "and-then nested"
+                  ast-equal?
+                  (and-then (and-then #\a #\b) #\c "ba")
+                  (encode-ast SEQUENCE (list A B C B A)))
+
+     (test-assert "and-then identity"
+                  ast-equal?
+                  (and-then)
+                  empty)
+
+     ;; === Ordered Choice ===
+     (test-assert "or-else, a / b"
+                  ast-equal?
+                  (or-else #\a #\b)
+                  (encode-ast CHOICE (list A B)))
+
+     (test-assert "or-else nested"
+                  ast-equal?
+                  (or-else #\a (or-else #\b #\c))
+                  (encode-ast CHOICE (list A B C)))
+
+     (test-assert "or-else identity"
+                  ast-equal?
+                  (or-else)
+                  fail)
+
+     ;; === Repetition ===
+     (test-assert "repeat a*"
+                  ast-equal?
+                  (repeat #\a)
+                  (encode-ast REPEAT A))
+
+     (test-assert "repeat a+"
+                  ast-equal?
+                  (repeat+1 #\a)
+                  (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
+
+     (test-assert "repeat nullable"
+                  error-equal?
+                  (catch (repeat empty))
+                  (peg-error "repeat" ERROR-NULLABLE '()))
+
+     ;; === Not Predicate ===
+     (test-assert "predicate !a"
+                  ast-equal?
+                  (is-not? #\a)
+                  (encode-ast IS-NOT A))
+
+     ;; === Predicate ===
+     (test-assert "predicate &a"
+                  ast-equal?
+                  (is? #\a)
+                  (encode-ast IS A))
+
+     ;; === Sets ===
+     (test-assert "character set [abc]"
+                  ast-equal?
+                  (one-of "abc")
+                  (encode-ast ONE-OF (make-charset "abc")))
+
+     (test-assert "character set [^abc]"
+                  ast-equal?
+                  (none-of "abc")
+                  (encode-ast NONE-OF (make-charset "abc")))
+
+     (test-assert "character set error"
+                  error-equal?
+                  (catch (one-of (list #\a #\b #\c)))
+                  (peg-error "one-of" ERROR-TYPE-STRING (list (list #\a #\b #\c))))
+
+     (test-assert "empty set"
+                  ast-equal?
+                  (one-of "")
+                  fail)
+
+     (test-assert "universal set"
+                  ast-equal?
+                  (none-of "")
+                  any)
+
+     ;; === Captures ===
+     (test-assert "capture, baseline"
+                  ast-equal?
+                  (capture #\a)
+                  (encode-ast CAPTURE '() A))
+
+     (test-assert "capture, true positive"
+                  ast-equal?
+                  (capture identity #\a)
+                  (encode-ast CAPTURE identity A))
+
+     (test-assert "capture, false positive, + ≠ identity"
+                  ast-equal?
+                  (capture + #\a)
+                  (encode-ast CAPTURE identity A))
+
+     ;; === Grammars ===
+     (test-assert "grammar, baseline"
+                  ast-equal?
+                  (grammar [R1 (and-then "ab" (rule R2))]
+                           [R2 "c"])
+                  (encode-ast GRAMMAR
+                              (vector (encode-ast RULE
+                                                  (quote R1)
+                                                  (encode-ast SEQUENCE
+                                                              (list A
+                                                                    B
+                                                                    (encode-ast CALL
+                                                                                (quote R2)
+                                                                                1))))
                                       (encode-ast RULE
-                                                  (ast-node-x rule)
-                                                  (let recur ([node (ast-node-y rule)])
-                                                    (let ([type (ast-type node)])
-                                                      (case type
-                                                        ;; terminals
-                                                        [(EMPTY FAIL ANY CHARACTER CALL ONE-OF NONE-OF) node]
-                                                        ;; sequences
-                                                        [(SEQUENCE CHOICE)
-                                                         (encode-ast type (map recur (ast-node-x node)))]
-                                                        ;; non-terminals
-                                                        [(REPEAT IS IS-NOT)
-                                                         (encode-ast type (recur (ast-node-x node)))]
-                                                        [(CAPTURE TRANSFORM)
-                                                         (encode-ast type (ast-node-x node) (recur (ast-node-y node)))]
-                                                        ;; skip
-                                                        [(GRAMMAR) node]
-                                                        ;; open call -> call
-                                                        [(OPEN-CALL)
-                                                         (let ([offset (assq (ast-node-x node) offsets)])
-                                                           (if offset
-                                                               (encode-ast CALL (car offset) (cdr offset))
-                                                               (peg-error "grammar" ERROR-UNDEFINED-RULE (list (ast-node-x node)))))]
-                                                        ;; wildcard
-                                                        [else node])))))
-                                    open-rules)])
-                  ;; Check for possible left recursion.
-                  (encode-ast GRAMMAR (check-grammar closed-rules))))]))
+                                                  (quote R2)
+                                                  C))))
 
-         ;; (capture fn px)
-         ;;   where fn = function
-         ;;         px = pattern
-         ;;
-         ;; (capture fn px) -> (ast CAPTURE fn px)
-         ;; (capture px)    -> (ast CAPTURE '() px)
-         (define capture
-           (case-lambda
-            [(px)
-             (encode-ast CAPTURE '() (assert-ast px))]
-            [(fn px)
-             (unless (procedure? fn)
-               (peg-error "capture" ERROR-TYPE-FUNCTION (list fn)))
-             (encode-ast CAPTURE fn (assert-ast px))]))
+     (test-assert "undefined rule"
+                  error-equal?
+                  (catch (grammar [A (and-then #\a (rule C))]
+                                  [B #\b]))
+                  (peg-error "grammar" ERROR-UNDEFINED-RULE (list (quote C))))
 
-         ;; (transform fn px)
-         ;;   where fn = function
-         ;;         px = pattern
-         ;;
-         ;; (transform fn px) -> (ast TRANSFORM fn px)
-         (define transform
-           (lambda (fn px)
-             (if (procedure? fn)
-                 (encode-ast TRANSFORM fn (assert-ast px))
-                 (peg-error "transform" ERROR-TYPE-FUNCTION (list fn)))))
+     ;; Left Recursion: A → Bβ such that B ⇒ Aγ
+     (test-assert "grammar, direct left recursion"
+                  error-equal?
+                  (catch (grammar [R (rule R)]))
+                  (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote R))))
 
-         ;; (text "abc") = a • b • c
-         ;; (text "")    = ε
-         ;; (text "abc") -> (ast SEQUENCE (list (char #\a) (char #\b) (char #\c)))
-         ;; (text "")    -> empty
-         (define text
-           (lambda (xs)
-             (cond [(string? xs)
-                    (let* ([characters (map (lambda (x) (encode-ast CHARACTER x)) (string->list xs))]
-                           [size       (length characters)])
-                      (cond [(< size 1) empty]
-                            [(= size 1) (car characters)]
-                            [else       (encode-ast SEQUENCE characters)]))]
-                   [else
-                    (peg-error "text" ERROR-TYPE-STRING (list xs))])))
-
-         ;; === Unit Tests ===
-
-         (define unit-tests
-           (test-chunk
-            "Cursor Core"
-            ([A (encode-ast CHARACTER #\a)]
-             [B (encode-ast CHARACTER #\b)]
-             [C (encode-ast CHARACTER #\c)]
-             [identity     (lambda (x) x)]
-             [error-equal? (lambda (x y)
-                             (and (peg-violation? x) (peg-violation? y)
-                                  (equal? (list (condition-who x) (condition-message x) (condition-irritants x))
-                                          (list (condition-who y) (condition-message y) (condition-irritants y)))))]
-             [peg-error    (lambda (who message irritants)
-                             (condition (make-peg-violation)
-                                        (make-who-condition who)
-                                        (make-message-condition message)
-                                        (make-irritants-condition irritants)))])
-            ;; === Literals ===
-            (test-assert "character literal"
-                         ast-equal?
-                         (char #\a)
-                         A)
-
-            (test-assert "character error"
-                         error-equal?
-                         (catch (char "a"))
-                         (peg-error "char" ERROR-TYPE-CHARACTER (list "a")))
-
-            ;; === Concatenation ===
-            (test-assert "text sequence abc"
-                         ast-equal?
-                         (text "abc")
-                         (encode-ast SEQUENCE (list A B C)))
-
-            (test-assert "text sequence error"
-                         error-equal?
-                         (catch (text #\a))
-                         (peg-error "text" ERROR-TYPE-STRING (list #\a)))
-
-            (test-assert "text epsilon"
-                         ast-equal?
-                         (text "")
-                         empty)
-
-            (test-assert "and-then abc"
-                         ast-equal?
-                         (and-then #\a #\b #\c)
-                         (encode-ast SEQUENCE (list A B C)))
-
-            (test-assert "and-then nested"
-                         ast-equal?
-                         (and-then (and-then #\a #\b) #\c "ba")
-                         (encode-ast SEQUENCE (list A B C B A)))
-
-            (test-assert "and-then identity"
-                         ast-equal?
-                         (and-then)
-                         empty)
-
-            ;; === Ordered Choice ===
-            (test-assert "or-else, a / b"
-                         ast-equal?
-                         (or-else #\a #\b)
-                         (encode-ast CHOICE (list A B)))
-
-            (test-assert "or-else nested"
-                         ast-equal?
-                         (or-else #\a (or-else #\b #\c))
-                         (encode-ast CHOICE (list A B C)))
-
-            (test-assert "or-else identity"
-                         ast-equal?
-                         (or-else)
-                         fail)
-
-            ;; === Repetition ===
-            (test-assert "repeat a*"
-                         ast-equal?
-                         (repeat #\a)
-                         (encode-ast REPEAT A))
-
-            (test-assert "repeat a+"
-                         ast-equal?
-                         (repeat+1 #\a)
-                         (encode-ast SEQUENCE (list A (encode-ast REPEAT A))))
-
-            (test-assert "repeat nullable"
-                         error-equal?
-                         (catch (repeat empty))
-                         (peg-error "repeat" ERROR-NULLABLE '()))
-
-            ;; === Not Predicate ===
-            (test-assert "predicate !a"
-                         ast-equal?
-                         (is-not? #\a)
-                         (encode-ast IS-NOT A))
-
-            ;; === Predicate ===
-            (test-assert "predicate &a"
-                         ast-equal?
-                         (is? #\a)
-                         (encode-ast IS A))
-
-            ;; === Sets ===
-            (test-assert "character set [abc]"
-                         ast-equal?
-                         (one-of "abc")
-                         (encode-ast ONE-OF (make-charset "abc")))
-
-            (test-assert "character set [^abc]"
-                         ast-equal?
-                         (none-of "abc")
-                         (encode-ast NONE-OF (make-charset "abc")))
-
-            (test-assert "character set error"
-                         error-equal?
-                         (catch (one-of (list #\a #\b #\c)))
-                         (peg-error "one-of" ERROR-TYPE-STRING (list (list #\a #\b #\c))))
-
-            (test-assert "empty set"
-                         ast-equal?
-                         (one-of "")
-                         fail)
-
-            (test-assert "universal set"
-                         ast-equal?
-                         (none-of "")
-                         any)
-
-            ;; === Captures ===
-            (test-assert "capture, baseline"
-                         ast-equal?
-                         (capture #\a)
-                         (encode-ast CAPTURE '() A))
-
-            (test-assert "capture, true positive"
-                         ast-equal?
-                         (capture identity #\a)
-                         (encode-ast CAPTURE identity A))
-
-            (test-assert "capture, false positive, + ≠ identity"
-                         ast-equal?
-                         (capture + #\a)
-                         (encode-ast CAPTURE identity A))
-
-            ;; === Grammars ===
-            (test-assert "grammar, baseline"
-                         ast-equal?
-                         (grammar [R1 (and-then "ab" (rule R2))]
-                                  [R2 "c"])
-                         (encode-ast GRAMMAR
-                                     (vector (encode-ast RULE
-                                                         (quote R1)
-                                                         (encode-ast SEQUENCE
-                                                                     (list A
-                                                                           B
-                                                                           (encode-ast CALL
-                                                                                       (quote R2)
-                                                                                       1))))
-                                             (encode-ast RULE
-                                                         (quote R2)
-                                                         C))))
-
-            (test-assert "undefined rule"
-                         error-equal?
-                         (catch (grammar [A (and-then #\a (rule C))]
-                                         [B #\b]))
-                         (peg-error "grammar" ERROR-UNDEFINED-RULE (list (quote C))))
-
-            ;; Left Recursion: A → Bβ such that B ⇒ Aγ
-            (test-assert "grammar, direct left recursion"
-                         error-equal?
-                         (catch (grammar [R (rule R)]))
-                         (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote R))))
-
-            (test-assert "grammar, indirect left recursion"
-                         error-equal?
-                         (catch (grammar [A (and-then (rule B) #\x)]
-                                         [B (and-then (rule C) #\y)]
-                                         [C (and-then (rule A) #\z)]))
-                         (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote A))))
-            ))
-
+     (test-assert "grammar, indirect left recursion"
+                  error-equal?
+                  (catch (grammar [A (and-then (rule B) #\x)]
+                                  [B (and-then (rule C) #\y)]
+                                  [C (and-then (rule A) #\z)]))
+                  (peg-error "grammar" ERROR-LEFT-RECURSION (list (quote A))))))
 )

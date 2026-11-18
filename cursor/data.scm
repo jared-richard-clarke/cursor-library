@@ -1,197 +1,196 @@
 (library (cursor data)
-         ;; enumerations
-         (export EMPTY
-                 ANY
-                 FAIL
-                 FAIL-TWICE
-                 CHARACTER
-                 SEQUENCE
-                 CHOICE
-                 COMMIT
-                 PARTIAL-COMMIT
-                 BACK-COMMIT
-                 GRAMMAR
-                 RULE
-                 CALL
-                 OPEN-CALL
-                 RETURN
-                 JUMP
-                 CAPTURE
-                 CAPTURE-START
-                 CAPTURE-STOP
-                 TRANSFORM
-                 TRANSFORM-START
-                 TRANSFORM-STOP
-                 REPEAT
-                 IS
-                 IS-NOT
-                 ONE-OF
-                 NONE-OF
-                 MATCH
-          ;; record-type: ast
-                 encode-ast ;; constructor
-                 ast?       ;; predicate
-                 ast-type   ;; field
-                 ast-node-x ;; field
-                 ast-node-y ;; field
-                 ast-equal?
-          ;; record-type: &peg < &violation < &condition
-                 make-peg-violation ;; constructor
-                 peg-violation?     ;; predicate
-          ;; record-type: &context < &condition
-                 make-context  ;; constructor
-                 context?      ;; predicate
-                 context-items ;; field
-          ;; raise exceptions
-                 peg-error)
+  ;; enumerations
+  (export EMPTY
+          ANY
+          FAIL
+          FAIL-TWICE
+          CHARACTER
+          SEQUENCE
+          CHOICE
+          COMMIT
+          PARTIAL-COMMIT
+          BACK-COMMIT
+          GRAMMAR
+          RULE
+          CALL
+          OPEN-CALL
+          RETURN
+          JUMP
+          CAPTURE
+          CAPTURE-START
+          CAPTURE-STOP
+          TRANSFORM
+          TRANSFORM-START
+          TRANSFORM-STOP
+          REPEAT
+          IS
+          IS-NOT
+          ONE-OF
+          NONE-OF
+          MATCH
+   ;; record-type: ast
+          encode-ast ;; constructor
+          ast?       ;; predicate
+          ast-type   ;; field
+          ast-node-x ;; field
+          ast-node-y ;; field
+          ast-equal?
+   ;; record-type: &peg < &violation < &condition
+          make-peg-violation ;; constructor
+          peg-violation?     ;; predicate
+   ;; record-type: &context < &condition
+          make-context  ;; constructor
+          context?      ;; predicate
+          context-items ;; field
+   ;; raise exceptions
+          peg-error)
 
-         (import (rnrs)
-                 (cursor collections charset)
-                 (cursor tools))
+  (import (rnrs)
+          (cursor collections charset)
+          (cursor tools))
 
-         ;; === enumerations ===
+  ;; === enumerations ===
 
-         ;; Symbols that identify nodes within abstract syntax trees
-         ;; and instructions within instruction lists.
-         (enum EMPTY
-               ANY
-               FAIL
-               FAIL-TWICE
-               CHARACTER
-               SEQUENCE
-               CHOICE
-               COMMIT
-               PARTIAL-COMMIT
-               BACK-COMMIT
-               GRAMMAR
-               RULE
-               CALL
-               OPEN-CALL
-               RETURN
-               JUMP
-               CAPTURE
-               CAPTURE-START
-               CAPTURE-STOP
-               TRANSFORM
-               TRANSFORM-START
-               TRANSFORM-STOP
-               REPEAT
-               IS
-               IS-NOT
-               ONE-OF
-               NONE-OF
-               MATCH)
+  ;; Symbols that identify nodes within abstract syntax trees
+  ;; and instructions within instruction lists.
+  (enum EMPTY
+        ANY
+        FAIL
+        FAIL-TWICE
+        CHARACTER
+        SEQUENCE
+        CHOICE
+        COMMIT
+        PARTIAL-COMMIT
+        BACK-COMMIT
+        GRAMMAR
+        RULE
+        CALL
+        OPEN-CALL
+        RETURN
+        JUMP
+        CAPTURE
+        CAPTURE-START
+        CAPTURE-STOP
+        TRANSFORM
+        TRANSFORM-START
+        TRANSFORM-STOP
+        REPEAT
+        IS
+        IS-NOT
+        ONE-OF
+        NONE-OF
+        MATCH)
 
-         ;; === Abstract Syntax Tree ===
+  ;; === Abstract Syntax Tree ===
 
-         ;; record: (ast type node-x node-y)
-         ;;   where type = symbol
-         ;;         node-x = ast | (list ast) | (vector ast)
-         ;;         node-y = ast | (list ast) | (vector ast)
-         ;;
-         ;; The leaves and branches within an abstract syntax tree.
-         ;; The type identifies the node. The child nodes are themselves
-         ;; ASTs or lists or vectors containing zero or more ASTs.
-         (define-record-type (ast encode-ast ast?)
-           (fields type
-                   node-x
-                   node-y)
-           (sealed #t)
-           (nongenerative peg-ast)
-           (protocol
-            (lambda (new)
-             (case-lambda
-               [(type)               (new type '() '())]
-               [(type node-x)        (new type node-x '())]
-               [(type node-x node-y) (new type node-x node-y)]))))
+  ;; record: (ast type node-x node-y)
+  ;;   where type = symbol
+  ;;         node-x = ast | (list ast) | (vector ast)
+  ;;         node-y = ast | (list ast) | (vector ast)
+  ;;
+  ;; The leaves and branches within an abstract syntax tree.
+  ;; The type identifies the node. The child nodes are themselves
+  ;; ASTs or lists or vectors containing zero or more ASTs.
+  (define-record-type (ast encode-ast ast?)
+    (fields type
+            node-x
+            node-y)
+    (sealed #t)
+    (nongenerative peg-ast)
+    (protocol
+     (lambda (new)
+      (case-lambda
+        [(type)               (new type '() '())]
+        [(type node-x)        (new type node-x '())]
+        [(type node-x node-y) (new type node-x node-y)]))))
 
-         ;; (ast-equal? ast ast) -> boolean
-         ;;
-         ;; Deep, structural comparison of ASTs.
-         (define ast-equal?
-           (lambda (a b)
-             (and (ast? a) (ast? b)
-                  (let ([type-a (ast-type a)]
-                        [type-b (ast-type b)])
-                    (and (eq? type-a type-b)
-                         (case type-a
-                           [(EMPTY FAIL ANY) #t]
-                           [(CHARACTER)
-                            (char=? (ast-node-x a) (ast-node-x b))]
-                           [(SEQUENCE CHOICE)
-                            (let ([node-a (ast-node-x a)]
-                                  [node-b (ast-node-x b)])
-                              (and (= (length node-a) (length node-b))
-                                   (for-all ast-equal? node-a node-b)))]
-                           [(REPEAT IS IS-NOT)
-                            (ast-equal? (ast-node-x a) (ast-node-x b))]
-                           [(ONE-OF NONE-OF)
-                            (charset-equal? (ast-node-x a) (ast-node-x b))]
-                           [(OPEN-CALL)
-                            (eq? (ast-node-x a) (ast-node-x b))]
-                           [(CALL)
-                            (and (eq? (ast-node-x a) (ast-node-x b))
-                                 (= (ast-node-y a) (ast-node-y b)))]
-                           [(GRAMMAR)
-                            (for-all ast-equal?
-                                     (vector->list (ast-node-x a))
-                                     (vector->list (ast-node-x b)))]
-                           [(RULE)
-                            (and (eq? (ast-node-x a) (ast-node-x b))
-                                 (ast-equal? (ast-node-y a) (ast-node-y b)))]
-                           ;; Capture and Transform comparison.
-                           ;; Function equality is undecidable.
-                           ;; We check only for their presence or absence
-                           ;; within both captures or transforms.
-                           [(CAPTURE TRANSFORM)
-                            (let ([a-f? (procedure? (ast-node-x a))]
-                                  [a-n? (null? (ast-node-x a))]
-                                  [a-px (ast-node-y a)]
-                                  [b-f? (procedure? (ast-node-x b))]
-                                  [b-n? (null? (ast-node-x b))]
-                                  [b-px (ast-node-y b)])
-                              (let ([both-functions? (and a-f? b-f?)]
-                                    [both-nulls?     (and a-n? b-n?)])
-                                (and (or both-functions? both-nulls?)
-                                     (ast-equal? a-px b-px))))]
-                           [else #f]))))))
+  ;; (ast-equal? ast ast) -> boolean
+  ;;
+  ;; Deep, structural comparison of ASTs.
+  (define ast-equal?
+    (lambda (a b)
+      (and (ast? a) (ast? b)
+           (let ([type-a (ast-type a)]
+                 [type-b (ast-type b)])
+             (and (eq? type-a type-b)
+                  (case type-a
+                    [(EMPTY FAIL ANY) #t]
+                    [(CHARACTER)
+                     (char=? (ast-node-x a) (ast-node-x b))]
+                    [(SEQUENCE CHOICE)
+                     (let ([node-a (ast-node-x a)]
+                           [node-b (ast-node-x b)])
+                       (and (= (length node-a) (length node-b))
+                            (for-all ast-equal? node-a node-b)))]
+                    [(REPEAT IS IS-NOT)
+                     (ast-equal? (ast-node-x a) (ast-node-x b))]
+                    [(ONE-OF NONE-OF)
+                     (charset-equal? (ast-node-x a) (ast-node-x b))]
+                    [(OPEN-CALL)
+                     (eq? (ast-node-x a) (ast-node-x b))]
+                    [(CALL)
+                     (and (eq? (ast-node-x a) (ast-node-x b))
+                          (= (ast-node-y a) (ast-node-y b)))]
+                    [(GRAMMAR)
+                     (for-all ast-equal?
+                              (vector->list (ast-node-x a))
+                              (vector->list (ast-node-x b)))]
+                    [(RULE)
+                     (and (eq? (ast-node-x a) (ast-node-x b))
+                          (ast-equal? (ast-node-y a) (ast-node-y b)))]
+                    ;; Capture and Transform comparison.
+                    ;; Function equality is undecidable.
+                    ;; We check only for their presence or absence
+                    ;; within both captures or transforms.
+                    [(CAPTURE TRANSFORM)
+                     (let ([a-f? (procedure? (ast-node-x a))]
+                           [a-n? (null? (ast-node-x a))]
+                           [a-px (ast-node-y a)]
+                           [b-f? (procedure? (ast-node-x b))]
+                           [b-n? (null? (ast-node-x b))]
+                           [b-px (ast-node-y b)])
+                       (let ([both-functions? (and a-f? b-f?)]
+                             [both-nulls?     (and a-n? b-n?)])
+                         (and (or both-functions? both-nulls?)
+                              (ast-equal? a-px b-px))))]
+                    [else #f]))))))
 
-         ;; === Conditions and Error Handling ===
+  ;; === Conditions and Error Handling ===
 
-         ;; record-type: &peg < &violation < &condition
-         ;;
-         ;; Conditions of this type indicate a violation specific to this
-         ;; Parsing Expression Grammar library.
-         (define-condition-type &peg &violation make-peg-violation peg-violation?)
+  ;; record-type: &peg < &violation < &condition
+  ;;
+  ;; Conditions of this type indicate a violation specific to this
+  ;; Parsing Expression Grammar library.
+  (define-condition-type &peg &violation make-peg-violation peg-violation?)
 
-         ;; record-type: &context < &condition
-         ;;
-         ;; Provides context by collating the list of conditions that triggered
-         ;; the current condition.
-         (define-condition-type &context &condition make-context context?
-           (items context-items))
+  ;; record-type: &context < &condition
+  ;;
+  ;; Provides context by collating the list of conditions that triggered
+  ;; the current condition.
+  (define-condition-type &context &condition make-context context?
+    (items context-items))
 
-         ;; (peg-error who message irritants)         -> raise exception
-         ;; (peg-error who message irritants context) -> raise exception
-         ;;   where who       = string
-         ;;         message   = string
-         ;;         irritants = (list any)
-         ;;         context   = (list condition)
-         ;;
-         ;; A convenience function for creating and raising compound conditions
-         ;; of type &peg, which is a subtype of &violation.
-         (define peg-error
-           (case-lambda
-            [(who message irritants)
-             (raise (condition (make-peg-violation)
-                               (make-who-condition who)
-                               (make-message-condition message)
-                               (make-irritants-condition irritants)))]
-            [(who message irritants context)
-             (raise (condition (make-peg-violation)
-                               (make-who-condition who)
-                               (make-message-condition message)
-                               (make-irritants-condition irritants)
-                               (make-context (simple-conditions context))))]))
-
+  ;; (peg-error who message irritants)         -> raise exception
+  ;; (peg-error who message irritants context) -> raise exception
+  ;;   where who       = string
+  ;;         message   = string
+  ;;         irritants = (list any)
+  ;;         context   = (list condition)
+  ;;
+  ;; A convenience function for creating and raising compound conditions
+  ;; of type &peg, which is a subtype of &violation.
+  (define peg-error
+    (case-lambda
+     [(who message irritants)
+      (raise (condition (make-peg-violation)
+                        (make-who-condition who)
+                        (make-message-condition message)
+                        (make-irritants-condition irritants)))]
+     [(who message irritants context)
+      (raise (condition (make-peg-violation)
+                        (make-who-condition who)
+                        (make-message-condition message)
+                        (make-irritants-condition irritants)
+                        (make-context (simple-conditions context))))]))
 )

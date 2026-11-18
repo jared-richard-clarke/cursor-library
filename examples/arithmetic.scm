@@ -1,100 +1,99 @@
 (library (examples arithmetic)
-         (export evaluate-expression
-                 (rename (tests arithmetic:tests)))
-         (import (rnrs)
-                 (cursor)
-                 (cursor tools))
+  (export evaluate-expression
+          (rename (tests arithmetic:tests)))
+  (import (rnrs)
+          (cursor)
+          (cursor tools))
 
-         (define replace
-           (lambda (px y)
-             (capture (lambda (x) y)
-                      px)))
+  (define replace
+    (lambda (px y)
+      (capture (lambda (x) y)
+               px)))
 
-         (define whitespace (repeat (one-of " \n\r\t")))
+  (define whitespace (repeat (one-of " \n\r\t")))
 
-         (define capture-number
-           (lambda (px)
-             (capture (lambda (x)
-                        (string->number x 10))
-                      px)))
+  (define capture-number
+    (lambda (px)
+      (capture (lambda (x)
+                 (string->number x 10))
+               px)))
 
-         (define fold-equation
-           (lambda xs
-             (let loop ([x  (car xs)]
-                        [ys (cdr xs)])
-               (cond [(null? ys)
-                      x]
-                     [else
-                      (let ([op (car ys)]
-                            [y  (cadr ys)])
-                        (loop (op x y)
-                              (cddr ys)))]))))
+  (define fold-equation
+    (lambda xs
+      (let loop ([x  (car xs)]
+                 [ys (cdr xs)])
+        (cond [(null? ys)
+               x]
+              [else
+               (let ([op (car ys)]
+                     [y  (cadr ys)])
+                 (loop (op x y)
+                       (cddr ys)))]))))
 
-         (define binary
-           (lambda (px op py)
-             (transform fold-equation
-                        (and-then px (repeat (and-then op py))))))
+  (define binary
+    (lambda (px op py)
+      (transform fold-equation
+                 (and-then px (repeat (and-then op py))))))
 
-         (define digit  (one-of "0123456789"))
-         (define digits (repeat+1 digit))
+  (define digit  (one-of "0123456789"))
+  (define digits (repeat+1 digit))
 
-         (define sign        (maybe (or-else #\- #\+)))
-         (define whole       (or-else #\0 digits))
-         (define integer     (and-then sign whole))
-         (define fraction    (maybe (and-then #\. digits)))
-         (define exponent    (maybe (and-then (or-else #\e #\E)
-                                              sign
-                                              digits)))
-         (define real-number (and-then integer fraction exponent))
+  (define sign        (maybe (or-else #\- #\+)))
+  (define whole       (or-else #\0 digits))
+  (define integer     (and-then sign whole))
+  (define fraction    (maybe (and-then #\. digits)))
+  (define exponent    (maybe (and-then (or-else #\e #\E)
+                                       sign
+                                       digits)))
+  (define real-number (and-then integer fraction exponent))
 
-         (define add      (replace #\+ +))
-         (define subtract (replace #\- -))
-         (define multiply (replace #\* *))
-         (define divide   (replace #\/ /))
-         (define power    (replace #\^ expt))
+  (define add      (replace #\+ +))
+  (define subtract (replace #\- -))
+  (define multiply (replace #\* *))
+  (define divide   (replace #\/ /))
+  (define power    (replace #\^ expt))
 
-         (define add-sub (or-else add subtract))
-         (define mul-div (or-else multiply divide))
+  (define add-sub (or-else add subtract))
+  (define mul-div (or-else multiply divide))
 
-         (define arithmetic-grammar
-           (grammar [Expression (binary (rule Term) add-sub (rule Term))]
-                    [Term       (binary (rule Factor) mul-div (rule Factor))]
-                    [Factor     (binary (rule Primary) power (rule Factor))]
-                    [Primary    (and-then whitespace
-                                          (or-else (and-then #\( (rule Expression) #\))
-                                                   (rule Number))
-                                          whitespace)]
-                    [Number (capture-number real-number)]))
+  (define arithmetic-grammar
+    (grammar [Expression (binary (rule Term) add-sub (rule Term))]
+             [Term       (binary (rule Factor) mul-div (rule Factor))]
+             [Factor     (binary (rule Primary) power (rule Factor))]
+             [Primary    (and-then whitespace
+                                   (or-else (and-then #\( (rule Expression) #\))
+                                            (rule Number))
+                                   whitespace)]
+             [Number (capture-number real-number)]))
 
-         (define evaluate-expression (compile arithmetic-grammar))
+  (define evaluate-expression (compile arithmetic-grammar))
 
-         (define tests
-           (test-chunk
-            "Arithmetic"
-            ()
-            (test-assert "base"
-                         =
-                         (evaluate-expression "1 + 2 * 3 ^ 4")
-                         163)
+  (define tests
+    (test-chunk
+     "Arithmetic"
+     ()
+     (test-assert "base"
+                  =
+                  (evaluate-expression "1 + 2 * 3 ^ 4")
+                  163)
 
-            (test-assert "float"
-                         =
-                         (evaluate-expression "0.3 + 0.4")
-                         0.7)
+     (test-assert "float"
+                  =
+                  (evaluate-expression "0.3 + 0.4")
+                  0.7)
 
-            (test-assert "exponent"
-                         =
-                         (evaluate-expression "1.2e3 - 1")
-                         1199)
+     (test-assert "exponent"
+                  =
+                  (evaluate-expression "1.2e3 - 1")
+                  1199)
 
-            (test-assert "right-associative"
-                         =
-                         (evaluate-expression "4 ^ 3 ^ 2")
-                         262144)
+     (test-assert "right-associative"
+                  =
+                  (evaluate-expression "4 ^ 3 ^ 2")
+                  262144)
 
-            (test-assert "parenthetical grouping"
-                         =
-                         (evaluate-expression "(1 + 2) * 3")
-                         9)))
-
+     (test-assert "parenthetical grouping"
+                  =
+                  (evaluate-expression "(1 + 2) * 3")
+                  9)))
 )
