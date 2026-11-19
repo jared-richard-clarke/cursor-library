@@ -84,12 +84,21 @@
 
   ;; === Input/Output ===
 
-  ;; (open-file string) -> textual-input-port
+  ;; (open-input-file path) -> textual-input-port
+  ;;   where path = string
   ;;
   ;; Opens a textual input port.
-  (define open-file
+  (define open-input-file
     (lambda (path)
       (open-file-input-port path (file-options) (buffer-mode block) TRANSCODER)))
+
+  ;; (open-output-file path) -> textual-output-port
+  ;;   where path = string
+  ;;
+  ;; Opens a textual output port. Overwrites existing files.
+  (define open-output-file
+    (lambda (path)
+      (open-file-output-port path (file-options no-fail) (buffer-mode block) TRANSCODER)))
 
   ;; === Parser Combinators ===
   ;;
