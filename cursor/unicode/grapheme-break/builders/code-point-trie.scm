@@ -17,12 +17,16 @@
 
   ;; === Constants ===
 
-  (define PERIOD         #\.)
-  (define SEMICOLON      #\;)
-  (define HASH           #\#)
-  (define SPACE          #\space)
-  (define HEX-DIGITS     "0123456789abcdefABCDEF")
+  (define PERIOD     #\.)
+  (define SEMICOLON  #\;)
+  (define HASH       #\#)
+  (define SPACE      #\space)
+  (define HEX-DIGITS "0123456789abcdefABCDEF")
+  
   (define MAX-CODE-POINT #x10FFFF)
+  (define PREFIX-SHIFT   8)
+  (define SUFFIX-MASK    #xFF)
+  (define BLOCK-SIZE     256)
 
   (define CODEC (utf-8-codec))
   (define EOL-STYLE (eol-style lf))
@@ -128,8 +132,8 @@
     (lambda (x)
 
       (define raise-assertion
-        (lambda (message value)
-          (assertion-violation 'match-with message value)))
+        (lambda (message object)
+          (assertion-violation 'match-with message object)))
 
       (define predicate
         (cond [(char? x)
@@ -388,8 +392,8 @@
     (lambda (line)
 
       (define raise-assertion
-        (lambda (message output)
-          (assertion-violation 'parse-field message output)))
+        (lambda (message object)
+          (assertion-violation 'parse-field message object)))
 
       (define output (run field-parser line))
 
@@ -422,10 +426,10 @@
     (lambda (pattern)
 
       (define raise-assertion
-        (lambda (message port)
-          (assertion-violation 'find-string message port)))
+        (lambda (message object)
+          (assertion-violation 'find-string message object)))
 
-      (define pattern-reset (string->list pattern))
+      (define PATTERN-RESET (string->list pattern))
 
       (define skip-line
         (lambda (port)
@@ -440,7 +444,7 @@
         (unless (and (textual-port? port) (input-port? port))
           (raise-assertion "not a textual input port" port))
 
-        (let loop ([pattern pattern-reset])
+        (let loop ([pattern PATTERN-RESET])
           (cond [(null? pattern)
                  #t]
                 [(port-eof? port)
@@ -452,7 +456,7 @@
                           (loop (cdr pattern))]
                          [else
                           (skip-line port)
-                          (loop pattern-reset)]))])))))
+                          (loop PATTERN-RESET)]))])))))
 
   ;; === Scanners ===
   ;;
