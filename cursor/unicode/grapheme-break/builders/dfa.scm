@@ -62,8 +62,7 @@
   ;; for a given language.
   (define literal?
     (lambda (x)
-      (and (number? x)
-           (grapheme-break-property? x))))
+      (grapheme-break-property? x)))
 
   (define concat?
     (lambda (x)
