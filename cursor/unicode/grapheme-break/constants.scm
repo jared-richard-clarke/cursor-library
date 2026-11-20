@@ -39,6 +39,7 @@
           EXTENDED-PICTOGRAPHIC-STRING
           ALPHABET
           ALPHABET-LENGTH
+          grapheme-break-property?
           string->grapheme-break)
   (import (rnrs)
           (cursor tools))
@@ -122,10 +123,43 @@
 
   (define ALPHABET-LENGTH (length ALPHABET))
 
+  ;; === Grapheme Break Predicate ===
+  
+  (define grapheme-break-set
+    (let ([table    (make-eqv-hashtable)]
+          [set-list (list OTHER
+                          CR
+                          LF
+                          CONTROL
+                          L
+                          V
+                          LV
+                          LVT
+                          T
+                          REGIONAL-INDICATOR
+                          PREPEND
+                          EXTEND
+                          ZWJ
+                          SPACING-MARK
+                          INDIC-CONSONANT
+                          INDIC-EXTEND
+                          INDIC-LINKER
+                          EXTENDED-PICTOGRAPHIC)])
+      (fold-left (lambda (accum property)
+                   (hashtable-set! accum property #t)
+                   accum)
+                 table
+                 set-list)))
+
+  (define grapheme-break-property?
+    (lambda (x)
+      (and (number? x)
+           (hashtable-contains? grapheme-break-set x))))
+
   ;; === Grapheme Break Identifier String Conversion ===
 
   ;; Maps grapheme-break identifier strings to their enumerated constants.
-  (define grapheme-break-table
+  (define grapheme-break-string-table
     (string-hashtable (OTHER-STRING                 OTHER)
                       (CR-STRING                    CR)
                       (LF-STRING                    LF)
@@ -147,7 +181,7 @@
 
   (define string->grapheme-break
     (lambda (x)
-      (let ([constant (hashtable-ref grapheme-break-table x #f)])
+      (let ([constant (hashtable-ref grapheme-break-string-table x #f)])
         (unless constant
           (assertion-violation 'string->grapheme-break
                                "not a grapheme-break"
