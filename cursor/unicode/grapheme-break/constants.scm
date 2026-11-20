@@ -124,7 +124,7 @@
   (define ALPHABET-LENGTH (length ALPHABET))
 
   ;; === Grapheme Break Predicate ===
-  
+
   (define grapheme-break-set
     (let ([table    (make-eqv-hashtable)]
           [set-list (list OTHER
