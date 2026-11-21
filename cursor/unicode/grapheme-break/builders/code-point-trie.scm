@@ -17,22 +17,28 @@
 
   ;; === Constants ===
 
-  (define PERIOD     #\.)
-  (define SEMICOLON  #\;)
-  (define HASH       #\#)
-  (define SPACE      #\space)
-  (define HEX-DIGITS "0123456789abcdefABCDEF")
-  
-  (define MAX-CODE-POINT #x10FFFF)
-  (define PREFIX-SHIFT   8)
-  (define SUFFIX-MASK    #xFF)
-  (define BLOCK-SIZE     256)
+  (define PERIOD              #\.)
+  (define SEMICOLON           #\;)
+  (define HASH                #\#)
+  (define SPACE               #\space)
+  (define HEX-DIGITS          "0123456789abcdefABCDEF")
 
-  (define CODEC (utf-8-codec))
-  (define EOL-STYLE (eol-style lf))
+  (define CODE-POINT-MAX      #x10FFFF)
+  (define CODE-POINT-BOUND    (+ CODE-POINT-MAX 1))
+  (define CODE-POINT-START      0)
+  (define CODE-POINT-OFFSET     8)
+  (define CODE-POINT-SIZE      32)
+  (define BLOCK-SIZE          256)
+
+  (define CODEC               (utf-8-codec))
+  (define EOL-STYLE           (eol-style lf))
   ;; Raise exception on encoding errors. Lookup tables must not be corrupted.
   (define ERROR-HANDLING-MODE (error-handling-mode raise))
-  (define TRANSCODER (make-transcoder CODEC EOL-STYLE ERROR-HANDLING-MODE))
+  (define TRANSCODER          (make-transcoder CODEC EOL-STYLE ERROR-HANDLING-MODE))
+
+  (define PATH-DERIVED-CORE   "../data/DerivedCoreProperties.txt")
+  (define PATH-GRAPHEME-BREAK "../data/GraphemeBreakProperty.txt")
+  (define PATH-EMOJI          "../data/emoji-data.txt")
 
   ;; === Data Types ===
 
